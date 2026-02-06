@@ -34,10 +34,10 @@ interface ConsultationResultViewProps {
   initialAnswer?: ConsultationAnswerContent | null;
   onBack: () => void;
   onUpdate?: (updated: ConsultationItem) => void;
-  onDelete?: (id: string) => void;
+  onDeleteOptimistic?: (id: string) => void;
 }
 
-const ConsultationResultView: React.FC<ConsultationResultViewProps> = ({ collection, consultation, initialAnswer, onBack, onUpdate, onDelete }) => {
+const ConsultationResultView: React.FC<ConsultationResultViewProps> = ({ collection, consultation, initialAnswer, onBack, onUpdate, onDeleteOptimistic }) => {
   const [answerContent, setAnswerContent] = useState<ConsultationAnswerContent | null>(initialAnswer || null);
   const [localQuestion, setLocalQuestion] = useState(consultation.question);
   const [tempQuestion, setTempQuestion] = useState(consultation.question);
@@ -114,7 +114,7 @@ const ConsultationResultView: React.FC<ConsultationResultViewProps> = ({ collect
     setLocalQuestion(newQuestion);
     setIsEditing(false);
     
-    // Mark as dirty instead of saving immediately (Light Action)
+    // Mark as dirty instead of saving immediately
     setIsDirty(true);
 
     // Notify Parent instantly (Optimistic)
@@ -126,11 +126,15 @@ const ConsultationResultView: React.FC<ConsultationResultViewProps> = ({ collect
     onUpdate?.(updatedItem);
   };
 
-  // Explicit Save Function (Heavy Action - Uses Overlay)
+  // Explicit Save Function
   const handleSaveChanges = async () => {
-    if (!answerContent) return;
+    // Validation Feedback
+    if (!answerContent) {
+      showXeenapsToast('error', 'Content not fully loaded. Please wait or refresh.');
+      return;
+    }
     
-    setIsSaving(true); // Trigger Saving Overlay
+    setIsSaving(true); // Trigger Loading State Immediately
     
     const updatedItem = {
       ...consultation,
@@ -146,12 +150,12 @@ const ConsultationResultView: React.FC<ConsultationResultViewProps> = ({ collect
         onUpdate?.(updatedItem);
         showXeenapsToast('success', 'Changes saved successfully');
       } else {
-        showXeenapsToast('error', 'Failed to save changes');
+        showXeenapsToast('error', 'Failed to save changes to server');
       }
     } catch (e) {
-      showXeenapsToast('error', 'Connection error');
+      showXeenapsToast('error', 'Connection error. Check your network.');
     } finally {
-      setIsSaving(false); // Disable Saving Overlay
+      setIsSaving(false); // Disable Loading State
     }
   };
 
@@ -192,23 +196,8 @@ const ConsultationResultView: React.FC<ConsultationResultViewProps> = ({ collect
   };
 
   const toggleFavorite = () => {
-    const newVal = !isFavorite;
-    // 1. Optimistic Update
-    setIsFavorite(newVal);
-    
-    const updatedItem = { ...consultation, isFavorite: newVal };
-    onUpdate?.(updatedItem);
-
-    // 2. Silent Background Sync (Don't set isDirty, don't use Overlay)
-    if (answerContent) {
-        saveConsultation({ ...updatedItem, updatedAt: new Date().toISOString() }, answerContent)
-          .catch(() => {
-              // Rollback on failure
-              setIsFavorite(!newVal);
-              onUpdate?.({ ...consultation, isFavorite: !newVal });
-              showXeenapsToast('error', 'Favorite sync failed. Reverting.');
-          });
-    }
+    setIsFavorite(!isFavorite);
+    setIsDirty(true);
   };
 
   // Safe Navigation Guard
@@ -235,20 +224,26 @@ const ConsultationResultView: React.FC<ConsultationResultViewProps> = ({ collect
   const handleDelete = async () => {
     const confirmed = await showXeenapsDeleteConfirm(1);
     if (confirmed) {
-      // 1. Optimistic Update (Notify Parent & Close)
-      onDelete?.(consultation.id);
-      onBack(); 
-      showXeenapsToast('success', 'Processing deletion...');
+      // 1. Instant UI Feedback & Navigation (Optimistic)
+      if (onDeleteOptimistic) {
+          onDeleteOptimistic(consultation.id);
+      } else {
+          onBack();
+      }
+      showXeenapsToast('success', 'Consultation deleted');
 
-      // 2. Background Sync (Fire and Forget)
+      // 2. Background Process (Fire and Forget)
+      // Melakukan cleanup tanpa memblokir UI thread
       (async () => {
         try {
+          // Physical Cleanup (GAS)
           if (consultation.answerJsonId && consultation.nodeUrl) {
              await deleteRemoteFile(consultation.answerJsonId, consultation.nodeUrl);
           }
+          // Metadata Cleanup (Supabase)
           await deleteConsultation(consultation.id);
         } catch (e) {
-          showXeenapsToast('error', 'Background deletion failed');
+          console.error("Background deletion error:", e);
         }
       })();
     }
@@ -279,16 +274,25 @@ const ConsultationResultView: React.FC<ConsultationResultViewProps> = ({ collect
             {isDirty ? (
               <button 
                 onClick={handleSaveChanges}
-                className="flex items-center gap-2 px-6 py-3 bg-[#004A74] text-[#FED400] rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg hover:scale-105 active:scale-95 transition-all animate-in zoom-in-95"
+                disabled={isSaving}
+                className={`flex items-center gap-2 px-6 py-3 bg-[#004A74] text-[#FED400] rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg transition-all animate-in zoom-in-95 ${isSaving ? 'opacity-70 cursor-not-allowed' : 'hover:scale-105 active:scale-95'}`}
               >
-                <Save size={16} /> Save Changes
+                {isSaving ? (
+                  <>
+                    <ArrowPathIcon className="w-4 h-4 animate-spin" /> Saving...
+                  </>
+                ) : (
+                  <>
+                    <Save size={16} /> Save Changes
+                  </>
+                )}
               </button>
             ) : (
               <>
-                <button onClick={toggleFavorite} className="p-2.5 rounded-xl border transition-all shadow-sm active:scale-90 border-gray-100 hover:bg-[#FED400]/10">
-                   {isFavorite ? <StarSolid className="w-5 h-5 text-[#FED400]" /> : <StarIcon className="w-5 h-5 text-gray-300 hover:text-[#FED400]" />}
+                <button onClick={toggleFavorite} className="p-2.5 rounded-xl border transition-all shadow-sm active:scale-90 border-gray-100 hover:bg-[#FED400]/10 text-[#FED400]">
+                   {isFavorite ? <StarSolid className="w-5 h-5 text-[#FED400]" /> : <StarIcon className="w-5 h-5 text-[#FED400]" />}
                 </button>
-                <button onClick={handleDelete} className="p-2.5 bg-white border border-gray-100 text-red-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all shadow-sm active:scale-90">
+                <button onClick={handleDelete} className="p-2.5 bg-white border border-gray-100 text-red-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all shadow-sm active:scale-90">
                    <TrashIcon className="w-5 h-5" />
                 </button>
               </>
