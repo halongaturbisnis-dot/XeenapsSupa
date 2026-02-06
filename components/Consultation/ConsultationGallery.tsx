@@ -66,34 +66,25 @@ const ConsultationGallery: React.FC<ConsultationGalleryProps> = ({ collection, o
     setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
   };
 
-  const toggleFavorite = async (e: React.MouseEvent, item: ConsultationItem) => {
-    e.stopPropagation();
-    const newVal = !item.isFavorite;
-    
-    // Optimistic Update
-    setItems(prev => prev.map(i => i.id === item.id ? { ...i, isFavorite: newVal } : i));
-    
-    // Background sync
-    const content = await fetchFileContent(item.answerJsonId, item.nodeUrl);
-    if (content) {
-      await saveConsultation({ ...item, isFavorite: newVal }, content);
-    }
-  };
-
   const handleDelete = async (e: React.MouseEvent, item: ConsultationItem) => {
     e.stopPropagation();
     const confirmed = await showXeenapsDeleteConfirm(1);
     if (confirmed) {
-      // 1. Optimistic Delete
+      // 1. Optimistic Delete (Zero-Latency)
       setItems(prev => prev.filter(i => i.id !== item.id));
       
-      // 2. Physical File Cleanup (GAS)
-      if (item.answerJsonId && item.nodeUrl) {
-         await deleteRemoteFile(item.answerJsonId, item.nodeUrl);
-      }
+      try {
+        // 2. Physical File Cleanup (GAS)
+        if (item.answerJsonId && item.nodeUrl) {
+           await deleteRemoteFile(item.answerJsonId, item.nodeUrl);
+        }
 
-      // 3. Metadata Cleanup (Supabase)
-      await deleteConsultation(item.id);
+        // 3. Metadata Cleanup (Supabase)
+        await deleteConsultation(item.id);
+      } catch (e) {
+        // Silent fail or toast error
+        showXeenapsToast('error', 'Delete sync failed');
+      }
     }
   };
 
@@ -167,7 +158,8 @@ const ConsultationGallery: React.FC<ConsultationGalleryProps> = ({ collection, o
           setView('gallery');
           setSelectedConsult(null);
           setActiveAnswer(null);
-          loadConsultations(true); // Silent refresh to ensure list is fresh without loading state
+          // Silent refresh to ensure list is fresh without loading state
+          loadConsultations(true); 
         }}
       />
     );
@@ -273,20 +265,23 @@ const ConsultationGallery: React.FC<ConsultationGalleryProps> = ({ collection, o
                            <ClockIcon className="w-3 h-3" />
                            <span className="text-[9px] font-black uppercase tracking-widest">{formatTimeAgo(item.createdAt)}</span>
                         </div>
+                        {item.isFavorite && (
+                          <div className="flex items-center gap-1">
+                             <StarSolid className="w-3 h-3 text-[#FED400]" />
+                             <span className="text-[8px] font-black uppercase tracking-widest text-[#FED400]">Saved</span>
+                          </div>
+                        )}
                        </div>
                     </div>
 
                     {/* RIGHT: ACTIONS */}
                     <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
-                    <button onClick={(e) => toggleFavorite(e, item)} className="p-2 hover:scale-125 transition-transform text-[#FED400]">
-                      {item.isFavorite ? <StarSolid className="w-5 h-5" /> : <StarIcon className="w-5 h-5 text-gray-300 hover:text-[#FED400]" />}
-                    </button>
-                    <button onClick={(e) => handleDelete(e, item)} className="p-2 text-gray-300 hover:text-red-500 rounded-xl transition-all">
-                      <TrashIcon className="w-5 h-5" />
-                    </button>
-                    <div className="ml-2 p-1.5 bg-gray-50 text-gray-400 rounded-lg group-hover:bg-[#FED400] group-hover:text-[#004A74] transition-all">
-                       <ChevronRightIcon className="w-4 h-4 stroke-[3]" />
-                    </div>
+                      <button onClick={(e) => handleDelete(e, item)} className="p-2 text-red-500 bg-red-50 rounded-xl transition-all hover:bg-red-500 hover:text-white">
+                        <TrashIcon className="w-5 h-5" />
+                      </button>
+                      <div className="ml-2 p-1.5 bg-gray-50 text-gray-400 rounded-lg group-hover:bg-[#FED400] group-hover:text-[#004A74] transition-all">
+                         <ChevronRightIcon className="w-4 h-4 stroke-[3]" />
+                      </div>
                     </div>
                   </div>
                 );

@@ -26,6 +26,7 @@ import Swal from 'sweetalert2';
 import { XEENAPS_SWAL_CONFIG } from '../../utils/swalUtils';
 import { Save } from 'lucide-react';
 import { BRAND_ASSETS } from '../../assets';
+import { GlobalSavingOverlay } from '../Common/LoadingComponents';
 
 interface ConsultationResultViewProps {
   collection: LibraryItem;
@@ -115,10 +116,11 @@ const ConsultationResultView: React.FC<ConsultationResultViewProps> = ({ collect
     // Mark as dirty instead of saving immediately
     setIsDirty(true);
 
-    // Notify Parent instantly (Optimistic)
+    // Notify Parent instantly (Optimistic) but mark as dirty
     const updatedItem = {
       ...consultation,
       question: newQuestion,
+      isFavorite: isFavorite,
       updatedAt: new Date().toISOString()
     };
     onUpdate?.(updatedItem);
@@ -189,13 +191,13 @@ const ConsultationResultView: React.FC<ConsultationResultViewProps> = ({ collect
     }
   };
 
+  // Toggling favorite only sets dirty state, does NOT save immediately
   const toggleFavorite = () => {
     const newVal = !isFavorite;
     setIsFavorite(newVal);
-    
-    // Mark as dirty instead of saving immediately
     setIsDirty(true);
     
+    // Optional: Optimistic update for parent list view visual
     const updatedItem = { ...consultation, isFavorite: newVal };
     onUpdate?.(updatedItem);
   };
@@ -262,22 +264,26 @@ const ConsultationResultView: React.FC<ConsultationResultViewProps> = ({ collect
          </div>
 
          <div className="flex items-center gap-3">
-            {isDirty ? (
+            {isDirty && (
               <button 
                 onClick={handleSaveChanges}
                 className="flex items-center gap-2 px-6 py-3 bg-[#004A74] text-[#FED400] rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg hover:scale-105 active:scale-95 transition-all animate-in zoom-in-95"
               >
                 <Save size={16} /> Save Changes
               </button>
-            ) : (
-              <>
-                <button onClick={toggleFavorite} className="p-2.5 rounded-xl border transition-all shadow-sm active:scale-90 border-gray-100 hover:bg-[#FED400]/10">
-                   {isFavorite ? <StarSolid className="w-5 h-5 text-[#FED400]" /> : <StarIcon className="w-5 h-5 text-gray-300 hover:text-[#FED400]" />}
-                </button>
-                <button onClick={handleDelete} className="p-2.5 bg-white border border-gray-100 text-red-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all shadow-sm active:scale-90">
-                   <TrashIcon className="w-5 h-5" />
-                </button>
-              </>
+            )}
+            
+            <button 
+              onClick={toggleFavorite} 
+              className="p-2.5 rounded-xl border transition-all shadow-sm active:scale-90 border-gray-100 hover:bg-[#FED400]/10"
+            >
+               {isFavorite ? <StarSolid className="w-5 h-5 text-[#FED400]" /> : <StarIcon className="w-5 h-5 text-[#FED400]" />}
+            </button>
+            
+            {!isDirty && (
+              <button onClick={handleDelete} className="p-2.5 bg-white border border-gray-100 text-red-500 hover:bg-red-50 rounded-xl transition-all shadow-sm active:scale-90">
+                 <TrashIcon className="w-5 h-5" />
+              </button>
             )}
          </div>
       </div>
@@ -285,7 +291,7 @@ const ConsultationResultView: React.FC<ConsultationResultViewProps> = ({ collect
       <div className="flex-1 overflow-y-auto custom-scrollbar p-6 md:p-10 bg-[#fcfcfc]">
          <div className="max-w-4xl mx-auto space-y-8 pb-32">
             
-            {/* 1. SOURCE HEADER (Replaces Blue Banner) */}
+            {/* 1. SOURCE HEADER */}
             <header className="space-y-4">
                <div className="flex flex-wrap gap-2">
                   <span className="px-3 py-1 bg-[#004A74] text-white text-[8px] font-black uppercase tracking-widest rounded-full flex items-center gap-2">
@@ -308,7 +314,7 @@ const ConsultationResultView: React.FC<ConsultationResultViewProps> = ({ collect
                </div>
             </header>
 
-            {/* 2. QUESTION CARD (Clean & Structured) */}
+            {/* 2. QUESTION CARD */}
             <section className="bg-white p-6 md:p-8 rounded-[2.5rem] border border-gray-100 shadow-sm space-y-6 relative overflow-hidden group/question transition-all">
                <div className="flex items-center justify-between">
                   <h3 className="text-[9px] font-black uppercase tracking-[0.2em] text-gray-400 flex items-center gap-2">
@@ -438,18 +444,7 @@ const ConsultationResultView: React.FC<ConsultationResultViewProps> = ({ collect
       </div>
       
       {/* SAVING OVERLAY - Fixed Center */}
-      {isSaving && (
-        <div className="fixed inset-0 z-[9999] bg-white/40 backdrop-blur-md flex flex-col items-center justify-center animate-in fade-in duration-300">
-            <img 
-               src={BRAND_ASSETS.LOGO_ICON} 
-               className="w-16 h-16 animate-spin object-contain mb-4" 
-               alt="Saving" 
-            />
-            <p className="text-sm font-black text-[#004A74] uppercase tracking-widest animate-pulse">
-               Saving your latest data...
-            </p>
-        </div>
-      )}
+      <GlobalSavingOverlay isVisible={isSaving} />
 
       <style>{`
         .custom-scrollbar::-webkit-scrollbar { width: 4px; }
