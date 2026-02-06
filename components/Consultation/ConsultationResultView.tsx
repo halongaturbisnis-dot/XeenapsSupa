@@ -128,9 +128,13 @@ const ConsultationResultView: React.FC<ConsultationResultViewProps> = ({ collect
 
   // Explicit Save Function
   const handleSaveChanges = async () => {
-    if (!answerContent) return;
+    // Validation Feedback
+    if (!answerContent) {
+      showXeenapsToast('error', 'Content not fully loaded. Please wait or refresh.');
+      return;
+    }
     
-    setIsSaving(true); // Trigger Loading State
+    setIsSaving(true); // Trigger Loading State Immediately
     
     const updatedItem = {
       ...consultation,
@@ -146,10 +150,10 @@ const ConsultationResultView: React.FC<ConsultationResultViewProps> = ({ collect
         onUpdate?.(updatedItem);
         showXeenapsToast('success', 'Changes saved successfully');
       } else {
-        showXeenapsToast('error', 'Failed to save changes');
+        showXeenapsToast('error', 'Failed to save changes to server');
       }
     } catch (e) {
-      showXeenapsToast('error', 'Connection error');
+      showXeenapsToast('error', 'Connection error. Check your network.');
     } finally {
       setIsSaving(false); // Disable Loading State
     }
