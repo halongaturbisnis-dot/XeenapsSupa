@@ -34,9 +34,10 @@ interface ConsultationResultViewProps {
   initialAnswer?: ConsultationAnswerContent | null;
   onBack: () => void;
   onUpdate?: (updated: ConsultationItem) => void;
+  onDelete?: (id: string) => void;
 }
 
-const ConsultationResultView: React.FC<ConsultationResultViewProps> = ({ collection, consultation, initialAnswer, onBack, onUpdate }) => {
+const ConsultationResultView: React.FC<ConsultationResultViewProps> = ({ collection, consultation, initialAnswer, onBack, onUpdate, onDelete }) => {
   const [answerContent, setAnswerContent] = useState<ConsultationAnswerContent | null>(initialAnswer || null);
   const [localQuestion, setLocalQuestion] = useState(consultation.question);
   const [tempQuestion, setTempQuestion] = useState(consultation.question);
@@ -234,7 +235,8 @@ const ConsultationResultView: React.FC<ConsultationResultViewProps> = ({ collect
   const handleDelete = async () => {
     const confirmed = await showXeenapsDeleteConfirm(1);
     if (confirmed) {
-      // 1. Optimistic Navigation
+      // 1. Optimistic Update (Notify Parent & Close)
+      onDelete?.(consultation.id);
       onBack(); 
       showXeenapsToast('success', 'Processing deletion...');
 

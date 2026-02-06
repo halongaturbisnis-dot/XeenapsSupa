@@ -66,27 +66,6 @@ const ConsultationGallery: React.FC<ConsultationGalleryProps> = ({ collection, o
     setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
   };
 
-  const toggleFavorite = async (e: React.MouseEvent, item: ConsultationItem) => {
-    e.stopPropagation();
-    const originalVal = item.isFavorite;
-    const newVal = !originalVal;
-    
-    // 1. Optimistic Update (Instant UI)
-    setItems(prev => prev.map(i => i.id === item.id ? { ...i, isFavorite: newVal } : i));
-    
-    // 2. Silent Background Sync
-    try {
-      const content = await fetchFileContent(item.answerJsonId, item.nodeUrl);
-      if (content) {
-        await saveConsultation({ ...item, isFavorite: newVal }, content);
-      }
-    } catch (error) {
-      // 3. Rollback on Failure
-      setItems(prev => prev.map(i => i.id === item.id ? { ...i, isFavorite: originalVal } : i));
-      showXeenapsToast('error', 'Sync failed. Reverting status.');
-    }
-  };
-
   const handleDelete = async (e: React.MouseEvent, item: ConsultationItem) => {
     e.stopPropagation();
     const confirmed = await showXeenapsDeleteConfirm(1);
@@ -184,6 +163,12 @@ const ConsultationGallery: React.FC<ConsultationGalleryProps> = ({ collection, o
     setItems(prev => prev.map(i => i.id === updated.id ? updated : i));
   };
 
+  // Handler for internal delete from detail view
+  const handleItemDeleteLocally = (id: string) => {
+    setItems(prev => prev.filter(i => i.id !== id));
+    setTotalCount(prev => prev - 1);
+  };
+
   if (view === 'result' && selectedConsult) {
     return (
       <ConsultationResultView 
@@ -191,6 +176,7 @@ const ConsultationGallery: React.FC<ConsultationGalleryProps> = ({ collection, o
         consultation={selectedConsult}
         initialAnswer={activeAnswer}
         onUpdate={handleItemUpdateLocally}
+        onDelete={handleItemDeleteLocally}
         onBack={() => {
           setView('gallery');
           setSelectedConsult(null);
@@ -307,9 +293,9 @@ const ConsultationGallery: React.FC<ConsultationGalleryProps> = ({ collection, o
 
                     {/* RIGHT: ACTIONS */}
                     <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
-                    <button onClick={(e) => toggleFavorite(e, item)} className="p-2 hover:scale-125 transition-transform text-[#FED400]">
-                      {item.isFavorite ? <StarSolid className="w-5 h-5" /> : <StarIcon className="w-5 h-5 text-gray-300 hover:text-[#FED400]" />}
-                    </button>
+                    <div className="p-2 text-[#FED400] cursor-default">
+                      {item.isFavorite ? <StarSolid className="w-5 h-5" /> : <StarIcon className="w-5 h-5 text-gray-300" />}
+                    </div>
                     <button onClick={(e) => handleDelete(e, item)} className="p-2 text-gray-300 hover:text-red-500 rounded-xl transition-all">
                       <TrashIcon className="w-5 h-5" />
                     </button>
