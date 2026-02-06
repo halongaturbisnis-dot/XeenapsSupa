@@ -302,8 +302,8 @@ const AllPresentation: React.FC<AllPresentationProps> = ({ items }) => {
   const handleDelete = async (id: string) => {
     const confirmed = await showXeenapsDeleteConfirm(1);
     if (confirmed) {
-      await performDelete(presentations, setPresentations, [id], async (pid) => await deletePresentation(pid));
       if (selectedDetail?.id === id) setSelectedDetail(null);
+      await performDelete(presentations, setPresentations, [id], async (pid) => await deletePresentation(pid));
     }
   };
 

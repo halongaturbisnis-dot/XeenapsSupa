@@ -7,16 +7,16 @@ import {
   PlusIcon, 
   PresentationChartBarIcon, 
   ArrowTopRightOnSquareIcon, 
-  CalendarDaysIcon,
-  UserGroupIcon,
-  ArrowLeftIcon,
-  TrashIcon,
-  EyeIcon,
-  ChevronUpIcon,
-  ChevronDownIcon,
-  ArrowsUpDownIcon,
-  CheckIcon,
-  XMarkIcon,
+  CalendarDaysIcon, 
+  UserGroupIcon, 
+  ArrowLeftIcon, 
+  TrashIcon, 
+  EyeIcon, 
+  ChevronUpIcon, 
+  ChevronDownIcon, 
+  ArrowsUpDownIcon, 
+  CheckIcon, 
+  XMarkIcon, 
   ClockIcon
 } from '@heroicons/react/24/outline';
 import { Grip, Trash2 } from 'lucide-react';
@@ -30,7 +30,7 @@ import {
   StandardTr, 
   StandardTd, 
   StandardTableFooter, 
-  StandardCheckbox,
+  StandardCheckbox, 
   ElegantTooltip 
 } from '../Common/TableComponents';
 import { SmartSearchBox } from '../Common/SearchComponents';
@@ -238,9 +238,9 @@ const RelatedPresentations: React.FC<RelatedPresentationsProps> = ({ collection,
   const handleDelete = async (id: string) => {
     const confirmed = await showXeenapsDeleteConfirm(1);
     if (confirmed) {
+      if (selectedDetail?.id === id) setSelectedDetail(null);
       await performDelete(presentations, setPresentations, [id], async (pid) => await deletePresentation(pid));
       setSelectedIds(prev => prev.filter(i => i !== id));
-      if (selectedDetail?.id === id) setSelectedDetail(null);
     }
   };
 
