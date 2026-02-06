@@ -186,6 +186,11 @@ const ConsultationGallery: React.FC<ConsultationGalleryProps> = ({ collection, o
           collection={collection}
           onClose={() => setIsInputOpen(false)}
           onSuccess={(item, content) => {
+            // Optimistic UI Update: Inject new item to local list immediately
+            setItems(prev => [item, ...prev]);
+            setTotalCount(prev => prev + 1);
+
+            // Open Result View
             setActiveAnswer(content);
             setSelectedConsult(item);
             setIsInputOpen(false);
