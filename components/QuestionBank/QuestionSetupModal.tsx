@@ -184,6 +184,14 @@ const QuestionSetupModal: React.FC<QuestionSetupModalProps> = ({ item, onClose, 
     }
   };
 
+  // Prevent form submission on Enter for search box
+  const handleSearchKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      // Optional: Trigger immediate search if needed, but debouncer handles it
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-[250] flex items-center justify-center p-4 md:p-6 bg-black/60 backdrop-blur-xl animate-in fade-in duration-300">
       <div className="bg-white rounded-[2rem] md:rounded-[3rem] w-full max-w-4xl shadow-2xl overflow-hidden relative flex flex-col max-h-[95vh] md:max-h-[90vh]">
@@ -245,9 +253,8 @@ const QuestionSetupModal: React.FC<QuestionSetupModalProps> = ({ item, onClose, 
               <div className="relative" ref={searchContainerRef}>
                 <FormField label="Source Collection (Smart Search)" required>
                   <div className="relative group">
-                    <MagnifyingGlassIcon className={`absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 transition-colors ${isSearchingSources ? 'text-[#004A74] animate-pulse' : 'text-gray-400'}`} />
                     <input 
-                      className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl font-bold text-[#004A74] outline-none focus:bg-white focus:ring-2 focus:ring-[#004A74]/5 transition-all"
+                      className="w-full pl-5 pr-14 py-3 bg-gray-50 border border-gray-200 rounded-xl font-bold text-[#004A74] outline-none focus:bg-white focus:ring-2 focus:ring-[#004A74]/5 transition-all"
                       placeholder="Type title or keywords..."
                       value={selectedSource ? selectedSource.title : sourceSearch}
                       onChange={(e) => {
@@ -256,14 +263,23 @@ const QuestionSetupModal: React.FC<QuestionSetupModalProps> = ({ item, onClose, 
                         setShowResults(true);
                       }}
                       onFocus={() => setShowResults(true)}
+                      onKeyDown={handleSearchKeyDown}
                     />
-                    {selectedSource && (
+                    
+                    {selectedSource ? (
                        <button 
                          type="button" 
                          onClick={() => { setSelectedSource(null); setSourceSearch(''); }}
-                         className="absolute right-4 top-1/2 -translate-y-1/2 p-1 hover:bg-gray-100 rounded-full"
+                         className="absolute right-1.5 top-1/2 -translate-y-1/2 p-2 hover:bg-gray-200 rounded-lg text-gray-400"
                        >
-                         <XMarkIcon className="w-3 h-3 text-gray-400" />
+                         <XMarkIcon className="w-4 h-4" />
+                       </button>
+                    ) : (
+                       <button
+                         type="button"
+                         className="absolute right-1.5 top-1/2 -translate-y-1/2 p-2 bg-[#004A74] hover:bg-[#003859] rounded-lg text-white transition-all shadow-sm active:scale-90"
+                       >
+                         {isSearchingSources ? <Loader2Icon className="w-4 h-4 animate-spin" /> : <MagnifyingGlassIcon className="w-4 h-4 stroke-[2.5]" />}
                        </button>
                     )}
                   </div>
