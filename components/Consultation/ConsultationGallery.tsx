@@ -68,15 +68,22 @@ const ConsultationGallery: React.FC<ConsultationGalleryProps> = ({ collection, o
 
   const toggleFavorite = async (e: React.MouseEvent, item: ConsultationItem) => {
     e.stopPropagation();
-    const newVal = !item.isFavorite;
+    const originalVal = item.isFavorite;
+    const newVal = !originalVal;
     
-    // Optimistic Update
+    // 1. Optimistic Update (Instant UI)
     setItems(prev => prev.map(i => i.id === item.id ? { ...i, isFavorite: newVal } : i));
     
-    // Background sync
-    const content = await fetchFileContent(item.answerJsonId, item.nodeUrl);
-    if (content) {
-      await saveConsultation({ ...item, isFavorite: newVal }, content);
+    // 2. Silent Background Sync
+    try {
+      const content = await fetchFileContent(item.answerJsonId, item.nodeUrl);
+      if (content) {
+        await saveConsultation({ ...item, isFavorite: newVal }, content);
+      }
+    } catch (error) {
+      // 3. Rollback on Failure
+      setItems(prev => prev.map(i => i.id === item.id ? { ...i, isFavorite: originalVal } : i));
+      showXeenapsToast('error', 'Sync failed. Reverting status.');
     }
   };
 
@@ -84,16 +91,22 @@ const ConsultationGallery: React.FC<ConsultationGalleryProps> = ({ collection, o
     e.stopPropagation();
     const confirmed = await showXeenapsDeleteConfirm(1);
     if (confirmed) {
-      // 1. Optimistic Delete
+      const originalItems = [...items];
+
+      // 1. Optimistic Delete (Instant UI)
       setItems(prev => prev.filter(i => i.id !== item.id));
       
-      // 2. Physical File Cleanup (GAS)
-      if (item.answerJsonId && item.nodeUrl) {
-         await deleteRemoteFile(item.answerJsonId, item.nodeUrl);
+      // 2. Silent Background Sync
+      try {
+        if (item.answerJsonId && item.nodeUrl) {
+           await deleteRemoteFile(item.answerJsonId, item.nodeUrl);
+        }
+        await deleteConsultation(item.id);
+      } catch (error) {
+        // 3. Rollback on Failure
+        setItems(originalItems);
+        showXeenapsToast('error', 'Delete failed. Item restored.');
       }
-
-      // 3. Metadata Cleanup (Supabase)
-      await deleteConsultation(item.id);
     }
   };
 
@@ -101,19 +114,27 @@ const ConsultationGallery: React.FC<ConsultationGalleryProps> = ({ collection, o
     const confirmed = await showXeenapsDeleteConfirm(selectedIds.length);
     if (confirmed) {
       const itemsToDelete = items.filter(i => selectedIds.includes(i.id));
-      
-      // Optimistic Update
+      const originalItems = [...items];
+
+      // 1. Optimistic Update
       setItems(prev => prev.filter(i => !selectedIds.includes(i.id)));
       setSelectedIds([]);
       
-      // Silent background processing
-      for (const item of itemsToDelete) {
-        if (item.answerJsonId && item.nodeUrl) {
-           await deleteRemoteFile(item.answerJsonId, item.nodeUrl);
+      // 2. Silent background processing
+      try {
+        for (const item of itemsToDelete) {
+          if (item.answerJsonId && item.nodeUrl) {
+             await deleteRemoteFile(item.answerJsonId, item.nodeUrl);
+          }
+          await deleteConsultation(item.id);
         }
-        await deleteConsultation(item.id);
+        loadConsultations(true); // Final silent sync
+      } catch (error) {
+        // Rollback (Partial rollback is hard, so we reload)
+        setItems(originalItems);
+        showXeenapsToast('error', 'Batch delete incomplete. Reloading...');
+        loadConsultations();
       }
-      loadConsultations(true); // Final silent sync
     }
   };
 
@@ -121,16 +142,23 @@ const ConsultationGallery: React.FC<ConsultationGalleryProps> = ({ collection, o
     const selectedItems = items.filter(i => selectedIds.includes(i.id));
     const anyUnfav = selectedItems.some(i => !i.isFavorite);
     const newValue = anyUnfav;
+    const originalItems = [...items];
 
-    // Optimistic Update
+    // 1. Optimistic Update
     setItems(prev => prev.map(i => selectedIds.includes(i.id) ? { ...i, isFavorite: newValue } : i));
     
-    // Background sync
-    for (const item of selectedItems) {
-       const content = await fetchFileContent(item.answerJsonId, item.nodeUrl);
-       if (content) {
-         await saveConsultation({ ...item, isFavorite: newValue }, content);
-       }
+    // 2. Background sync
+    try {
+      for (const item of selectedItems) {
+         const content = await fetchFileContent(item.answerJsonId, item.nodeUrl);
+         if (content) {
+           await saveConsultation({ ...item, isFavorite: newValue }, content);
+         }
+      }
+    } catch (error) {
+      // Rollback
+      setItems(originalItems);
+      showXeenapsToast('error', 'Batch update failed. Reverting.');
     }
     setSelectedIds([]);
   };
@@ -167,7 +195,8 @@ const ConsultationGallery: React.FC<ConsultationGalleryProps> = ({ collection, o
           setView('gallery');
           setSelectedConsult(null);
           setActiveAnswer(null);
-          loadConsultations(true); // Silent refresh to ensure list is fresh without loading state
+          // Don't force reload, let optimistic state persist for seamless feel
+          // loadConsultations(true); 
         }}
       />
     );

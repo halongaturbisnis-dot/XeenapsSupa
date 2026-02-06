@@ -113,7 +113,7 @@ const ConsultationResultView: React.FC<ConsultationResultViewProps> = ({ collect
     setLocalQuestion(newQuestion);
     setIsEditing(false);
     
-    // Mark as dirty instead of saving immediately
+    // Mark as dirty instead of saving immediately (Light Action)
     setIsDirty(true);
 
     // Notify Parent instantly (Optimistic)
@@ -125,7 +125,7 @@ const ConsultationResultView: React.FC<ConsultationResultViewProps> = ({ collect
     onUpdate?.(updatedItem);
   };
 
-  // Explicit Save Function
+  // Explicit Save Function (Heavy Action - Uses Overlay)
   const handleSaveChanges = async () => {
     if (!answerContent) return;
     
@@ -192,13 +192,22 @@ const ConsultationResultView: React.FC<ConsultationResultViewProps> = ({ collect
 
   const toggleFavorite = () => {
     const newVal = !isFavorite;
+    // 1. Optimistic Update
     setIsFavorite(newVal);
-    
-    // Mark as dirty instead of saving immediately
-    setIsDirty(true);
     
     const updatedItem = { ...consultation, isFavorite: newVal };
     onUpdate?.(updatedItem);
+
+    // 2. Silent Background Sync (Don't set isDirty, don't use Overlay)
+    if (answerContent) {
+        saveConsultation({ ...updatedItem, updatedAt: new Date().toISOString() }, answerContent)
+          .catch(() => {
+              // Rollback on failure
+              setIsFavorite(!newVal);
+              onUpdate?.({ ...consultation, isFavorite: !newVal });
+              showXeenapsToast('error', 'Favorite sync failed. Reverting.');
+          });
+    }
   };
 
   // Safe Navigation Guard
@@ -225,19 +234,21 @@ const ConsultationResultView: React.FC<ConsultationResultViewProps> = ({ collect
   const handleDelete = async () => {
     const confirmed = await showXeenapsDeleteConfirm(1);
     if (confirmed) {
-      // 1. Physical Cleanup (GAS)
-      if (consultation.answerJsonId && consultation.nodeUrl) {
-         await deleteRemoteFile(consultation.answerJsonId, consultation.nodeUrl);
-      }
-      
-      // 2. Metadata Cleanup (Supabase)
-      const success = await deleteConsultation(consultation.id);
-      
-      if (success) {
-        showXeenapsToast('success', 'Consultation deleted');
-        // Force back without check since it's deleted
-        onBack(); 
-      }
+      // 1. Optimistic Navigation
+      onBack(); 
+      showXeenapsToast('success', 'Processing deletion...');
+
+      // 2. Background Sync (Fire and Forget)
+      (async () => {
+        try {
+          if (consultation.answerJsonId && consultation.nodeUrl) {
+             await deleteRemoteFile(consultation.answerJsonId, consultation.nodeUrl);
+          }
+          await deleteConsultation(consultation.id);
+        } catch (e) {
+          showXeenapsToast('error', 'Background deletion failed');
+        }
+      })();
     }
   };
 

@@ -35,5 +35,12 @@ Untuk mencegah *Race Condition* dan data yatim (orphaned data), urutan transaksi
 *   **Query Syntax**: Untuk kolom bertipe `TEXT[]`, pencarian dalam string query `.or()` harus menggunakan kurung kurawal (contoh: `col.cs.{val}`).
 *   **Sanitasi Upsert**: Sebelum melakukan `.upsert()`, hapus kolom *generated/computed* (seperti `search_all`) di sisi frontend untuk mencegah error `428C9` (cannot insert into generated column).
 
+## 7. Zero-Latency UX Standard (Optimistic UI)
+*   **UI Sovereignity**: Interface harus merespon interaksi user (klik delete/favorite) dalam < 50ms, tanpa menunggu server.
+*   **Trust-First Strategy**: Manipulasi state lokal React terlebih dahulu (hapus item dari list/update status). Asumsikan request server akan sukses.
+*   **Silent Synchronization**: Operasi berat (seperti menghapus file di GAS atau update database) berjalan di *background process* (Fire-and-Forget).
+*   **State Handover**: Hindari *refetch* data global setelah aksi lokal. Gunakan callback untuk mengupdate state parent secara manual.
+*   **Auto Rollback**: Jika request server gagal, kembalikan state UI ke kondisi semula dan tampilkan pesan error.
+
 ---
 *Protokol ini wajib diikuti oleh AI Studio saat melakukan regenerasi kode untuk menjaga konsistensi sistem Xeenaps.*
