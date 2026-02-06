@@ -191,15 +191,36 @@ const ConsultationResultView: React.FC<ConsultationResultViewProps> = ({ collect
     }
   };
 
-  const toggleFavorite = () => {
+  const toggleFavorite = async () => {
     const newVal = !isFavorite;
+    const oldVal = isFavorite;
+
+    // 1. Optimistic UI Update
     setIsFavorite(newVal);
     
-    // Mark as dirty instead of saving immediately
-    setIsDirty(true);
-    
-    const updatedItem = { ...consultation, isFavorite: newVal };
+    // Create updated item object
+    const updatedItem = { 
+      ...consultation, 
+      isFavorite: newVal, 
+      updatedAt: new Date().toISOString() 
+    };
+
+    // Notify Parent instantly (State Handover)
     onUpdate?.(updatedItem);
+
+    // 2. Background Sync (Fire-and-Forget / Silent)
+    // Favorites are usually auto-saved, so we don't set isDirty here.
+    if (answerContent) {
+      try {
+        const success = await saveConsultation(updatedItem, answerContent);
+        if (!success) throw new Error("Sync failed");
+      } catch (e) {
+        // 3. Rollback on failure
+        setIsFavorite(oldVal);
+        onUpdate?.({ ...consultation, isFavorite: oldVal });
+        showXeenapsToast('error', 'Failed to update favorite');
+      }
+    }
   };
 
   // Safe Navigation Guard

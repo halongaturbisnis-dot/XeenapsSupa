@@ -71,10 +71,11 @@ const ConsultationGallery: React.FC<ConsultationGalleryProps> = ({ collection, o
     setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
   };
 
-  const toggleFavorite = async (e: React.MouseEvent, item: ConsultationItem) => {
+  const toggleFavorite = (e: React.MouseEvent, item: ConsultationItem) => {
     e.stopPropagation();
     
-    await performUpdate(
+    // Optimistic Update (No await)
+    performUpdate(
         items,
         setItems,
         [item.id],
@@ -94,7 +95,12 @@ const ConsultationGallery: React.FC<ConsultationGalleryProps> = ({ collection, o
     e.stopPropagation();
     const confirmed = await showXeenapsDeleteConfirm(1);
     if (confirmed) {
-      await performDelete(
+      // 1. Instant UI Feedback
+      setTotalCount(prev => Math.max(0, prev - 1));
+      showXeenapsToast('success', 'Consultation deleted');
+
+      // 2. Fire-and-Forget Background Sync
+      performDelete(
           items,
           setItems,
           [item.id],
@@ -105,10 +111,13 @@ const ConsultationGallery: React.FC<ConsultationGalleryProps> = ({ collection, o
               }
               // 2. Metadata Cleanup (Supabase)
               return await deleteConsultation(id);
+          },
+          () => {
+             // Rollback Count on Error
+             setTotalCount(prev => prev + 1);
+             showXeenapsToast('error', 'Deletion failed');
           }
       );
-      setTotalCount(prev => Math.max(0, prev - 1));
-      showXeenapsToast('success', 'Consultation deleted');
     }
   };
 
@@ -120,8 +129,13 @@ const ConsultationGallery: React.FC<ConsultationGalleryProps> = ({ collection, o
       const itemsToDelete = items.filter(i => selectedIds.includes(i.id));
       
       setSelectedIds([]); // Clear selection UI immediately
+      
+      // 1. Instant UI Feedback
+      setTotalCount(prev => Math.max(0, prev - itemsToDelete.length));
+      showXeenapsToast('success', 'Consultation deleted');
 
-      await performDelete(
+      // 2. Fire-and-Forget Background Sync
+      performDelete(
           items,
           setItems,
           idsToDelete,
@@ -131,21 +145,23 @@ const ConsultationGallery: React.FC<ConsultationGalleryProps> = ({ collection, o
                 await deleteRemoteFile(item.answerJsonId, item.nodeUrl);
              }
              return await deleteConsultation(id);
+          },
+          () => {
+             // Rollback Count on Error
+             setTotalCount(prev => prev + itemsToDelete.length);
           }
       );
-      
-      setTotalCount(prev => Math.max(0, prev - itemsToDelete.length));
-      showXeenapsToast('success', 'Consultation deleted');
     }
   };
 
-  const handleMassFavorite = async () => {
+  const handleMassFavorite = () => {
     if (selectedIds.length === 0) return;
     const selectedItems = items.filter(i => selectedIds.includes(i.id));
     const anyUnfav = selectedItems.some(i => !i.isFavorite);
     const newValue = anyUnfav;
 
-    await performUpdate(
+    // Optimistic Update (No await)
+    performUpdate(
         items,
         setItems,
         selectedIds,
