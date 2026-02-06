@@ -34,9 +34,10 @@ interface ConsultationResultViewProps {
   initialAnswer?: ConsultationAnswerContent | null;
   onBack: () => void;
   onUpdate?: (updated: ConsultationItem) => void;
+  onDeleteSuccess?: (id: string) => void;
 }
 
-const ConsultationResultView: React.FC<ConsultationResultViewProps> = ({ collection, consultation, initialAnswer, onBack, onUpdate }) => {
+const ConsultationResultView: React.FC<ConsultationResultViewProps> = ({ collection, consultation, initialAnswer, onBack, onUpdate, onDeleteSuccess }) => {
   const [answerContent, setAnswerContent] = useState<ConsultationAnswerContent | null>(initialAnswer || null);
   const [localQuestion, setLocalQuestion] = useState(consultation.question);
   const [tempQuestion, setTempQuestion] = useState(consultation.question);
@@ -235,8 +236,12 @@ const ConsultationResultView: React.FC<ConsultationResultViewProps> = ({ collect
       
       if (success) {
         showXeenapsToast('success', 'Consultation deleted');
-        // Force back without check since it's deleted
-        onBack(); 
+        if (onDeleteSuccess) {
+            onDeleteSuccess(consultation.id);
+        } else {
+            // Force back if no specific handler
+            onBack();
+        }
       }
     }
   };
@@ -272,10 +277,10 @@ const ConsultationResultView: React.FC<ConsultationResultViewProps> = ({ collect
               </button>
             ) : (
               <>
-                <button onClick={toggleFavorite} className="p-2.5 rounded-xl border transition-all shadow-sm active:scale-90 border-gray-100 hover:bg-[#FED400]/10">
-                   {isFavorite ? <StarSolid className="w-5 h-5 text-[#FED400]" /> : <StarIcon className="w-5 h-5 text-gray-300 hover:text-[#FED400]" />}
+                <button onClick={toggleFavorite} className="p-2.5 rounded-xl border transition-all shadow-sm active:scale-90 border-gray-100 hover:bg-[#FED400]/10 text-[#FED400]">
+                   {isFavorite ? <StarSolid className="w-5 h-5 text-[#FED400]" /> : <StarIcon className="w-5 h-5 text-[#FED400]" />}
                 </button>
-                <button onClick={handleDelete} className="p-2.5 bg-white border border-gray-100 text-red-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all shadow-sm active:scale-90">
+                <button onClick={handleDelete} className="p-2.5 bg-white border border-gray-100 text-red-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all shadow-sm active:scale-90">
                    <TrashIcon className="w-5 h-5" />
                 </button>
               </>

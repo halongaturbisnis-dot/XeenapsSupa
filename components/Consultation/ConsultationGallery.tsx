@@ -86,6 +86,7 @@ const ConsultationGallery: React.FC<ConsultationGalleryProps> = ({ collection, o
     if (confirmed) {
       // 1. Optimistic Delete
       setItems(prev => prev.filter(i => i.id !== item.id));
+      setTotalCount(prev => Math.max(0, prev - 1));
       
       // 2. Physical File Cleanup (GAS)
       if (item.answerJsonId && item.nodeUrl) {
@@ -104,6 +105,7 @@ const ConsultationGallery: React.FC<ConsultationGalleryProps> = ({ collection, o
       
       // Optimistic Update
       setItems(prev => prev.filter(i => !selectedIds.includes(i.id)));
+      setTotalCount(prev => Math.max(0, prev - itemsToDelete.length));
       setSelectedIds([]);
       
       // Silent background processing
@@ -156,6 +158,15 @@ const ConsultationGallery: React.FC<ConsultationGalleryProps> = ({ collection, o
     setItems(prev => prev.map(i => i.id === updated.id ? updated : i));
   };
 
+  // Handler for instant deletion from detail view
+  const handleItemDeleteLocally = (id: string) => {
+    setItems(prev => prev.filter(i => i.id !== id));
+    setTotalCount(prev => Math.max(0, prev - 1));
+    setView('gallery');
+    setSelectedConsult(null);
+    setActiveAnswer(null);
+  };
+
   if (view === 'result' && selectedConsult) {
     return (
       <ConsultationResultView 
@@ -163,6 +174,7 @@ const ConsultationGallery: React.FC<ConsultationGalleryProps> = ({ collection, o
         consultation={selectedConsult}
         initialAnswer={activeAnswer}
         onUpdate={handleItemUpdateLocally}
+        onDeleteSuccess={handleItemDeleteLocally}
         onBack={() => {
           setView('gallery');
           setSelectedConsult(null);
@@ -279,9 +291,9 @@ const ConsultationGallery: React.FC<ConsultationGalleryProps> = ({ collection, o
                     {/* RIGHT: ACTIONS */}
                     <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
                     <button onClick={(e) => toggleFavorite(e, item)} className="p-2 hover:scale-125 transition-transform text-[#FED400]">
-                      {item.isFavorite ? <StarSolid className="w-5 h-5" /> : <StarIcon className="w-5 h-5 text-gray-300 hover:text-[#FED400]" />}
+                      {item.isFavorite ? <StarSolid className="w-5 h-5" /> : <StarIcon className="w-5 h-5 text-[#FED400]" />}
                     </button>
-                    <button onClick={(e) => handleDelete(e, item)} className="p-2 text-gray-300 hover:text-red-500 rounded-xl transition-all">
+                    <button onClick={(e) => handleDelete(e, item)} className="p-2 text-red-400 hover:text-red-500 rounded-xl transition-all">
                       <TrashIcon className="w-5 h-5" />
                     </button>
                     <div className="ml-2 p-1.5 bg-gray-50 text-gray-400 rounded-lg group-hover:bg-[#FED400] group-hover:text-[#004A74] transition-all">
