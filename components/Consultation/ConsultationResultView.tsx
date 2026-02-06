@@ -26,7 +26,6 @@ import Swal from 'sweetalert2';
 import { XEENAPS_SWAL_CONFIG } from '../../utils/swalUtils';
 import { Save } from 'lucide-react';
 import { BRAND_ASSETS } from '../../assets';
-import { GlobalSavingOverlay } from '../Common/LoadingComponents';
 
 interface ConsultationResultViewProps {
   collection: LibraryItem;
@@ -439,7 +438,18 @@ const ConsultationResultView: React.FC<ConsultationResultViewProps> = ({ collect
       </div>
       
       {/* SAVING OVERLAY - Fixed Center */}
-      <GlobalSavingOverlay isVisible={isSaving} />
+      {isSaving && (
+        <div className="fixed inset-0 z-[9999] bg-white/40 backdrop-blur-md flex flex-col items-center justify-center animate-in fade-in duration-300">
+            <img 
+               src={BRAND_ASSETS.LOGO_ICON} 
+               className="w-16 h-16 animate-spin object-contain mb-4" 
+               alt="Saving" 
+            />
+            <p className="text-sm font-black text-[#004A74] uppercase tracking-widest animate-pulse">
+               Saving your latest data...
+            </p>
+        </div>
+      )}
 
       <style>{`
         .custom-scrollbar::-webkit-scrollbar { width: 4px; }

@@ -1,6 +1,6 @@
+
 import React from 'react';
 import { StandardGridContainer } from './TableComponents';
-import { BRAND_ASSETS } from '../../assets';
 
 /**
  * GlobalAppLoader
@@ -67,25 +67,3 @@ export const CardGridSkeleton: React.FC<{ count?: number }> = ({ count = 6 }) =>
     ))}
   </StandardGridContainer>
 );
-
-/**
- * GlobalSavingOverlay
- * Reusable full-screen overlay for saving operations.
- * Blocks interaction and displays branded spinner.
- */
-export const GlobalSavingOverlay: React.FC<{ isVisible: boolean }> = ({ isVisible }) => {
-  if (!isVisible) return null;
-
-  return (
-    <div className="fixed inset-0 z-[9999] bg-white/40 backdrop-blur-md flex flex-col items-center justify-center animate-in fade-in duration-300">
-        <img 
-           src={BRAND_ASSETS.LOGO_ICON} 
-           className="w-16 h-16 animate-spin object-contain mb-4" 
-           alt="Saving" 
-        />
-        <p className="text-sm font-black text-[#004A74] uppercase tracking-widest animate-pulse">
-           Saving your latest data...
-        </p>
-    </div>
-  );
-};
