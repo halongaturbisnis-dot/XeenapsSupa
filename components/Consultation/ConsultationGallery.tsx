@@ -21,6 +21,7 @@ import { showXeenapsDeleteConfirm } from '../../utils/confirmUtils';
 import { showXeenapsToast } from '../../utils/toastUtils';
 import { fetchFileContent } from '../../services/gasService';
 import { deleteRemoteFile } from '../../services/ActivityService'; // Helper for file deletion
+import { useOptimisticUpdate } from '../../hooks/useOptimisticUpdate';
 
 interface ConsultationGalleryProps {
   collection: LibraryItem;
@@ -42,6 +43,10 @@ const ConsultationGallery: React.FC<ConsultationGalleryProps> = ({ collection, o
   const [isInputOpen, setIsInputOpen] = useState(false);
   const [activeAnswer, setActiveAnswer] = useState<ConsultationAnswerContent | null>(null);
 
+  // Hook Optimistic UI
+  const { performUpdate, performDelete } = useOptimisticUpdate<ConsultationItem>();
+
+  // FIX: Removed items.length dependency to prevent refetch loop on local delete
   const loadConsultations = useCallback(async (isSilent = false) => {
     // Only show global loading if we have no data and it's not a silent refresh
     if (!isSilent && items.length === 0) setIsLoading(true);
@@ -50,7 +55,7 @@ const ConsultationGallery: React.FC<ConsultationGalleryProps> = ({ collection, o
     setItems(result.items);
     setTotalCount(result.totalCount);
     setIsLoading(false);
-  }, [collection.id, currentPage, appliedSearch, items.length]);
+  }, [collection.id, currentPage, appliedSearch]);
 
   useEffect(() => {
     loadConsultations();
@@ -68,72 +73,91 @@ const ConsultationGallery: React.FC<ConsultationGalleryProps> = ({ collection, o
 
   const toggleFavorite = async (e: React.MouseEvent, item: ConsultationItem) => {
     e.stopPropagation();
-    const newVal = !item.isFavorite;
     
-    // Optimistic Update
-    setItems(prev => prev.map(i => i.id === item.id ? { ...i, isFavorite: newVal } : i));
-    
-    // Background sync
-    const content = await fetchFileContent(item.answerJsonId, item.nodeUrl);
-    if (content) {
-      await saveConsultation({ ...item, isFavorite: newVal }, content);
-    }
+    await performUpdate(
+        items,
+        setItems,
+        [item.id],
+        (i) => ({ ...i, isFavorite: !i.isFavorite }),
+        async (updated) => {
+             // Fetch content first needed for saveConsultation signature
+             const content = await fetchFileContent(updated.answerJsonId, updated.nodeUrl);
+             if (content) {
+                 return await saveConsultation(updated, content);
+             }
+             return false; // Fail safe
+        }
+    );
   };
 
   const handleDelete = async (e: React.MouseEvent, item: ConsultationItem) => {
     e.stopPropagation();
     const confirmed = await showXeenapsDeleteConfirm(1);
     if (confirmed) {
-      // 1. Optimistic Delete
-      setItems(prev => prev.filter(i => i.id !== item.id));
+      await performDelete(
+          items,
+          setItems,
+          [item.id],
+          async (id) => {
+              // 1. Physical File Cleanup (GAS)
+              if (item.answerJsonId && item.nodeUrl) {
+                 await deleteRemoteFile(item.answerJsonId, item.nodeUrl);
+              }
+              // 2. Metadata Cleanup (Supabase)
+              return await deleteConsultation(id);
+          }
+      );
       setTotalCount(prev => Math.max(0, prev - 1));
-      
-      // 2. Physical File Cleanup (GAS)
-      if (item.answerJsonId && item.nodeUrl) {
-         await deleteRemoteFile(item.answerJsonId, item.nodeUrl);
-      }
-
-      // 3. Metadata Cleanup (Supabase)
-      await deleteConsultation(item.id);
+      showXeenapsToast('success', 'Consultation deleted');
     }
   };
 
   const handleMassDelete = async () => {
+    if (selectedIds.length === 0) return;
     const confirmed = await showXeenapsDeleteConfirm(selectedIds.length);
     if (confirmed) {
+      const idsToDelete = [...selectedIds];
       const itemsToDelete = items.filter(i => selectedIds.includes(i.id));
       
-      // Optimistic Update
-      setItems(prev => prev.filter(i => !selectedIds.includes(i.id)));
-      setTotalCount(prev => Math.max(0, prev - itemsToDelete.length));
-      setSelectedIds([]);
+      setSelectedIds([]); // Clear selection UI immediately
+
+      await performDelete(
+          items,
+          setItems,
+          idsToDelete,
+          async (id) => {
+             const item = itemsToDelete.find(i => i.id === id);
+             if (item && item.answerJsonId && item.nodeUrl) {
+                await deleteRemoteFile(item.answerJsonId, item.nodeUrl);
+             }
+             return await deleteConsultation(id);
+          }
+      );
       
-      // Silent background processing
-      for (const item of itemsToDelete) {
-        if (item.answerJsonId && item.nodeUrl) {
-           await deleteRemoteFile(item.answerJsonId, item.nodeUrl);
-        }
-        await deleteConsultation(item.id);
-      }
-      loadConsultations(true); // Final silent sync
+      setTotalCount(prev => Math.max(0, prev - itemsToDelete.length));
+      showXeenapsToast('success', 'Consultation deleted');
     }
   };
 
   const handleMassFavorite = async () => {
+    if (selectedIds.length === 0) return;
     const selectedItems = items.filter(i => selectedIds.includes(i.id));
     const anyUnfav = selectedItems.some(i => !i.isFavorite);
     const newValue = anyUnfav;
 
-    // Optimistic Update
-    setItems(prev => prev.map(i => selectedIds.includes(i.id) ? { ...i, isFavorite: newValue } : i));
-    
-    // Background sync
-    for (const item of selectedItems) {
-       const content = await fetchFileContent(item.answerJsonId, item.nodeUrl);
-       if (content) {
-         await saveConsultation({ ...item, isFavorite: newValue }, content);
-       }
-    }
+    await performUpdate(
+        items,
+        setItems,
+        selectedIds,
+        (i) => ({ ...i, isFavorite: newValue }),
+        async (updated) => {
+             const content = await fetchFileContent(updated.answerJsonId, updated.nodeUrl);
+             if (content) {
+                 return await saveConsultation(updated, content);
+             }
+             return false;
+        }
+    );
     setSelectedIds([]);
   };
 
@@ -153,18 +177,19 @@ const ConsultationGallery: React.FC<ConsultationGalleryProps> = ({ collection, o
     return items.filter(i => selectedIds.includes(i.id)).some(i => !i.isFavorite);
   }, [items, selectedIds]);
 
-  // Handler for internal updates from detail view
+  // Handler for internal updates from detail view (Handover State)
   const handleItemUpdateLocally = (updated: ConsultationItem) => {
     setItems(prev => prev.map(i => i.id === updated.id ? updated : i));
   };
 
-  // Handler for instant deletion from detail view
+  // Handler for instant deletion from detail view (Handover State)
   const handleItemDeleteLocally = (id: string) => {
     setItems(prev => prev.filter(i => i.id !== id));
     setTotalCount(prev => Math.max(0, prev - 1));
     setView('gallery');
     setSelectedConsult(null);
     setActiveAnswer(null);
+    // Note: No need to call loadConsultations() here, state is already clean
   };
 
   if (view === 'result' && selectedConsult) {
@@ -174,12 +199,11 @@ const ConsultationGallery: React.FC<ConsultationGalleryProps> = ({ collection, o
         consultation={selectedConsult}
         initialAnswer={activeAnswer}
         onUpdate={handleItemUpdateLocally}
-        onDeleteSuccess={handleItemDeleteLocally}
+        onDeleteOptimistic={handleItemDeleteLocally}
         onBack={() => {
           setView('gallery');
           setSelectedConsult(null);
           setActiveAnswer(null);
-          loadConsultations(true); // Silent refresh to ensure list is fresh without loading state
         }}
       />
     );
