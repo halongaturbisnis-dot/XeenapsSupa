@@ -439,7 +439,7 @@ const ConsultationResultView: React.FC<ConsultationResultViewProps> = ({ collect
       
       {/* SAVING OVERLAY - Fixed Center */}
       {isSaving && (
-        <div className="fixed inset-0 z-[9999] bg-white/80 backdrop-blur-md flex flex-col items-center justify-center animate-in fade-in duration-300">
+        <div className="fixed inset-0 z-[9999] bg-white/40 backdrop-blur-md flex flex-col items-center justify-center animate-in fade-in duration-300">
             <img 
                src={BRAND_ASSETS.LOGO_ICON} 
                className="w-16 h-16 animate-spin object-contain mb-4" 
