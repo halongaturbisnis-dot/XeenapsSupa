@@ -21,6 +21,9 @@ import {
 import { StarIcon as StarSolid } from '@heroicons/react/24/solid';
 import { showXeenapsToast } from '../../utils/toastUtils';
 import { showXeenapsDeleteConfirm } from '../../utils/confirmUtils';
+import Swal from 'sweetalert2';
+import { XEENAPS_SWAL_CONFIG } from '../../utils/swalUtils';
+import { Save } from 'lucide-react';
 
 interface ConsultationResultViewProps {
   collection: LibraryItem;
@@ -40,6 +43,9 @@ const ConsultationResultView: React.FC<ConsultationResultViewProps> = ({ collect
   const [isLoading, setIsLoading] = useState(!initialAnswer);
   const [isThinking, setIsThinking] = useState(false);
   
+  // Dirty State Management
+  const [isDirty, setIsDirty] = useState(false);
+  
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -54,6 +60,18 @@ const ConsultationResultView: React.FC<ConsultationResultViewProps> = ({ collect
     };
     loadStoredAnswer();
   }, [consultation, initialAnswer]);
+
+  // Prevent accidental browser closure
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (isDirty) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [isDirty]);
 
   // Auto-resize textarea
   useEffect(() => {
@@ -80,6 +98,9 @@ const ConsultationResultView: React.FC<ConsultationResultViewProps> = ({ collect
     // Optimistic Update UI
     setLocalQuestion(newQuestion);
     setIsEditing(false);
+    
+    // Mark as dirty instead of saving immediately
+    setIsDirty(true);
 
     // Notify Parent instantly (Optimistic)
     const updatedItem = {
@@ -88,10 +109,34 @@ const ConsultationResultView: React.FC<ConsultationResultViewProps> = ({ collect
       updatedAt: new Date().toISOString()
     };
     onUpdate?.(updatedItem);
+  };
 
-    // Silent Background Sync
-    if (answerContent) {
-      saveConsultation(updatedItem, answerContent);
+  // Explicit Save Function
+  const handleSaveChanges = async () => {
+    if (!answerContent) return;
+    
+    setIsThinking(true); // Reuse loading state visual if needed or just block interactions
+    
+    const updatedItem = {
+      ...consultation,
+      question: localQuestion,
+      isFavorite: isFavorite,
+      updatedAt: new Date().toISOString()
+    };
+
+    try {
+      const success = await saveConsultation(updatedItem, answerContent);
+      if (success) {
+        setIsDirty(false);
+        onUpdate?.(updatedItem);
+        showXeenapsToast('success', 'Changes saved successfully');
+      } else {
+        showXeenapsToast('error', 'Failed to save changes');
+      }
+    } catch (e) {
+      showXeenapsToast('error', 'Connection error');
+    } finally {
+      setIsThinking(false);
     }
   };
 
@@ -118,6 +163,7 @@ const ConsultationResultView: React.FC<ConsultationResultViewProps> = ({ collect
         onUpdate?.(updatedItem);
         const success = await saveConsultation(updatedItem, result);
         if (success) {
+          setIsDirty(false); // Clean state after re-consultation (auto-saved)
           showXeenapsToast('success', 'Synthesis Re-synchronized');
         }
       } else {
@@ -134,12 +180,31 @@ const ConsultationResultView: React.FC<ConsultationResultViewProps> = ({ collect
     const newVal = !isFavorite;
     setIsFavorite(newVal);
     
+    // Mark as dirty instead of saving immediately
+    setIsDirty(true);
+    
     const updatedItem = { ...consultation, isFavorite: newVal };
     onUpdate?.(updatedItem);
-    
-    if (answerContent) {
-      // Silent Background Sync
-      saveConsultation(updatedItem, answerContent);
+  };
+
+  // Safe Navigation Guard
+  const handleSafeBack = async () => {
+    if (isDirty) {
+      const result = await Swal.fire({
+        ...XEENAPS_SWAL_CONFIG,
+        title: 'Unsaved Changes',
+        text: 'Anda memiliki perubahan yang belum disimpan. Yakin ingin keluar?',
+        showCancelButton: true,
+        confirmButtonText: 'Discard & Leave',
+        cancelButtonText: 'Cancel',
+        confirmButtonColor: '#ef4444'
+      });
+
+      if (result.isConfirmed) {
+        onBack();
+      }
+    } else {
+      onBack();
     }
   };
 
@@ -156,7 +221,8 @@ const ConsultationResultView: React.FC<ConsultationResultViewProps> = ({ collect
       
       if (success) {
         showXeenapsToast('success', 'Consultation deleted');
-        onBack();
+        // Force back without check since it's deleted
+        onBack(); 
       }
     }
   };
@@ -173,7 +239,7 @@ const ConsultationResultView: React.FC<ConsultationResultViewProps> = ({ collect
       {/* HEADER BAR */}
       <div className="px-6 md:px-10 py-6 border-b border-gray-100 flex items-center justify-between bg-white shrink-0">
          <div className="flex items-center gap-4">
-            <button onClick={onBack} className="p-2.5 bg-gray-50 text-gray-400 hover:text-[#004A74] hover:bg-[#FED400]/20 rounded-xl transition-all shadow-sm active:scale-90">
+            <button onClick={handleSafeBack} className="p-2.5 bg-gray-50 text-gray-400 hover:text-[#004A74] hover:bg-[#FED400]/20 rounded-xl transition-all shadow-sm active:scale-90">
                <ArrowLeftIcon className="w-5 h-5" />
             </button>
             <div className="min-w-0">
@@ -183,12 +249,23 @@ const ConsultationResultView: React.FC<ConsultationResultViewProps> = ({ collect
          </div>
 
          <div className="flex items-center gap-3">
-            <button onClick={toggleFavorite} className="p-3 bg-gray-50 text-[#FED400] hover:bg-[#FED400]/10 rounded-xl transition-all shadow-sm active:scale-90 border border-gray-100">
-               {isFavorite ? <StarSolid className="w-6 h-6" /> : <StarIcon className="w-6 h-6" />}
-            </button>
-            <button onClick={handleDelete} className="p-3 bg-gray-50 text-red-400 hover:bg-red-50 rounded-xl transition-all shadow-sm active:scale-90 border border-gray-100">
-               <TrashIcon className="w-6 h-6" />
-            </button>
+            {isDirty ? (
+              <button 
+                onClick={handleSaveChanges}
+                className="flex items-center gap-2 px-6 py-3 bg-[#004A74] text-[#FED400] rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg hover:scale-105 active:scale-95 transition-all animate-in zoom-in-95"
+              >
+                <Save size={16} /> Save Changes
+              </button>
+            ) : (
+              <>
+                <button onClick={toggleFavorite} className="p-3 bg-gray-50 text-[#FED400] hover:bg-[#FED400]/10 rounded-xl transition-all shadow-sm active:scale-90 border border-gray-100">
+                   {isFavorite ? <StarSolid className="w-6 h-6" /> : <StarIcon className="w-6 h-6" />}
+                </button>
+                <button onClick={handleDelete} className="p-3 bg-gray-50 text-red-400 hover:bg-red-50 rounded-xl transition-all shadow-sm active:scale-90 border border-gray-100">
+                   <TrashIcon className="w-6 h-6" />
+                </button>
+              </>
+            )}
          </div>
       </div>
 
@@ -238,7 +315,7 @@ const ConsultationResultView: React.FC<ConsultationResultViewProps> = ({ collect
                          <button 
                            onClick={handleSaveEdit}
                            className="p-1.5 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-all shadow-sm"
-                           title="Save Changes"
+                           title="Apply Edit"
                          >
                            <CheckIcon className="w-4 h-4 stroke-[3]" />
                          </button>

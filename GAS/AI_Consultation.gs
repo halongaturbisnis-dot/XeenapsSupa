@@ -1,7 +1,7 @@
 /**
  * XEENAPS PKM - GROQ AI CONSULTATION SERVICE
  * Specialized for Reasoning and Contextual Deep Analysis via Groq Engine.
- * VERSION: 2.1 (Anti-Markdown Regex & Strict HTML)
+ * VERSION: 2.2 (Timeout Fix & Language Mirroring)
  */
 
 function handleAiConsultRequest(collectionId, question) {
@@ -92,6 +92,9 @@ function callGroqConsultant(prompt, collectionId) {
           { 
             role: "system", 
             content: "You are the Xeenaps Knowledge Consultant. \n\n" +
+                     "CORE PROTOCOLS:\n" +
+                     "1. LANGUAGE MIRRORING: Detect the language of the user's question. You MUST answer in the EXACT SAME LANGUAGE.\n" +
+                     "2. NO LEAKING: Do NOT repeat the [DOCUMENT_CONTEXT] header or metadata in your response. Start answering immediately.\n\n" +
                      "STRICT FORMATTING RULES (ZERO TOLERANCE FOR MARKDOWN):\n" +
                      "1. NEVER use symbols like **, *, #, or -. If you use them, the application will crash.\n" +
                      "2. ALWAYS use pure HTML tags for formatting.\n" +
@@ -99,7 +102,7 @@ function callGroqConsultant(prompt, collectionId) {
                      "4. Use <span class='xeenaps-highlight' style='background-color: #FED40030; color: #004A74; padding: 0 4px; border-radius: 4px; font-weight: 700;'> for critical insights.\n" +
                      "5. Use <br/> for line breaks and paragraph spacing.\n" +
                      "6. For lists, use format: 1. <b>Point Name</b>:<br/>Description<br/><br/>\n" +
-                     "7. Link all answers to the provided [DOCUMENT_CONTEXT].\n\n" +
+                     "7. Link all answers to the provided context below.\n\n" +
                      "[DOCUMENT_CONTEXT]: \n" + context 
           },
           { role: "user", content: prompt }
@@ -112,7 +115,8 @@ function callGroqConsultant(prompt, collectionId) {
         contentType: "application/json",
         headers: { "Authorization": "Bearer " + key },
         payload: JSON.stringify(payload),
-        muteHttpExceptions: true
+        muteHttpExceptions: true,
+        timeoutInSeconds: 300 // Extended timeout for larger models (70b)
       });
       
       const responseData = JSON.parse(res.getContentText());
