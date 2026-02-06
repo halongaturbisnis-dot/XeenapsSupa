@@ -130,7 +130,7 @@ const ConsultationResultView: React.FC<ConsultationResultViewProps> = ({ collect
   const handleSaveChanges = async () => {
     if (!answerContent) return;
     
-    setIsSaving(true); // Trigger Loading State
+    setIsSaving(true); // Trigger Saving Overlay
     
     const updatedItem = {
       ...consultation,
@@ -151,7 +151,7 @@ const ConsultationResultView: React.FC<ConsultationResultViewProps> = ({ collect
     } catch (e) {
       showXeenapsToast('error', 'Connection error');
     } finally {
-      setIsSaving(false); // Disable Loading State
+      setIsSaving(false); // Disable Saving Overlay
     }
   };
 
@@ -192,8 +192,14 @@ const ConsultationResultView: React.FC<ConsultationResultViewProps> = ({ collect
   };
 
   const toggleFavorite = () => {
-    setIsFavorite(!isFavorite);
+    const newVal = !isFavorite;
+    setIsFavorite(newVal);
+    
+    // Mark as dirty instead of saving immediately
     setIsDirty(true);
+    
+    const updatedItem = { ...consultation, isFavorite: newVal };
+    onUpdate?.(updatedItem);
   };
 
   // Safe Navigation Guard
@@ -270,18 +276,9 @@ const ConsultationResultView: React.FC<ConsultationResultViewProps> = ({ collect
             {isDirty ? (
               <button 
                 onClick={handleSaveChanges}
-                disabled={isSaving}
-                className={`flex items-center gap-2 px-6 py-3 bg-[#004A74] text-[#FED400] rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg transition-all animate-in zoom-in-95 ${isSaving ? 'opacity-70 cursor-not-allowed' : 'hover:scale-105 active:scale-95'}`}
+                className="flex items-center gap-2 px-6 py-3 bg-[#004A74] text-[#FED400] rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg hover:scale-105 active:scale-95 transition-all animate-in zoom-in-95"
               >
-                {isSaving ? (
-                  <>
-                    <ArrowPathIcon className="w-4 h-4 animate-spin" /> Saving...
-                  </>
-                ) : (
-                  <>
-                    <Save size={16} /> Save Changes
-                  </>
-                )}
+                <Save size={16} /> Save Changes
               </button>
             ) : (
               <>
