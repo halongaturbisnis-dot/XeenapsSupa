@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 // @ts-ignore - Resolving TS error for missing exported members
-import { NavLink, useLocation } from 'react-router-dom';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { 
   Settings, 
   Star, 
@@ -32,6 +32,8 @@ import {
   Book
 } from 'lucide-react';
 import { BRAND_ASSETS, SPREADSHEET_CONFIG } from '../../assets';
+import Swal from 'sweetalert2';
+import { XEENAPS_SWAL_CONFIG } from '../../utils/swalUtils';
 
 interface SidebarProps {
   isMobileOpen?: boolean;
@@ -44,6 +46,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onMobileClose }) => {
   const [researchMenuOpen, setResearchMenuOpen] = useState(false);
   const [findLiteratureMenuOpen, setFindLiteratureMenuOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
 
   const navItemsBlock1 = [
     { name: 'Dashboard', path: '/dashboard', icon: LayoutGrid },
@@ -86,6 +89,33 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onMobileClose }) => {
     background: 'linear-gradient(to bottom, #FFFFFF 0%, #FFFFFF 25%, #004A74 100%)',
   };
 
+  const handleSafeClick = (e: React.MouseEvent, targetPath?: string) => {
+    if ((window as any).xeenapsIsDirty) {
+      e.preventDefault();
+      e.stopPropagation();
+
+      Swal.fire({
+        ...XEENAPS_SWAL_CONFIG,
+        title: 'Unsaved Changes',
+        text: 'Anda memiliki perubahan yang belum disimpan. Yakin ingin keluar?',
+        showCancelButton: true,
+        confirmButtonText: 'Discard & Leave',
+        cancelButtonText: 'Cancel',
+        confirmButtonColor: '#ef4444'
+      }).then((result) => {
+        if (result.isConfirmed) {
+          (window as any).xeenapsIsDirty = false;
+          if (targetPath) {
+             navigate(targetPath);
+          }
+          if (onMobileClose) onMobileClose();
+        }
+      });
+    } else {
+      if (onMobileClose) onMobileClose();
+    }
+  };
+
   const handleExploreClick = async () => {
     const spreadsheetUrl = SPREADSHEET_CONFIG.EXPLORE_MAINDI_CSV;
     
@@ -124,10 +154,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onMobileClose }) => {
         }
       }
     }, 0);
-  };
-
-  const handleNavClick = () => {
-    if (onMobileClose) onMobileClose();
   };
 
   return (
@@ -203,7 +229,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onMobileClose }) => {
             <NavLink
               key={item.name}
               to={item.path}
-              onClick={handleNavClick}
+              onClick={(e) => handleSafeClick(e, item.path)}
               className={`relative w-full group flex items-center p-2 md:p-2.5 rounded-xl transition-all duration-300 transform active:scale-95 overflow-hidden ${
                 isActive 
                   ? 'bg-[#FED400] text-black shadow-md' 
@@ -243,7 +269,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onMobileClose }) => {
           <div className={`overflow-hidden transition-all duration-500 ease-in-out space-y-1 mt-1 ${findLiteratureMenuOpen && isExpanded ? 'max-h-40 opacity-100' : 'max-h-0 opacity-0 invisible'}`}>
             <NavLink 
               to="/find-article"
-              onClick={handleNavClick}
+              onClick={(e) => handleSafeClick(e, '/find-article')}
               className={`w-full flex items-center p-2 pl-9 lg:pl-10 rounded-lg transition-all text-xs md:text-sm font-medium ${location.pathname === '/find-article' ? 'text-black bg-[#FED400]/10 font-bold' : 'text-black hover:text-black hover:bg-[#FED400]/5'}`}
             >
               <FileText size={14} className="mr-2 shrink-0" />
@@ -251,7 +277,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onMobileClose }) => {
             </NavLink>
             <NavLink 
               to="/find-book"
-              onClick={handleNavClick}
+              onClick={(e) => handleSafeClick(e, '/find-book')}
               className={`w-full flex items-center p-2 pl-9 lg:pl-10 rounded-lg transition-all text-xs md:text-sm font-medium ${location.pathname === '/find-book' ? 'text-black bg-[#FED400]/10 font-bold' : 'text-black hover:text-black hover:bg-[#FED400]/5'}`}
             >
               <Book size={14} className="mr-2 shrink-0" />
@@ -263,7 +289,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onMobileClose }) => {
         {/* Literature Review Link */}
         <NavLink
           to="/research/literature-review"
-          onClick={handleNavClick}
+          onClick={(e) => handleSafeClick(e, '/research/literature-review')}
           className={`relative w-full group flex items-center p-2 md:p-2.5 rounded-xl transition-all duration-300 transform active:scale-95 overflow-hidden ${
             location.pathname === '/research/literature-review' 
               ? 'bg-[#FED400] text-black shadow-md' 
@@ -298,7 +324,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onMobileClose }) => {
           <div className={`overflow-hidden transition-all duration-500 ease-in-out space-y-1 mt-1 ${researchMenuOpen && isExpanded ? 'max-h-80 opacity-100' : 'max-h-0 opacity-0 invisible'}`}>
             <NavLink 
               to="/research"
-              onClick={handleNavClick}
+              onClick={(e) => handleSafeClick(e, '/research')}
               className={`w-full flex items-center p-2 pl-9 lg:pl-10 rounded-lg transition-all text-xs md:text-sm font-medium ${location.pathname === '/research' ? 'text-black bg-[#FED400]/10 font-bold' : 'text-black hover:text-black hover:bg-[#FED400]/5'}`}
             >
               <TextSearch size={14} className="mr-2 shrink-0" />
@@ -306,7 +332,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onMobileClose }) => {
             </NavLink>
             <NavLink 
               to="/research/brainstorming"
-              onClick={handleNavClick}
+              onClick={(e) => handleSafeClick(e, '/research/brainstorming')}
               className={`w-full flex items-center p-2 pl-9 lg:pl-10 rounded-lg transition-all text-xs md:text-sm font-medium ${location.pathname === '/research/brainstorming' ? 'text-black bg-[#FED400]/10 font-bold' : 'text-black hover:text-black hover:bg-[#FED400]/5'}`}
             >
               <BrainCog size={14} className="mr-2 shrink-0" />
@@ -314,7 +340,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onMobileClose }) => {
             </NavLink>
             <NavLink 
               to="/research/tracer"
-              onClick={handleNavClick}
+              onClick={(e) => handleSafeClick(e, '/research/tracer')}
               className={`w-full flex items-center p-2 pl-9 lg:pl-10 rounded-lg transition-all text-xs md:text-sm font-medium ${location.pathname.startsWith('/research/tracer') ? 'text-black bg-[#FED400]/10 font-bold' : 'text-black hover:text-black hover:bg-[#FED400]/5'}`}
             >
               <Target size={14} className="mr-2 shrink-0" />
@@ -322,7 +348,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onMobileClose }) => {
             </NavLink>
             <NavLink 
               to="/research/publication"
-              onClick={handleNavClick}
+              onClick={(e) => handleSafeClick(e, '/research/publication')}
               className={`w-full flex items-center p-2 pl-9 lg:pl-10 rounded-lg transition-all text-xs md:text-sm font-medium ${location.pathname === '/research/publication' ? 'text-black bg-[#FED400]/10 font-bold' : 'text-black hover:text-black hover:bg-[#FED400]/5'}`}
             >
               <BookUp size={14} className="mr-2 shrink-0" />
@@ -357,7 +383,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onMobileClose }) => {
               <button
                 key={item.name}
                 onClick={async () => {
-                  handleNavClick();
+                  // Safe navigation check is skipped for external link (New Tab)
+                  // but we ensure sidebar closes
+                  if (onMobileClose) onMobileClose();
                   const spreadsheetUrl = SPREADSHEET_CONFIG.TUTORIAL_CSV;
                   try {
                     const response = await fetch(spreadsheetUrl);
@@ -387,7 +415,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onMobileClose }) => {
             <NavLink
               key={item.name}
               to={item.path}
-              onClick={handleNavClick}
+              onClick={(e) => handleSafeClick(e, item.path)}
               className={`relative w-full group flex items-center p-2 md:p-2.5 rounded-xl transition-all duration-300 transform active:scale-95 overflow-hidden ${
                 isActive 
                   ? 'bg-[#FED400] text-black shadow-md' 
@@ -427,7 +455,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onMobileClose }) => {
           <div className={`overflow-hidden transition-all duration-500 ease-in-out space-y-1 mt-1 ${settingsMenuOpen && isExpanded ? 'max-h-32 opacity-100' : 'max-h-0 opacity-0 invisible'}`}>
             <NavLink 
               to="/settings"
-              onClick={handleNavClick}
+              onClick={(e) => handleSafeClick(e, '/settings')}
               className="w-full flex items-center p-2 pl-9 lg:pl-10 rounded-lg text-black hover:text-black hover:bg-[#FED400]/5 transition-all text-xs md:text-sm font-medium"
             >
               <Settings size={16} className="mr-2 shrink-0" />
@@ -435,7 +463,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onMobileClose }) => {
             </NavLink>
             <button 
               onClick={async () => {
-                handleNavClick();
+                if (onMobileClose) onMobileClose();
                 if (window.aistudio?.openSelectKey) {
                   await window.aistudio.openSelectKey();
                 }

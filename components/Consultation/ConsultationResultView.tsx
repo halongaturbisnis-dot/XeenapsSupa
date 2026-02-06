@@ -73,6 +73,14 @@ const ConsultationResultView: React.FC<ConsultationResultViewProps> = ({ collect
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [isDirty]);
 
+  // Sync Global Dirty Flag for Sidebar Interception
+  useEffect(() => {
+    (window as any).xeenapsIsDirty = isDirty;
+    return () => {
+      (window as any).xeenapsIsDirty = false;
+    };
+  }, [isDirty]);
+
   // Auto-resize textarea
   useEffect(() => {
     if (textareaRef.current) {
