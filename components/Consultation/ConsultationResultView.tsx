@@ -192,8 +192,14 @@ const ConsultationResultView: React.FC<ConsultationResultViewProps> = ({ collect
   };
 
   const toggleFavorite = () => {
-    setIsFavorite(!isFavorite);
+    const newVal = !isFavorite;
+    setIsFavorite(newVal);
+    
+    // Mark as dirty instead of saving immediately
     setIsDirty(true);
+    
+    const updatedItem = { ...consultation, isFavorite: newVal };
+    onUpdate?.(updatedItem);
   };
 
   // Safe Navigation Guard

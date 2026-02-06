@@ -43,8 +43,8 @@ const ConsultationGallery: React.FC<ConsultationGalleryProps> = ({ collection, o
   const [isInputOpen, setIsInputOpen] = useState(false);
   const [activeAnswer, setActiveAnswer] = useState<ConsultationAnswerContent | null>(null);
 
-  // Hook Optimistic UI - Only delete needed now
-  const { performDelete } = useOptimisticUpdate<ConsultationItem>();
+  // Hook Optimistic UI
+  const { performUpdate, performDelete } = useOptimisticUpdate<ConsultationItem>();
 
   // FIX: Removed items.length dependency to prevent refetch loop on local delete
   const loadConsultations = useCallback(async (isSilent = false) => {
@@ -71,16 +71,30 @@ const ConsultationGallery: React.FC<ConsultationGalleryProps> = ({ collection, o
     setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
   };
 
+  const toggleFavorite = async (e: React.MouseEvent, item: ConsultationItem) => {
+    e.stopPropagation();
+    
+    await performUpdate(
+        items,
+        setItems,
+        [item.id],
+        (i) => ({ ...i, isFavorite: !i.isFavorite }),
+        async (updated) => {
+             // Fetch content first needed for saveConsultation signature
+             const content = await fetchFileContent(updated.answerJsonId, updated.nodeUrl);
+             if (content) {
+                 return await saveConsultation(updated, content);
+             }
+             return false; // Fail safe
+        }
+    );
+  };
+
   const handleDelete = async (e: React.MouseEvent, item: ConsultationItem) => {
     e.stopPropagation();
     const confirmed = await showXeenapsDeleteConfirm(1);
     if (confirmed) {
-      // 1. Instant UI Feedback
-      setTotalCount(prev => Math.max(0, prev - 1));
-      showXeenapsToast('success', 'Consultation deleted');
-
-      // 2. Fire-and-Forget Background Sync
-      performDelete(
+      await performDelete(
           items,
           setItems,
           [item.id],
@@ -91,13 +105,10 @@ const ConsultationGallery: React.FC<ConsultationGalleryProps> = ({ collection, o
               }
               // 2. Metadata Cleanup (Supabase)
               return await deleteConsultation(id);
-          },
-          () => {
-             // Rollback Count on Error
-             setTotalCount(prev => prev + 1);
-             showXeenapsToast('error', 'Deletion failed');
           }
       );
+      setTotalCount(prev => Math.max(0, prev - 1));
+      showXeenapsToast('success', 'Consultation deleted');
     }
   };
 
@@ -109,13 +120,8 @@ const ConsultationGallery: React.FC<ConsultationGalleryProps> = ({ collection, o
       const itemsToDelete = items.filter(i => selectedIds.includes(i.id));
       
       setSelectedIds([]); // Clear selection UI immediately
-      
-      // 1. Instant UI Feedback
-      setTotalCount(prev => Math.max(0, prev - itemsToDelete.length));
-      showXeenapsToast('success', 'Consultation deleted');
 
-      // 2. Fire-and-Forget Background Sync
-      performDelete(
+      await performDelete(
           items,
           setItems,
           idsToDelete,
@@ -125,13 +131,34 @@ const ConsultationGallery: React.FC<ConsultationGalleryProps> = ({ collection, o
                 await deleteRemoteFile(item.answerJsonId, item.nodeUrl);
              }
              return await deleteConsultation(id);
-          },
-          () => {
-             // Rollback Count on Error
-             setTotalCount(prev => prev + itemsToDelete.length);
           }
       );
+      
+      setTotalCount(prev => Math.max(0, prev - itemsToDelete.length));
+      showXeenapsToast('success', 'Consultation deleted');
     }
+  };
+
+  const handleMassFavorite = async () => {
+    if (selectedIds.length === 0) return;
+    const selectedItems = items.filter(i => selectedIds.includes(i.id));
+    const anyUnfav = selectedItems.some(i => !i.isFavorite);
+    const newValue = anyUnfav;
+
+    await performUpdate(
+        items,
+        setItems,
+        selectedIds,
+        (i) => ({ ...i, isFavorite: newValue }),
+        async (updated) => {
+             const content = await fetchFileContent(updated.answerJsonId, updated.nodeUrl);
+             if (content) {
+                 return await saveConsultation(updated, content);
+             }
+             return false;
+        }
+    );
+    setSelectedIds([]);
   };
 
   const handleOpenConsult = (item: ConsultationItem) => {
@@ -145,6 +172,10 @@ const ConsultationGallery: React.FC<ConsultationGalleryProps> = ({ collection, o
     const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
     return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
   };
+
+  const anyUnfavSelected = useMemo(() => {
+    return items.filter(i => selectedIds.includes(i.id)).some(i => !i.isFavorite);
+  }, [items, selectedIds]);
 
   // Handler for internal updates from detail view (Handover State)
   const handleItemUpdateLocally = (updated: ConsultationItem) => {
@@ -235,7 +266,9 @@ const ConsultationGallery: React.FC<ConsultationGalleryProps> = ({ collection, o
           <StandardQuickActionButton variant="danger" onClick={handleMassDelete} title="Mass Delete">
             <TrashIcon className="w-5 h-5" />
           </StandardQuickActionButton>
-          {/* Read Only Mode: Removed Mass Favorite Button */}
+          <StandardQuickActionButton variant="warning" onClick={handleMassFavorite} title="Mass Favorite">
+            {anyUnfavSelected ? <StarIcon className="w-5 h-5" /> : <StarSolid className="w-5 h-5 text-[#FED400]" />}
+          </StandardQuickActionButton>
           <button onClick={() => setSelectedIds([])} className="text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-[#004A74] px-2 transition-all">Clear</button>
         </StandardQuickAccessBar>
 
@@ -281,10 +314,9 @@ const ConsultationGallery: React.FC<ConsultationGalleryProps> = ({ collection, o
 
                     {/* RIGHT: ACTIONS */}
                     <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
-                    {/* READ-ONLY FAVORITE INDICATOR */}
-                    <div className="p-2 text-[#FED400] cursor-default" title="Favorite status (Read-only in gallery)">
+                    <button onClick={(e) => toggleFavorite(e, item)} className="p-2 hover:scale-125 transition-transform text-[#FED400]">
                       {item.isFavorite ? <StarSolid className="w-5 h-5" /> : <StarIcon className="w-5 h-5 text-[#FED400]" />}
-                    </div>
+                    </button>
                     <button onClick={(e) => handleDelete(e, item)} className="p-2 text-red-400 hover:text-red-500 rounded-xl transition-all">
                       <TrashIcon className="w-5 h-5" />
                     </button>
