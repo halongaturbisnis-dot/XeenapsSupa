@@ -226,23 +226,28 @@ const ConsultationResultView: React.FC<ConsultationResultViewProps> = ({ collect
   const handleDelete = async () => {
     const confirmed = await showXeenapsDeleteConfirm(1);
     if (confirmed) {
-      // 1. Physical Cleanup (GAS)
-      if (consultation.answerJsonId && consultation.nodeUrl) {
-         await deleteRemoteFile(consultation.answerJsonId, consultation.nodeUrl);
+      // 1. Instant UI Feedback & Navigation (Optimistic)
+      if (onDeleteSuccess) {
+          onDeleteSuccess(consultation.id);
+      } else {
+          onBack();
       }
-      
-      // 2. Metadata Cleanup (Supabase)
-      const success = await deleteConsultation(consultation.id);
-      
-      if (success) {
-        showXeenapsToast('success', 'Consultation deleted');
-        if (onDeleteSuccess) {
-            onDeleteSuccess(consultation.id);
-        } else {
-            // Force back if no specific handler
-            onBack();
+      showXeenapsToast('success', 'Consultation deleted');
+
+      // 2. Background Process (Fire and Forget)
+      // Melakukan cleanup tanpa memblokir UI thread
+      (async () => {
+        try {
+          // Physical Cleanup (GAS)
+          if (consultation.answerJsonId && consultation.nodeUrl) {
+             await deleteRemoteFile(consultation.answerJsonId, consultation.nodeUrl);
+          }
+          // Metadata Cleanup (Supabase)
+          await deleteConsultation(consultation.id);
+        } catch (e) {
+          console.error("Background deletion error:", e);
         }
-      }
+      })();
     }
   };
 
