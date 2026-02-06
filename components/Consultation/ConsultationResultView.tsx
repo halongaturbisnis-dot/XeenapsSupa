@@ -130,7 +130,7 @@ const ConsultationResultView: React.FC<ConsultationResultViewProps> = ({ collect
   const handleSaveChanges = async () => {
     if (!answerContent) return;
     
-    setIsSaving(true); // Trigger Saving Overlay
+    setIsSaving(true); // Trigger Loading State
     
     const updatedItem = {
       ...consultation,
@@ -151,7 +151,7 @@ const ConsultationResultView: React.FC<ConsultationResultViewProps> = ({ collect
     } catch (e) {
       showXeenapsToast('error', 'Connection error');
     } finally {
-      setIsSaving(false); // Disable Saving Overlay
+      setIsSaving(false); // Disable Loading State
     }
   };
 
@@ -192,14 +192,8 @@ const ConsultationResultView: React.FC<ConsultationResultViewProps> = ({ collect
   };
 
   const toggleFavorite = () => {
-    const newVal = !isFavorite;
-    setIsFavorite(newVal);
-    
-    // Mark as dirty instead of saving immediately
+    setIsFavorite(!isFavorite);
     setIsDirty(true);
-    
-    const updatedItem = { ...consultation, isFavorite: newVal };
-    onUpdate?.(updatedItem);
   };
 
   // Safe Navigation Guard
@@ -276,9 +270,18 @@ const ConsultationResultView: React.FC<ConsultationResultViewProps> = ({ collect
             {isDirty ? (
               <button 
                 onClick={handleSaveChanges}
-                className="flex items-center gap-2 px-6 py-3 bg-[#004A74] text-[#FED400] rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg hover:scale-105 active:scale-95 transition-all animate-in zoom-in-95"
+                disabled={isSaving}
+                className={`flex items-center gap-2 px-6 py-3 bg-[#004A74] text-[#FED400] rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg transition-all animate-in zoom-in-95 ${isSaving ? 'opacity-70 cursor-not-allowed' : 'hover:scale-105 active:scale-95'}`}
               >
-                <Save size={16} /> Save Changes
+                {isSaving ? (
+                  <>
+                    <ArrowPathIcon className="w-4 h-4 animate-spin" /> Saving...
+                  </>
+                ) : (
+                  <>
+                    <Save size={16} /> Save Changes
+                  </>
+                )}
               </button>
             ) : (
               <>
