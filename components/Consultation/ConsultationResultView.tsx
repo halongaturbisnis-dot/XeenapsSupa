@@ -25,6 +25,7 @@ import { showXeenapsDeleteConfirm } from '../../utils/confirmUtils';
 import Swal from 'sweetalert2';
 import { XEENAPS_SWAL_CONFIG } from '../../utils/swalUtils';
 import { Save } from 'lucide-react';
+import { BRAND_ASSETS } from '../../assets';
 
 interface ConsultationResultViewProps {
   collection: LibraryItem;
@@ -43,6 +44,9 @@ const ConsultationResultView: React.FC<ConsultationResultViewProps> = ({ collect
   const [isFavorite, setIsFavorite] = useState(consultation.isFavorite || false);
   const [isLoading, setIsLoading] = useState(!initialAnswer);
   const [isThinking, setIsThinking] = useState(false);
+  
+  // New State for Saving Overlay
+  const [isSaving, setIsSaving] = useState(false);
   
   // Dirty State Management
   const [isDirty, setIsDirty] = useState(false);
@@ -124,7 +128,7 @@ const ConsultationResultView: React.FC<ConsultationResultViewProps> = ({ collect
   const handleSaveChanges = async () => {
     if (!answerContent) return;
     
-    setIsThinking(true); // Reuse loading state visual if needed or just block interactions
+    setIsSaving(true); // Trigger Saving Overlay
     
     const updatedItem = {
       ...consultation,
@@ -145,7 +149,7 @@ const ConsultationResultView: React.FC<ConsultationResultViewProps> = ({ collect
     } catch (e) {
       showXeenapsToast('error', 'Connection error');
     } finally {
-      setIsThinking(false);
+      setIsSaving(false); // Disable Saving Overlay
     }
   };
 
@@ -243,7 +247,7 @@ const ConsultationResultView: React.FC<ConsultationResultViewProps> = ({ collect
   };
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-white animate-in slide-in-from-right duration-500 overflow-hidden">
+    <div className="flex-1 flex flex-col h-full bg-white animate-in slide-in-from-right duration-500 overflow-hidden relative">
       
       {/* HEADER BAR (Navigation & Actions) */}
       <div className="px-6 md:px-10 py-6 border-b border-gray-100 flex items-center justify-between bg-white shrink-0 z-50">
@@ -432,6 +436,20 @@ const ConsultationResultView: React.FC<ConsultationResultViewProps> = ({ collect
             <div ref={scrollRef} className="h-10" />
          </div>
       </div>
+      
+      {/* SAVING OVERLAY - Fixed Center */}
+      {isSaving && (
+        <div className="fixed inset-0 z-[9999] bg-white/80 backdrop-blur-md flex flex-col items-center justify-center animate-in fade-in duration-300">
+            <img 
+               src={BRAND_ASSETS.LOGO_ICON} 
+               className="w-16 h-16 animate-spin object-contain mb-4" 
+               alt="Saving" 
+            />
+            <p className="text-sm font-black text-[#004A74] uppercase tracking-widest animate-pulse">
+               Saving your latest data...
+            </p>
+        </div>
+      )}
 
       <style>{`
         .custom-scrollbar::-webkit-scrollbar { width: 4px; }
