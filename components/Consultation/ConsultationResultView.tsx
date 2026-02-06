@@ -34,10 +34,9 @@ interface ConsultationResultViewProps {
   initialAnswer?: ConsultationAnswerContent | null;
   onBack: () => void;
   onUpdate?: (updated: ConsultationItem) => void;
-  onDeleteOptimistic?: (id: string) => void;
 }
 
-const ConsultationResultView: React.FC<ConsultationResultViewProps> = ({ collection, consultation, initialAnswer, onBack, onUpdate, onDeleteOptimistic }) => {
+const ConsultationResultView: React.FC<ConsultationResultViewProps> = ({ collection, consultation, initialAnswer, onBack, onUpdate }) => {
   const [answerContent, setAnswerContent] = useState<ConsultationAnswerContent | null>(initialAnswer || null);
   const [localQuestion, setLocalQuestion] = useState(consultation.question);
   const [tempQuestion, setTempQuestion] = useState(consultation.question);
@@ -226,28 +225,19 @@ const ConsultationResultView: React.FC<ConsultationResultViewProps> = ({ collect
   const handleDelete = async () => {
     const confirmed = await showXeenapsDeleteConfirm(1);
     if (confirmed) {
-      // 1. Instant UI Feedback & Navigation (Optimistic)
-      if (onDeleteOptimistic) {
-          onDeleteOptimistic(consultation.id);
-      } else {
-          onBack();
+      // 1. Physical Cleanup (GAS)
+      if (consultation.answerJsonId && consultation.nodeUrl) {
+         await deleteRemoteFile(consultation.answerJsonId, consultation.nodeUrl);
       }
-      showXeenapsToast('success', 'Consultation deleted');
-
-      // 2. Background Process (Fire and Forget)
-      // Melakukan cleanup tanpa memblokir UI thread
-      (async () => {
-        try {
-          // Physical Cleanup (GAS)
-          if (consultation.answerJsonId && consultation.nodeUrl) {
-             await deleteRemoteFile(consultation.answerJsonId, consultation.nodeUrl);
-          }
-          // Metadata Cleanup (Supabase)
-          await deleteConsultation(consultation.id);
-        } catch (e) {
-          console.error("Background deletion error:", e);
-        }
-      })();
+      
+      // 2. Metadata Cleanup (Supabase)
+      const success = await deleteConsultation(consultation.id);
+      
+      if (success) {
+        showXeenapsToast('success', 'Consultation deleted');
+        // Force back without check since it's deleted
+        onBack(); 
+      }
     }
   };
 
@@ -282,10 +272,10 @@ const ConsultationResultView: React.FC<ConsultationResultViewProps> = ({ collect
               </button>
             ) : (
               <>
-                <button onClick={toggleFavorite} className="p-2.5 rounded-xl border transition-all shadow-sm active:scale-90 border-gray-100 hover:bg-[#FED400]/10 text-[#FED400]">
-                   {isFavorite ? <StarSolid className="w-5 h-5 text-[#FED400]" /> : <StarIcon className="w-5 h-5 text-[#FED400]" />}
+                <button onClick={toggleFavorite} className="p-2.5 rounded-xl border transition-all shadow-sm active:scale-90 border-gray-100 hover:bg-[#FED400]/10">
+                   {isFavorite ? <StarSolid className="w-5 h-5 text-[#FED400]" /> : <StarIcon className="w-5 h-5 text-gray-300 hover:text-[#FED400]" />}
                 </button>
-                <button onClick={handleDelete} className="p-2.5 bg-white border border-gray-100 text-red-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all shadow-sm active:scale-90">
+                <button onClick={handleDelete} className="p-2.5 bg-white border border-gray-100 text-red-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all shadow-sm active:scale-90">
                    <TrashIcon className="w-5 h-5" />
                 </button>
               </>
