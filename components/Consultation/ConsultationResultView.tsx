@@ -16,7 +16,8 @@ import {
   TrashIcon,
   PencilIcon,
   CheckIcon,
-  XMarkIcon
+  XMarkIcon,
+  ClockIcon
 } from '@heroicons/react/24/outline';
 import { StarIcon as StarSolid } from '@heroicons/react/24/solid';
 import { showXeenapsToast } from '../../utils/toastUtils';
@@ -244,15 +245,15 @@ const ConsultationResultView: React.FC<ConsultationResultViewProps> = ({ collect
   return (
     <div className="flex-1 flex flex-col h-full bg-white animate-in slide-in-from-right duration-500 overflow-hidden">
       
-      {/* HEADER BAR */}
-      <div className="px-6 md:px-10 py-6 border-b border-gray-100 flex items-center justify-between bg-white shrink-0">
+      {/* HEADER BAR (Navigation & Actions) */}
+      <div className="px-6 md:px-10 py-6 border-b border-gray-100 flex items-center justify-between bg-white shrink-0 z-50">
          <div className="flex items-center gap-4">
             <button onClick={handleSafeBack} className="p-2.5 bg-gray-50 text-gray-400 hover:text-[#004A74] hover:bg-[#FED400]/20 rounded-xl transition-all shadow-sm active:scale-90">
                <ArrowLeftIcon className="w-5 h-5" />
             </button>
             <div className="min-w-0">
-               <h2 className="text-xl font-black text-[#004A74] uppercase tracking-tight truncate max-w-md">Consultation Analysis</h2>
-               <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest truncate">Synthesized by Groq AI</p>
+               <h2 className="text-sm md:text-base font-black text-[#004A74] uppercase tracking-widest truncate">Consultation Analysis</h2>
+               <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest truncate">Synthesized by Groq AI</p>
             </div>
          </div>
 
@@ -266,11 +267,11 @@ const ConsultationResultView: React.FC<ConsultationResultViewProps> = ({ collect
               </button>
             ) : (
               <>
-                <button onClick={toggleFavorite} className="p-3 bg-gray-50 text-[#FED400] hover:bg-[#FED400]/10 rounded-xl transition-all shadow-sm active:scale-90 border border-gray-100">
-                   {isFavorite ? <StarSolid className="w-6 h-6" /> : <StarIcon className="w-6 h-6" />}
+                <button onClick={toggleFavorite} className="p-2.5 rounded-xl border transition-all shadow-sm active:scale-90 border-gray-100 hover:bg-[#FED400]/10">
+                   {isFavorite ? <StarSolid className="w-5 h-5 text-[#FED400]" /> : <StarIcon className="w-5 h-5 text-gray-300 hover:text-[#FED400]" />}
                 </button>
-                <button onClick={handleDelete} className="p-3 bg-gray-50 text-red-400 hover:bg-red-50 rounded-xl transition-all shadow-sm active:scale-90 border border-gray-100">
-                   <TrashIcon className="w-6 h-6" />
+                <button onClick={handleDelete} className="p-2.5 bg-white border border-gray-100 text-red-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all shadow-sm active:scale-90">
+                   <TrashIcon className="w-5 h-5" />
                 </button>
               </>
             )}
@@ -278,35 +279,37 @@ const ConsultationResultView: React.FC<ConsultationResultViewProps> = ({ collect
       </div>
 
       <div className="flex-1 overflow-y-auto custom-scrollbar p-6 md:p-10 bg-[#fcfcfc]">
-         <div className="max-w-4xl mx-auto space-y-10">
+         <div className="max-w-4xl mx-auto space-y-8 pb-32">
             
-            {/* SOURCE BANNER */}
-            <div className="bg-[#004A74] rounded-[2.5rem] p-8 md:p-10 shadow-xl relative overflow-hidden group shrink-0">
-               <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 -translate-y-24 translate-x-24 rounded-full" />
-               <div className="relative z-10 space-y-4">
-                  <div className="flex items-center gap-3 text-[#FED400]">
-                     <BookOpenIcon className="w-6 h-6" />
-                     <span className="text-[10px] font-black uppercase tracking-[0.4em]">Target Knowledge Root</span>
-                  </div>
-                  <h3 className="text-xl md:text-2xl font-black text-white uppercase leading-tight tracking-tight">{collection.title}</h3>
-                  <div className="pt-4 border-t border-white/10 flex items-center gap-6">
-                     <div className="text-white/60 text-[9px] font-bold uppercase tracking-widest">
-                        Topic: <span className="text-white">{collection.topic}</span>
-                     </div>
-                     <div className="text-white/60 text-[9px] font-bold uppercase tracking-widest">
-                        Date: <span className="text-white">{formatDisplayDate(consultation.createdAt)}</span>
-                     </div>
+            {/* 1. SOURCE HEADER (Replaces Blue Banner) */}
+            <header className="space-y-4">
+               <div className="flex flex-wrap gap-2">
+                  <span className="px-3 py-1 bg-[#004A74] text-white text-[8px] font-black uppercase tracking-widest rounded-full flex items-center gap-2">
+                     <BookOpenIcon className="w-3 h-3" /> Target Knowledge Root
+                  </span>
+                  <span className="px-3 py-1 bg-[#FED400] text-[#004A74] text-[8px] font-black uppercase tracking-widest rounded-full">
+                     {collection.topic}
+                  </span>
+               </div>
+               
+               <h1 className="text-2xl md:text-3xl font-black text-[#004A74] leading-tight uppercase tracking-tight">
+                  {collection.title}
+               </h1>
+
+               <div className="flex items-center gap-4 pt-2 border-t border-gray-100">
+                  <div className="flex items-center gap-1.5 text-[9px] font-bold text-gray-400 uppercase tracking-widest">
+                     <ClockIcon className="w-3.5 h-3.5" />
+                     <span>Created: {formatDisplayDate(consultation.createdAt)}</span>
                   </div>
                </div>
-            </div>
+            </header>
 
-            {/* EDITABLE QUESTION DISPLAY */}
-            <div className="bg-white p-8 md:p-10 rounded-[2.5rem] border-2 border-[#004A74]/15 shadow-sm relative overflow-hidden group/question transition-all">
-               <div className="absolute top-0 left-0 w-1.5 h-full bg-[#FED400]" />
-               <div className="flex items-center justify-between mb-4">
-                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
-                     <CpuChipIcon className="w-3 h-3" /> Inquiry Context (Editable)
-                  </p>
+            {/* 2. QUESTION CARD (Clean & Structured) */}
+            <section className="bg-white p-6 md:p-8 rounded-[2.5rem] border border-gray-100 shadow-sm space-y-6 relative overflow-hidden group/question transition-all">
+               <div className="flex items-center justify-between">
+                  <h3 className="text-[9px] font-black uppercase tracking-[0.2em] text-gray-400 flex items-center gap-2">
+                     <CpuChipIcon className="w-3.5 h-3.5" /> Inquiry Context (Editable)
+                  </h3>
                   
                   {/* EDIT BUTTONS */}
                   <div className="flex items-center gap-2">
@@ -344,39 +347,39 @@ const ConsultationResultView: React.FC<ConsultationResultViewProps> = ({ collect
                     <textarea 
                       ref={textareaRef}
                       autoFocus
-                      className="w-full bg-gray-50 border-2 border-[#004A74]/10 p-4 rounded-2xl outline-none text-lg md:text-xl font-bold text-[#004A74] leading-relaxed italic placeholder:text-gray-200 resize-none overflow-hidden"
+                      className="w-full bg-gray-50 border-2 border-[#004A74]/10 p-5 rounded-2xl outline-none text-base md:text-lg font-bold text-[#004A74] leading-relaxed italic placeholder:text-gray-200 resize-none overflow-hidden focus:bg-white focus:border-[#FED400]/50 transition-all"
                       value={tempQuestion}
                       onChange={(e) => setTempQuestion(e.target.value)}
                       placeholder="Enter your inquiry for analysis..."
                       rows={1}
                     />
                   ) : (
-                    <p className="text-lg md:text-xl font-bold text-[#004A74] leading-relaxed italic">
+                    <p className="text-base md:text-lg font-bold text-[#004A74] leading-relaxed italic border-l-4 border-[#FED400] pl-6">
                       "{localQuestion}"
                     </p>
                   )}
 
-                  <div className="flex justify-end pt-2">
+                  <div className="flex justify-end pt-2 border-t border-gray-50">
                     <button 
                       onClick={handleReConsult}
                       disabled={isThinking || (isEditing ? !tempQuestion.trim() : !localQuestion.trim())}
-                      className="flex items-center gap-3 px-8 py-3.5 bg-[#004A74] text-[#FED400] rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] shadow-xl hover:scale-105 active:scale-95 transition-all disabled:opacity-40 disabled:grayscale"
+                      className="flex items-center gap-2 px-6 py-2.5 bg-[#004A74] text-[#FED400] rounded-2xl text-[9px] font-black uppercase tracking-widest shadow-md hover:scale-105 active:scale-95 transition-all disabled:opacity-40 disabled:grayscale"
                     >
                       {isThinking ? (
                         <>
-                          <ArrowPathIcon className="w-4 h-4 animate-spin" />
+                          <ArrowPathIcon className="w-3.5 h-3.5 animate-spin" />
                           Analyzing...
                         </>
                       ) : (
                         <>
-                          <PaperAirplaneIcon className="w-4 h-4 -rotate-45" />
+                          <PaperAirplaneIcon className="w-3.5 h-3.5 -rotate-45" />
                           Re-Analyze Knowledge
                         </>
                       )}
                     </button>
                   </div>
                </div>
-            </div>
+            </section>
 
             {(isLoading || isThinking) ? (
               <div className="space-y-6 animate-pulse">
@@ -384,25 +387,25 @@ const ConsultationResultView: React.FC<ConsultationResultViewProps> = ({ collect
                 <div className="h-96 w-full bg-gray-100 rounded-[2.5rem]" />
               </div>
             ) : answerContent && (
-              <div className="space-y-10 animate-in fade-in slide-in-from-bottom-6 duration-700">
+              <div className="space-y-8 animate-in fade-in slide-in-from-bottom-6 duration-700">
                  
-                 {/* THINKING PROCESS BOX */}
+                 {/* 3. REASONING PROCESS BOX (Clean Accordion) */}
                  {answerContent.reasoning && (
-                   <div className="bg-gray-50 border border-gray-100 rounded-[2.5rem] overflow-hidden">
+                   <div className="bg-gray-50 border border-gray-100 rounded-[2rem] overflow-hidden transition-all hover:border-[#004A74]/10">
                       <button 
                         onClick={() => setShowReasoning(!showReasoning)}
-                        className="w-full px-8 py-5 flex items-center justify-between text-[#004A74] hover:bg-gray-100 transition-all"
+                        className="w-full px-6 py-4 flex items-center justify-between text-[#004A74] hover:bg-gray-100 transition-all"
                       >
                          <div className="flex items-center gap-3">
-                            <CpuChipIcon className="w-5 h-5" />
-                            <span className="text-[10px] font-black uppercase tracking-widest">AI Reasoning Context</span>
+                            <CpuChipIcon className="w-4 h-4 opacity-60" />
+                            <span className="text-[9px] font-black uppercase tracking-widest opacity-60">AI Reasoning Context</span>
                          </div>
-                         {showReasoning ? <ChevronUpIcon className="w-4 h-4" /> : <ChevronDownIcon className="w-4 h-4" />}
+                         {showReasoning ? <ChevronUpIcon className="w-4 h-4 opacity-50" /> : <ChevronDownIcon className="w-4 h-4 opacity-50" />}
                       </button>
                       
                       {showReasoning && (
-                        <div className="px-8 pb-8 animate-in slide-in-from-top-2 duration-300">
-                           <div className="p-6 bg-white border border-gray-100 rounded-2xl text-xs text-gray-500 font-medium italic leading-relaxed whitespace-pre-wrap">
+                        <div className="px-6 pb-6 animate-in slide-in-from-top-2 duration-300">
+                           <div className="p-5 bg-white border border-gray-100 rounded-2xl text-[10px] md:text-xs text-gray-500 font-medium italic leading-relaxed whitespace-pre-wrap">
                               {answerContent.reasoning}
                            </div>
                         </div>
@@ -410,23 +413,23 @@ const ConsultationResultView: React.FC<ConsultationResultViewProps> = ({ collect
                    </div>
                  )}
 
-                 {/* FINAL SYNTHESIS BUBBLE */}
-                 <div className="space-y-4">
-                    <div className="flex items-center gap-3 text-[#004A74] px-4">
-                       <SparklesIcon className="w-6 h-6 text-[#FED400]" />
-                       <span className="text-[11px] font-black uppercase tracking-[0.3em]">Knowledge Synthesis Output</span>
-                    </div>
-                    <div className="p-10 md:p-14 bg-white border border-gray-100 rounded-[3.5rem] shadow-xl relative min-h-[400px]">
+                 {/* 4. FINAL SYNTHESIS BUBBLE (Clean Reading Layout) */}
+                 <section className="space-y-4">
+                    <h3 className="text-[9px] font-black uppercase tracking-[0.2em] text-gray-400 flex items-center gap-2 px-2">
+                       <SparklesIcon className="w-3.5 h-3.5 text-[#FED400]" /> Knowledge Synthesis Output
+                    </h3>
+                    <div className="p-8 md:p-12 bg-white border border-gray-100 rounded-[3rem] shadow-xl relative min-h-[400px] overflow-hidden">
+                       <div className="absolute top-0 right-0 w-64 h-64 bg-[#FED400]/5 -translate-y-24 translate-x-24 rounded-full" />
                        <div 
-                         className="text-base md:text-lg leading-relaxed text-[#004A74] font-medium whitespace-pre-wrap consultation-result-body"
+                         className="text-sm md:text-base leading-[1.8] text-[#004A74] font-medium whitespace-pre-wrap consultation-result-body relative z-10"
                          dangerouslySetInnerHTML={{ __html: answerContent.answer }} 
                        />
                     </div>
-                 </div>
+                 </section>
               </div>
             )}
 
-            <div ref={scrollRef} className="h-20" />
+            <div ref={scrollRef} className="h-10" />
          </div>
       </div>
 
