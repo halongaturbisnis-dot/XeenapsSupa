@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { ConsultationItem, LibraryItem, ConsultationAnswerContent } from '../../types';
 import { fetchRelatedConsultations, deleteConsultation, saveConsultation } from '../../services/ConsultationService';
@@ -21,6 +20,7 @@ import { StandardQuickAccessBar, StandardQuickActionButton, StandardPrimaryButto
 import { showXeenapsDeleteConfirm } from '../../utils/confirmUtils';
 import { showXeenapsToast } from '../../utils/toastUtils';
 import { fetchFileContent } from '../../services/gasService';
+import { deleteRemoteFile } from '../../services/ActivityService'; // Helper for file deletion
 
 interface ConsultationGalleryProps {
   collection: LibraryItem;
@@ -80,28 +80,38 @@ const ConsultationGallery: React.FC<ConsultationGalleryProps> = ({ collection, o
     }
   };
 
-  const handleDelete = async (e: React.MouseEvent, id: string) => {
+  const handleDelete = async (e: React.MouseEvent, item: ConsultationItem) => {
     e.stopPropagation();
     const confirmed = await showXeenapsDeleteConfirm(1);
     if (confirmed) {
-      // Optimistic Delete
-      setItems(prev => prev.filter(i => i.id !== id));
-      // Silent Background Delete
-      await deleteConsultation(id);
+      // 1. Optimistic Delete
+      setItems(prev => prev.filter(i => i.id !== item.id));
+      
+      // 2. Physical File Cleanup (GAS)
+      if (item.answerJsonId && item.nodeUrl) {
+         await deleteRemoteFile(item.answerJsonId, item.nodeUrl);
+      }
+
+      // 3. Metadata Cleanup (Supabase)
+      await deleteConsultation(item.id);
     }
   };
 
   const handleMassDelete = async () => {
     const confirmed = await showXeenapsDeleteConfirm(selectedIds.length);
     if (confirmed) {
-      const idsToDelete = [...selectedIds];
+      const itemsToDelete = items.filter(i => selectedIds.includes(i.id));
+      
       // Optimistic Update
-      setItems(prev => prev.filter(i => !idsToDelete.includes(i.id)));
+      setItems(prev => prev.filter(i => !selectedIds.includes(i.id)));
       setSelectedIds([]);
       
       // Silent background processing
-      for (const id of idsToDelete) {
-        await deleteConsultation(id);
+      for (const item of itemsToDelete) {
+        if (item.answerJsonId && item.nodeUrl) {
+           await deleteRemoteFile(item.answerJsonId, item.nodeUrl);
+        }
+        await deleteConsultation(item.id);
       }
       loadConsultations(true); // Final silent sync
     }
@@ -271,7 +281,7 @@ const ConsultationGallery: React.FC<ConsultationGalleryProps> = ({ collection, o
                     <button onClick={(e) => toggleFavorite(e, item)} className="p-2 hover:scale-125 transition-transform text-[#FED400]">
                       {item.isFavorite ? <StarSolid className="w-5 h-5" /> : <StarIcon className="w-5 h-5 text-gray-300 hover:text-[#FED400]" />}
                     </button>
-                    <button onClick={(e) => handleDelete(e, item.id)} className="p-2 text-gray-300 hover:text-red-500 rounded-xl transition-all">
+                    <button onClick={(e) => handleDelete(e, item)} className="p-2 text-gray-300 hover:text-red-500 rounded-xl transition-all">
                       <TrashIcon className="w-5 h-5" />
                     </button>
                     <div className="ml-2 p-1.5 bg-gray-50 text-gray-400 rounded-lg group-hover:bg-[#FED400] group-hover:text-[#004A74] transition-all">

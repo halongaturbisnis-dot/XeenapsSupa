@@ -146,15 +146,8 @@ function doGet(e) {
       return createJsonResponse({ status: 'success', data: result.items, totalCount: result.totalCount });
     }
 
-    // NEW: getConsultations
-    if (action === 'getConsultations') {
-      const collectionId = e.parameter.collectionId;
-      const page = parseInt(e.parameter.page || "1");
-      const limit = parseInt(e.parameter.limit || "20");
-      const search = e.parameter.search || "";
-      const result = getConsultationsFromRegistry(collectionId, page, limit, search);
-      return createJsonResponse({ status: 'success', data: result.items, totalCount: result.totalCount });
-    }
+    // DEPRECATED: getConsultations (Moved to Supabase)
+    // if (action === 'getConsultations') { ... }
 
     // NEW: getColleagues (SERVER-SIDE SEARCH & PAGINATION)
     if (action === 'getColleagues') {
@@ -432,14 +425,14 @@ function doPost(e) {
       }
     }
 
-    // NEW ACTION: saveConsultation
-    if (action === 'saveConsultation') {
-      return createJsonResponse(saveConsultationToRegistry(body.item, body.answerContent));
+    // MODIFIED ACTION: saveConsultation -> saveConsultationContent (Storage Worker Only)
+    if (action === 'saveConsultationContent') {
+      return createJsonResponse(saveConsultationContentToDrive(body.item, body.answerContent));
     }
-    // NEW ACTION: deleteConsultation
-    if (action === 'deleteConsultation') {
-      return createJsonResponse(deleteConsultationFromRegistry(body.id));
-    }
+    
+    // DEPRECATED: deleteConsultation (Frontend orchestrates deletions)
+    // if (action === 'deleteConsultation') { ... }
+
     // NEW ACTION: aiConsultProxy
     if (action === 'aiConsultProxy') {
       return createJsonResponse(handleAiConsultRequest(body.collectionId, body.question));
@@ -662,6 +655,7 @@ function doPost(e) {
       if (isLocal) {
         DriveApp.getFileById(fileId).setContent(newContent);
       } else {
+        // ENHANCED: Pass fileId to remote node to perform overwrite instead of create
         UrlFetchApp.fetch(nodeUrl, {
           method: 'post',
           contentType: 'application/json',
@@ -762,7 +756,6 @@ function doPost(e) {
       const isFileUpload = (body.file && body.file.fileData);
 
       // --- SELF-HEALING MECHANISM: Supporting References (Atomic Protection) ---
-      // If references are missing but keywords exist, attempt a final server-side enrichment
       if (!item.supportingReferences || (Array.isArray(item.supportingReferences.references) && item.supportingReferences.references.length === 0)) {
          const keywords = (item.tags && Array.isArray(item.tags.keywords)) ? item.tags.keywords : [];
          if (keywords.length > 0) {

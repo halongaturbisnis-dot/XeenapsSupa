@@ -1,8 +1,8 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { ConsultationItem, LibraryItem, ConsultationAnswerContent } from '../../types';
 import { saveConsultation, callAiConsult, deleteConsultation } from '../../services/ConsultationService';
 import { fetchFileContent } from '../../services/gasService';
+import { deleteRemoteFile } from '../../services/ActivityService'; // Import generic file deletion
 import { 
   ArrowLeftIcon, 
   SparklesIcon, 
@@ -146,7 +146,14 @@ const ConsultationResultView: React.FC<ConsultationResultViewProps> = ({ collect
   const handleDelete = async () => {
     const confirmed = await showXeenapsDeleteConfirm(1);
     if (confirmed) {
+      // 1. Physical Cleanup (GAS)
+      if (consultation.answerJsonId && consultation.nodeUrl) {
+         await deleteRemoteFile(consultation.answerJsonId, consultation.nodeUrl);
+      }
+      
+      // 2. Metadata Cleanup (Supabase)
       const success = await deleteConsultation(consultation.id);
+      
       if (success) {
         showXeenapsToast('success', 'Consultation deleted');
         onBack();
