@@ -21,6 +21,7 @@ import { showXeenapsDeleteConfirm } from '../../utils/confirmUtils';
 import { showXeenapsToast } from '../../utils/toastUtils';
 import { fetchFileContent } from '../../services/gasService';
 import { deleteRemoteFile } from '../../services/ActivityService'; // Helper for file deletion
+import { useOptimisticUpdate } from '../../hooks/useOptimisticUpdate';
 
 interface ConsultationGalleryProps {
   collection: LibraryItem;
@@ -42,6 +43,10 @@ const ConsultationGallery: React.FC<ConsultationGalleryProps> = ({ collection, o
   const [isInputOpen, setIsInputOpen] = useState(false);
   const [activeAnswer, setActiveAnswer] = useState<ConsultationAnswerContent | null>(null);
 
+  // Hook Optimistic UI - Only delete needed now
+  const { performDelete } = useOptimisticUpdate<ConsultationItem>();
+
+  // FIX: Removed items.length dependency to prevent refetch loop on local delete
   const loadConsultations = useCallback(async (isSilent = false) => {
     // Only show global loading if we have no data and it's not a silent refresh
     if (!isSilent && items.length === 0) setIsLoading(true);
@@ -50,7 +55,7 @@ const ConsultationGallery: React.FC<ConsultationGalleryProps> = ({ collection, o
     setItems(result.items);
     setTotalCount(result.totalCount);
     setIsLoading(false);
-  }, [collection.id, currentPage, appliedSearch, items.length]);
+  }, [collection.id, currentPage, appliedSearch]);
 
   useEffect(() => {
     loadConsultations();
@@ -70,60 +75,63 @@ const ConsultationGallery: React.FC<ConsultationGalleryProps> = ({ collection, o
     e.stopPropagation();
     const confirmed = await showXeenapsDeleteConfirm(1);
     if (confirmed) {
-      // 1. Optimistic Delete (Zero-Latency)
-      setItems(prev => prev.filter(i => i.id !== item.id));
-      
-      try {
-        // 2. Physical File Cleanup (GAS)
-        if (item.answerJsonId && item.nodeUrl) {
-           await deleteRemoteFile(item.answerJsonId, item.nodeUrl);
-        }
+      // 1. Instant UI Feedback
+      setTotalCount(prev => Math.max(0, prev - 1));
+      showXeenapsToast('success', 'Consultation deleted');
 
-        // 3. Metadata Cleanup (Supabase)
-        await deleteConsultation(item.id);
-      } catch (e) {
-        // Silent fail or toast error
-        showXeenapsToast('error', 'Delete sync failed');
-      }
+      // 2. Fire-and-Forget Background Sync
+      performDelete(
+          items,
+          setItems,
+          [item.id],
+          async (id) => {
+              // 1. Physical File Cleanup (GAS)
+              if (item.answerJsonId && item.nodeUrl) {
+                 await deleteRemoteFile(item.answerJsonId, item.nodeUrl);
+              }
+              // 2. Metadata Cleanup (Supabase)
+              return await deleteConsultation(id);
+          },
+          () => {
+             // Rollback Count on Error
+             setTotalCount(prev => prev + 1);
+             showXeenapsToast('error', 'Deletion failed');
+          }
+      );
     }
   };
 
   const handleMassDelete = async () => {
+    if (selectedIds.length === 0) return;
     const confirmed = await showXeenapsDeleteConfirm(selectedIds.length);
     if (confirmed) {
+      const idsToDelete = [...selectedIds];
       const itemsToDelete = items.filter(i => selectedIds.includes(i.id));
       
-      // Optimistic Update
-      setItems(prev => prev.filter(i => !selectedIds.includes(i.id)));
-      setSelectedIds([]);
+      setSelectedIds([]); // Clear selection UI immediately
       
-      // Silent background processing
-      for (const item of itemsToDelete) {
-        if (item.answerJsonId && item.nodeUrl) {
-           await deleteRemoteFile(item.answerJsonId, item.nodeUrl);
-        }
-        await deleteConsultation(item.id);
-      }
-      loadConsultations(true); // Final silent sync
-    }
-  };
+      // 1. Instant UI Feedback
+      setTotalCount(prev => Math.max(0, prev - itemsToDelete.length));
+      showXeenapsToast('success', 'Consultation deleted');
 
-  const handleMassFavorite = async () => {
-    const selectedItems = items.filter(i => selectedIds.includes(i.id));
-    const anyUnfav = selectedItems.some(i => !i.isFavorite);
-    const newValue = anyUnfav;
-
-    // Optimistic Update
-    setItems(prev => prev.map(i => selectedIds.includes(i.id) ? { ...i, isFavorite: newValue } : i));
-    
-    // Background sync
-    for (const item of selectedItems) {
-       const content = await fetchFileContent(item.answerJsonId, item.nodeUrl);
-       if (content) {
-         await saveConsultation({ ...item, isFavorite: newValue }, content);
-       }
+      // 2. Fire-and-Forget Background Sync
+      performDelete(
+          items,
+          setItems,
+          idsToDelete,
+          async (id) => {
+             const item = itemsToDelete.find(i => i.id === id);
+             if (item && item.answerJsonId && item.nodeUrl) {
+                await deleteRemoteFile(item.answerJsonId, item.nodeUrl);
+             }
+             return await deleteConsultation(id);
+          },
+          () => {
+             // Rollback Count on Error
+             setTotalCount(prev => prev + itemsToDelete.length);
+          }
+      );
     }
-    setSelectedIds([]);
   };
 
   const handleOpenConsult = (item: ConsultationItem) => {
@@ -138,13 +146,19 @@ const ConsultationGallery: React.FC<ConsultationGalleryProps> = ({ collection, o
     return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
   };
 
-  const anyUnfavSelected = useMemo(() => {
-    return items.filter(i => selectedIds.includes(i.id)).some(i => !i.isFavorite);
-  }, [items, selectedIds]);
-
-  // Handler for internal updates from detail view
+  // Handler for internal updates from detail view (Handover State)
   const handleItemUpdateLocally = (updated: ConsultationItem) => {
     setItems(prev => prev.map(i => i.id === updated.id ? updated : i));
+  };
+
+  // Handler for instant deletion from detail view (Handover State)
+  const handleItemDeleteLocally = (id: string) => {
+    setItems(prev => prev.filter(i => i.id !== id));
+    setTotalCount(prev => Math.max(0, prev - 1));
+    setView('gallery');
+    setSelectedConsult(null);
+    setActiveAnswer(null);
+    // Note: No need to call loadConsultations() here, state is already clean
   };
 
   if (view === 'result' && selectedConsult) {
@@ -154,12 +168,11 @@ const ConsultationGallery: React.FC<ConsultationGalleryProps> = ({ collection, o
         consultation={selectedConsult}
         initialAnswer={activeAnswer}
         onUpdate={handleItemUpdateLocally}
+        onDeleteOptimistic={handleItemDeleteLocally}
         onBack={() => {
           setView('gallery');
           setSelectedConsult(null);
           setActiveAnswer(null);
-          // Silent refresh to ensure list is fresh without loading state
-          loadConsultations(true); 
         }}
       />
     );
@@ -222,9 +235,7 @@ const ConsultationGallery: React.FC<ConsultationGalleryProps> = ({ collection, o
           <StandardQuickActionButton variant="danger" onClick={handleMassDelete} title="Mass Delete">
             <TrashIcon className="w-5 h-5" />
           </StandardQuickActionButton>
-          <StandardQuickActionButton variant="warning" onClick={handleMassFavorite} title="Mass Favorite">
-            {anyUnfavSelected ? <StarIcon className="w-5 h-5" /> : <StarSolid className="w-5 h-5 text-[#FED400]" />}
-          </StandardQuickActionButton>
+          {/* Read Only Mode: Removed Mass Favorite Button */}
           <button onClick={() => setSelectedIds([])} className="text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-[#004A74] px-2 transition-all">Clear</button>
         </StandardQuickAccessBar>
 
@@ -265,23 +276,21 @@ const ConsultationGallery: React.FC<ConsultationGalleryProps> = ({ collection, o
                            <ClockIcon className="w-3 h-3" />
                            <span className="text-[9px] font-black uppercase tracking-widest">{formatTimeAgo(item.createdAt)}</span>
                         </div>
-                        {item.isFavorite && (
-                          <div className="flex items-center gap-1">
-                             <StarSolid className="w-3 h-3 text-[#FED400]" />
-                             <span className="text-[8px] font-black uppercase tracking-widest text-[#FED400]">Saved</span>
-                          </div>
-                        )}
                        </div>
                     </div>
 
                     {/* RIGHT: ACTIONS */}
                     <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
-                      <button onClick={(e) => handleDelete(e, item)} className="p-2 text-red-500 bg-red-50 rounded-xl transition-all hover:bg-red-500 hover:text-white">
-                        <TrashIcon className="w-5 h-5" />
-                      </button>
-                      <div className="ml-2 p-1.5 bg-gray-50 text-gray-400 rounded-lg group-hover:bg-[#FED400] group-hover:text-[#004A74] transition-all">
-                         <ChevronRightIcon className="w-4 h-4 stroke-[3]" />
-                      </div>
+                    {/* READ-ONLY FAVORITE INDICATOR */}
+                    <div className="p-2 text-[#FED400] cursor-default" title="Favorite status (Read-only in gallery)">
+                      {item.isFavorite ? <StarSolid className="w-5 h-5" /> : <StarIcon className="w-5 h-5 text-[#FED400]" />}
+                    </div>
+                    <button onClick={(e) => handleDelete(e, item)} className="p-2 text-red-400 hover:text-red-500 rounded-xl transition-all">
+                      <TrashIcon className="w-5 h-5" />
+                    </button>
+                    <div className="ml-2 p-1.5 bg-gray-50 text-gray-400 rounded-lg group-hover:bg-[#FED400] group-hover:text-[#004A74] transition-all">
+                       <ChevronRightIcon className="w-4 h-4 stroke-[3]" />
+                    </div>
                     </div>
                   </div>
                 );
