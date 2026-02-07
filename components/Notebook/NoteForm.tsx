@@ -6,6 +6,7 @@ import {
   X, 
   Save, 
   StickyNote, 
+  NotebookPen, 
   Link as LinkIcon, 
   Paperclip, 
   Trash2, 
@@ -240,16 +241,16 @@ const NoteForm: React.FC<NoteFormProps> = ({ note, collectionId, onClose, onComp
         <div className="px-8 py-8 border-b border-gray-100 flex items-center justify-between shrink-0 bg-gray-50/50">
            <div className="flex items-center gap-4">
               <div className="w-12 h-12 bg-[#004A74] text-[#FED400] rounded-2xl flex items-center justify-center shadow-lg">
-                 <StickyNote size={24} />
+                 <NotebookPen size={24} />
               </div>
-              <h2 className="text-xl font-black text-[#004A74] uppercase tracking-tight">{note ? 'Refine Note' : 'Create Knowledge Anchor'}</h2>
+              <h2 className="text-xl font-black text-[#004A74] uppercase tracking-tight">{note ? 'Refine Note' : 'New Note'}</h2>
            </div>
            <button onClick={handleCancel} className="p-2 hover:bg-red-50 text-gray-400 hover:text-red-500 rounded-full transition-all"><X size={28} /></button>
         </div>
 
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto custom-scrollbar p-8 md:p-12 space-y-12">
            
-           <FormField label="Note Label / Summary Title" required>
+           <FormField label="Note Label" required>
               <input 
                 required
                 className="w-full px-6 py-4 bg-gray-50 border border-gray-200 rounded-[1.5rem] text-lg font-black text-[#004A74] uppercase outline-none focus:bg-white focus:ring-4 focus:ring-[#004A74]/5 transition-all"
@@ -259,13 +260,13 @@ const NoteForm: React.FC<NoteFormProps> = ({ note, collectionId, onClose, onComp
               />
            </FormField>
 
-           <FormField label="Knowledge Description (Rich Text)">
+           <FormField label="Description">
               <RichEditor value={content.description} onChange={v => setContent({...content, description: v})} />
            </FormField>
 
            <div className="space-y-6 pt-6 border-t border-gray-100">
               <div className="flex items-center justify-between px-2">
-                 <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-400 flex items-center gap-2"><Paperclip size={14} /> Attachments Matrix</h3>
+                 <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-400 flex items-center gap-2"><Paperclip size={14} /> Attachments</h3>
                  <div className="flex gap-2">
                     <button type="button" onClick={handleAddLink} className="flex items-center gap-1.5 px-4 py-2 bg-white border border-gray-200 rounded-xl text-[9px] font-black uppercase tracking-widest text-[#004A74] hover:bg-gray-50 shadow-sm transition-all"><LinkIcon size={12} /> Add Link</button>
                     <label className="flex items-center gap-1.5 px-4 py-2 bg-[#004A74] text-white rounded-xl text-[9px] font-black uppercase tracking-widest cursor-pointer hover:bg-[#003859] shadow-md transition-all">
@@ -346,7 +347,7 @@ const NoteForm: React.FC<NoteFormProps> = ({ note, collectionId, onClose, onComp
                 className={`w-full md:w-auto px-12 py-5 bg-[#004A74] text-[#FED400] rounded-2xl font-black uppercase tracking-[0.2em] text-xs shadow-2xl transition-all flex items-center justify-center gap-3 ${isSubmitting || pendingUploadsCount > 0 ? 'opacity-50 cursor-not-allowed' : 'hover:scale-105 active:scale-95'}`}
               >
                  {isSubmitting ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
-                 {isSubmitting ? 'SYNCHRONIZING...' : 'AUTHORIZE & SAVE'}
+                 {isSubmitting ? 'SYNCHRONIZING...' : 'AUTHORIZE'}
               </button>
            </div>
         </form>

@@ -92,7 +92,6 @@ const NoteDetailView: React.FC<NoteDetailViewProps> = ({ note, initialContent, o
             </button>
             <div className="min-w-0">
                <h2 className="text-sm font-black text-[#004A74] uppercase tracking-widest truncate">View Note</h2>
-               <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">Knowledge Synthesis Hub</p>
             </div>
          </div>
          <div className="flex items-center gap-3">
@@ -107,15 +106,8 @@ const NoteDetailView: React.FC<NoteDetailViewProps> = ({ note, initialContent, o
             
             {/* Read-Only Identity Section */}
             <header className="space-y-8">
-               <div className="flex flex-wrap gap-2">
-                  <span className="px-3 py-1 bg-[#004A74] text-white text-[8px] font-black uppercase tracking-widest rounded-full">Knowledge Anchor</span>
-                  {note.collectionId && (
-                     <span className="px-3 py-1 bg-[#FED400]/10 text-[#004A74] text-[8px] font-black uppercase tracking-widest rounded-full flex items-center gap-1.5 shadow-sm"><Library size={10} /> Source Linked</span>
-                  )}
-               </div>
-               
                <div className="space-y-4">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">Note Label / Summary Title</label>
+                  <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">Note Label</label>
                   {/* Visual Fix: Simplified layout to avoid box-in-box conflict */}
                   <div className="w-full border-l-8 border-[#FED400] pl-6 py-2">
                      <h1 className="text-2xl md:text-5xl font-black text-[#004A74] uppercase tracking-tighter leading-tight">
@@ -150,8 +142,7 @@ const NoteDetailView: React.FC<NoteDetailViewProps> = ({ note, initialContent, o
                  {/* Read-Only Synthesis Area */}
                  <div className="space-y-4">
                     <div className="flex items-center gap-3 text-gray-400 px-2">
-                       <Sparkles size={14} className="text-[#FED400]" />
-                       <span className="text-[10px] font-black uppercase tracking-[0.4em]">Synthesis Content</span>
+                       <span className="text-[10px] font-black uppercase tracking-[0.4em]">Description</span>
                     </div>
                     <div className="bg-white p-8 md:p-12 border border-gray-100 rounded-[3rem] shadow-xl relative min-h-[400px]">
                        <div className="absolute top-0 right-0 w-64 h-64 bg-[#FED400]/5 -translate-y-24 translate-x-24 rounded-full" />
@@ -165,8 +156,8 @@ const NoteDetailView: React.FC<NoteDetailViewProps> = ({ note, initialContent, o
                  {/* Read-Only Documentation Matrix */}
                  <div className="space-y-6">
                     <div className="flex items-center justify-between px-4">
-                       <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-400 flex items-center gap-2"><Paperclip size={14} /> Documentation Matrix</h3>
-                       <span className="text-[9px] font-black text-gray-300 uppercase tracking-widest">{content?.attachments.length || 0} Assets Linked</span>
+                       <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-400 flex items-center gap-2"><Paperclip size={14} /> ATTACHMENT</h3>
+                       <span className="text-[9px] font-black text-gray-300 uppercase tracking-widest">{content?.attachments.length || 0} ATTACHMENT</span>
                     </div>
                     
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -215,10 +206,6 @@ const NoteDetailView: React.FC<NoteDetailViewProps> = ({ note, initialContent, o
               </div>
             )}
 
-            <footer className="pt-20 pb-10 space-y-3 opacity-20 text-center">
-               <Library size={48} className="mx-auto text-[#004A74]" />
-               <p className="text-[8px] font-black uppercase tracking-[0.8em] text-[#004A74]">XEENAPS NOTEBOOK INFRASTRUCTURE</p>
-            </footer>
 
          </div>
       </div>

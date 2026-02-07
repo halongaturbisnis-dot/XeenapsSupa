@@ -11,6 +11,7 @@ import {
   ChevronRight,
   Sparkles,
   StickyNote,
+  NotebookPen, 
   Library,
   Check,
   MoreVertical,
@@ -210,11 +211,10 @@ const NotebookMain: React.FC<NotebookMainProps> = ({ libraryItems = [], collecti
                 </button>
              )}
              <div className="w-12 h-12 bg-[#004A74] text-[#FED400] rounded-2xl flex items-center justify-center shadow-lg">
-                <StickyNote size={24} />
+                <NotebookPen size={24} />
              </div>
              <div>
                 <h2 className="text-xl md:text-2xl font-black text-[#004A74] uppercase tracking-tight">Notebook</h2>
-                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">Research Insights & Synthesis</p>
              </div>
           </div>
           
@@ -251,7 +251,7 @@ const NotebookMain: React.FC<NotebookMainProps> = ({ libraryItems = [], collecti
            </div>
            
            <div className="text-[10px] font-black uppercase tracking-widest text-[#004A74]/60 px-4 whitespace-nowrap">
-             {totalCount} Knowledge Anchors
+             {totalCount} Note(s) Found
            </div>
         </div>
       </div>
