@@ -290,7 +290,7 @@ const RelatedQuestion: React.FC<RelatedQuestionProps> = ({ collection, onBack })
               className="flex items-center gap-2 px-5 py-2.5 bg-[#004A74] text-[#FFFFFF] rounded-xl md:rounded-2xl shadow-lg transition-all active:scale-95 group"
             >
               <PlusIcon className="w-5 h-5 stroke-[2.5] group-hover:rotate-90 transition-transform duration-300" />
-              <span className="text-[11px] uppercase tracking-widest font-black">Create</span>
+              <span className="text-[11px] tracking-widest font-black">Create</span>
             </button>
           </div>
         </div>
