@@ -271,7 +271,7 @@ const AllBrainstorming: React.FC = () => {
           value={localSearch} 
           onChange={setLocalSearch} 
           onSearch={handleSearchTrigger} 
-          phrases={["Search label...", "Search research ideas..., "Search gap..."]}
+          phrases={["Search label...", "Search research ideas...", "Search gap..."]}
         />
         <StandardPrimaryButton onClick={handleNewProject} icon={<PlusIcon size={20} />}>
           Create
