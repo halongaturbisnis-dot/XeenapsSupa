@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { LibraryItem, LibraryType } from '../../types';
-import { fetchLibraryPaginated } from '../../services/gasService';
+import { fetchLibraryPaginatedFromSupabase } from '../../services/LibrarySupabaseService';
 import { 
   XMarkIcon, 
   CheckIcon,
@@ -38,8 +38,17 @@ const ResearchSourceSelectorModal: React.FC<ResearchSourceSelectorModalProps> = 
   useEffect(() => {
     const loadData = async () => {
       setIsLoading(true);
-      const result = await fetchLibraryPaginated(currentPage, itemsPerPage, appliedSearch, LibraryType.LITERATURE, 'research', 'createdAt', 'desc');
-      // Hanya menampilkan yang sudah diproses AI (extractedJsonId ada)
+      // Switched to Supabase Service for faster registry access
+      const result = await fetchLibraryPaginatedFromSupabase(
+        currentPage, 
+        itemsPerPage, 
+        appliedSearch, 
+        'Literature', // Type filter
+        'research',   // Path filter logic handled in service if needed, or mapped
+        'createdAt', 
+        'desc'
+      );
+      // Filter client-side for extractedJsonId availability
       setItems(result.items.filter(it => !!it.extractedJsonId));
       setTotalCount(result.totalCount);
       setIsLoading(false);
@@ -77,7 +86,7 @@ const ResearchSourceSelectorModal: React.FC<ResearchSourceSelectorModalProps> = 
     <div className="fixed inset-0 z-[1000] flex items-center justify-center p-2 md:p-6 bg-black/40 backdrop-blur-md animate-in fade-in">
       <div className="bg-white rounded-[3rem] w-full max-w-5xl shadow-2xl overflow-hidden flex flex-col max-h-[95vh] border border-white/20">
         
-        {/* Header Identik dengan Review */}
+        {/* Header */}
         <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between shrink-0 bg-gray-50/50">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-[#004A74] text-[#FED400] rounded-xl flex items-center justify-center shadow-md">
@@ -144,7 +153,7 @@ const ResearchSourceSelectorModal: React.FC<ResearchSourceSelectorModalProps> = 
            </div>
         </div>
 
-        {/* Footer Identik dengan Review */}
+        {/* Footer */}
         <div className="px-6 py-4 border-t border-gray-100 bg-gray-50/50 flex flex-wrap items-center justify-between gap-4 shrink-0">
           <div className="flex items-center gap-6">
             <div className="flex items-center gap-2">

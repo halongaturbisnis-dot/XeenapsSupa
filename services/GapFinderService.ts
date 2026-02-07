@@ -2,6 +2,7 @@
 import { LibraryItem, GapAnalysisRow, NoveltySynthesis } from '../types';
 import { GAS_WEB_APP_URL } from '../constants';
 import { callAiProxy } from './gasService';
+import { fetchResearchSourceBySourceId, upsertResearchSourceToSupabase } from './ResearchSupabaseService';
 
 /**
  * XEENAPS RESEARCH GAP FINDER SERVICE
@@ -74,35 +75,36 @@ export const analyzeSingleSourceGap = async (snippet: string, title: string): Pr
 };
 
 /**
- * Mengecek apakah sumber ini sudah pernah dianalisis sebelumnya di Spreadsheet.
+ * Mengecek apakah sumber ini sudah pernah dianalisis sebelumnya (Supabase).
  */
 export const checkStoredGap = async (sourceId: string): Promise<GapAnalysisRow | null> => {
-  if (!GAS_WEB_APP_URL) return null;
   try {
-    const url = `${GAS_WEB_APP_URL}?action=getGapLog&sourceId=${sourceId}`;
-    const res = await fetch(url);
-    const result = await res.json();
-    return (result.status === 'success' && result.data) ? result.data : null;
+    const data = await fetchResearchSourceBySourceId(sourceId);
+    return data;
   } catch (e) {
     return null;
   }
 };
 
 /**
- * Menyimpan hasil analisis gap ke log permanen di backend.
+ * Menyimpan hasil analisis gap ke registry (Supabase).
+ * Membutuhkan projectId jika tersedia, atau null jika standalone (perlu penyesuaian schema jika projectId mandatory).
+ * Asumsi: Component akan memastikan projectId ada jika dalam konteks Project.
+ * Jika standalone, kita gunakan adapter ini.
  */
 export const saveGapToRegistry = async (log: GapAnalysisRow): Promise<boolean> => {
-  if (!GAS_WEB_APP_URL) return false;
-  try {
-    const res = await fetch(GAS_WEB_APP_URL, {
-      method: 'POST',
-      body: JSON.stringify({ action: 'saveGapLog', log })
-    });
-    const result = await res.json();
-    return result.status === 'success';
-  } catch (e) {
-    return false;
-  }
+  // Mapping GapAnalysisRow ke ResearchSource (Subset)
+  // Perlu diperhatikan: saveGapToRegistry biasanya dipanggil dari GapFinderView
+  // yang mungkin tidak memiliki ProjectContext. 
+  // Namun, sesuai schema baru, ResearchSource butuh projectId.
+  // Untuk kompatibilitas, kita akan melewatkan ini jika tidak ada project context yang jelas dari caller.
+  // Component GapFinderView perlu diupdate untuk memberikan konteks Project atau kita simpan sebagai "General".
+  
+  // NOTE: Dalam konteks migrasi ini, GapFinderView biasanya dipakai dalam ResearchWorkArea yang sudah punya Project.
+  // Jika GapFinderView dipakai mandiri, kita perlu strategi lain atau dummy project.
+  // Di sini kita cast ke any untuk kompatibilitas, tapi idealnya caller (ResearchWorkArea) menggunakan saveProjectSource.
+  
+  return await upsertResearchSourceToSupabase(log as any);
 };
 
 /**

@@ -1,10 +1,18 @@
 
-import { ResearchProject, ResearchSource, GASResponse } from '../types';
-import { GAS_WEB_APP_URL } from '../constants';
+import { ResearchProject, ResearchSource } from '../types';
+import { 
+  fetchResearchProjectsFromSupabase,
+  upsertResearchProjectToSupabase,
+  deleteResearchProjectFromSupabase,
+  fetchResearchSourcesFromSupabase,
+  upsertResearchSourceToSupabase,
+  deleteResearchSourceFromSupabase
+} from './ResearchSupabaseService';
 
 /**
  * XEENAPS RESEARCH SERVICE
- * Hub for Project-based Gap Analysis Management
+ * Hub for Project-based Gap Analysis Management.
+ * Refactored to use Supabase Registry.
  */
 
 export const fetchResearchProjects = async (
@@ -15,84 +23,25 @@ export const fetchResearchProjects = async (
   sortDir: string = "desc",
   signal?: AbortSignal
 ): Promise<{ items: ResearchProject[], totalCount: number }> => {
-  if (!GAS_WEB_APP_URL) return { items: [], totalCount: 0 };
-  try {
-    const url = `${GAS_WEB_APP_URL}?action=getResearchProjects&page=${page}&limit=${limit}&search=${encodeURIComponent(search)}&sortKey=${sortKey}&sortDir=${sortDir}`;
-    const res = await fetch(url, { signal });
-    const result = await res.json();
-    return { 
-      items: result.data || [], 
-      totalCount: result.totalCount || 0 
-    };
-  } catch (error) {
-    return { items: [], totalCount: 0 };
-  }
+  return await fetchResearchProjectsFromSupabase(page, limit, search, sortKey, sortDir);
 };
 
 export const saveResearchProject = async (project: ResearchProject): Promise<boolean> => {
-  if (!GAS_WEB_APP_URL) return false;
-  try {
-    const res = await fetch(GAS_WEB_APP_URL, {
-      method: 'POST',
-      body: JSON.stringify({ action: 'saveResearchProject', project })
-    });
-    const result = await res.json();
-    return result.status === 'success';
-  } catch (e) {
-    return false;
-  }
+  return await upsertResearchProjectToSupabase(project);
 };
 
 export const deleteResearchProject = async (id: string): Promise<boolean> => {
-  if (!GAS_WEB_APP_URL) return false;
-  try {
-    const res = await fetch(GAS_WEB_APP_URL, {
-      method: 'POST',
-      body: JSON.stringify({ action: 'deleteResearchProject', id })
-    });
-    const result = await res.json();
-    return result.status === 'success';
-  } catch (e) {
-    return false;
-  }
+  return await deleteResearchProjectFromSupabase(id);
 };
 
 export const fetchProjectSources = async (projectId: string): Promise<ResearchSource[]> => {
-  if (!GAS_WEB_APP_URL) return [];
-  try {
-    const url = `${GAS_WEB_APP_URL}?action=getProjectSources&projectId=${projectId}`;
-    const res = await fetch(url);
-    const result = await res.json();
-    return result.data || [];
-  } catch (e) {
-    return [];
-  }
+  return await fetchResearchSourcesFromSupabase(projectId);
 };
 
 export const saveProjectSource = async (source: ResearchSource): Promise<boolean> => {
-  if (!GAS_WEB_APP_URL) return false;
-  try {
-    const res = await fetch(GAS_WEB_APP_URL, {
-      method: 'POST',
-      body: JSON.stringify({ action: 'saveProjectSource', source })
-    });
-    const result = await res.json();
-    return result.status === 'success';
-  } catch (e) {
-    return false;
-  }
+  return await upsertResearchSourceToSupabase(source);
 };
 
 export const deleteProjectSource = async (id: string): Promise<boolean> => {
-  if (!GAS_WEB_APP_URL) return false;
-  try {
-    const res = await fetch(GAS_WEB_APP_URL, {
-      method: 'POST',
-      body: JSON.stringify({ action: 'deleteProjectSource', id })
-    });
-    const result = await res.json();
-    return result.status === 'success';
-  } catch (e) {
-    return false;
-  }
+  return await deleteResearchSourceFromSupabase(id);
 };
