@@ -1,3 +1,4 @@
+
 /**
  * XEENAPS PKM - GROQ AI CONSULTATION SERVICE
  * Specialized for Reasoning and Contextual Deep Analysis via Groq Engine.
@@ -28,8 +29,8 @@ function cleanAiOutputToHtml(text) {
   clean = clean.replace(/`/g, "");
 
   // 5. Konversi Newline menjadi <br/> jika AI lupa menyisipkan tag HTML
-  // Gunakan regex untuk menghindari duplikasi jika <br/> sudah ada
-  clean = clean.replace(/\n/g, "<br/>");
+  // Gunakan regex greedy (/\n+/g) untuk menggabungkan multiple enter yang berurutan menjadi satu <br/>
+  clean = clean.replace(/\n+/g, "<br/>");
   
   // 6. Rapikan spasi berlebih
   clean = clean.replace(/\s{2,}/g, ' ').trim();
@@ -102,7 +103,9 @@ function callGroqConsultant(prompt, collectionId) {
                      "4. MUST Use <span class='xeenaps-highlight' style='background-color: #FED40030; color: #004A74; padding: 0 4px; border-radius: 4px; font-weight: 700;'> for critical insights.\n" +
                      "5. MUST Use <br/> for line breaks and paragraph spacing.\n" +
                      "6. For lists, use format: 1. <b>Point Name</b>:<br/>Description<br/><br/>\n" +
-                     "7. Link all answers to the provided context below.\n\n" +
+                     "7. MUST USE PROPER ONLY ONE LINE BREAKING TO SEPARATE PARAGRAPH.\n" +
+                     "8. PLEASE THINK AND ANSWER WITH CLEAR, COMPREHENSIVE AND PROPER LENGTH OF EXPLAINATION .\n" +
+                     "9. Link all answers to the provided context below.\n\n" +
                      "[DOCUMENT_CONTEXT]: \n" + context 
           },
           { role: "user", content: prompt }

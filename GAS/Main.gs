@@ -68,17 +68,8 @@ function doGet(e) {
       return createJsonResponse({ status: 'success', data: result });
     }
 
-    // NEW: getNotes (NOTEBOOK MODULE)
-    if (action === 'getNotes') {
-      const page = parseInt(e.parameter.page || "1");
-      const limit = parseInt(e.parameter.limit || "25");
-      const search = e.parameter.search || "";
-      const collectionId = e.parameter.collectionId || "";
-      const sortKey = e.parameter.sortKey || "createdAt";
-      const sortDir = e.parameter.sortDir || "desc";
-      const result = getNotesFromRegistry(page, limit, search, collectionId, sortKey, sortDir);
-      return createJsonResponse({ status: 'success', data: result.items, totalCount: result.totalCount });
-    }
+    // DEPRECATED: getNotes (Moved to Supabase)
+    // if (action === 'getNotes') { ... }
 
     // NEW: Tracer Project Retrieval
     if (action === 'getTracerProjects') {
@@ -352,7 +343,7 @@ function doPost(e) {
   try {
     if (action === 'setupDatabase') return createJsonResponse(setupDatabase());
     if (action === 'setupSharboxDatabase') return createJsonResponse(setupSharboxDatabase());
-    if (action === 'setupNotebookDatabase') return createJsonResponse(setupNotebookDatabase());
+    // NOTEBOOK SETUP DEPRECATED: if (action === 'setupNotebookDatabase') ...
     if (action === 'setupColleagueDatabase') return createJsonResponse(setupColleagueDatabase());
     if (action === 'setupTeachingDatabase') return createJsonResponse(setupTeachingDatabase());
     if (action === 'setupResearchDatabase') return createJsonResponse(setupResearchDatabase());
@@ -372,10 +363,10 @@ function doPost(e) {
     if (action === 'deleteSharboxItem') return createJsonResponse(deleteSharboxItem(body.id, body.type));
     if (action === 'markSharboxRead') return createJsonResponse(markSharboxItemAsRead(body.id));
 
-    // NEW: saveNote
-    if (action === 'saveNote') return createJsonResponse(saveNoteToRegistry(body.item, body.content));
-    // NEW: deleteNote
-    if (action === 'deleteNote') return createJsonResponse(deleteNoteFromRegistry(body.id));
+    // MODIFIED: saveNoteContent (Worker Only)
+    if (action === 'saveNoteContent') return createJsonResponse(saveNoteContentToDrive(body.item, body.content));
+    // DEPRECATED: deleteNote (Frontend handles via deleteRemoteFiles)
+    // if (action === 'deleteNote') ...
 
     // NEW: saveTracerProject
     if (action === 'saveTracerProject') return createJsonResponse(saveTracerProjectToRegistry(body.item));

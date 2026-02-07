@@ -89,6 +89,7 @@ const NotebookMain: React.FC<NotebookMainProps> = ({ libraryItems = [], collecti
       [note.id],
       (i) => ({ ...i, isFavorite: !i.isFavorite }),
       async (updated) => {
+        // Pass empty content to signify metadata-only update (handled in Service)
         return await saveNote(updated, { description: "", attachments: [] });
       }
     );

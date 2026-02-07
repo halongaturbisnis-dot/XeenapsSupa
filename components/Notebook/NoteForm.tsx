@@ -203,14 +203,15 @@ const NoteForm: React.FC<NoteFormProps> = ({ note, collectionId, onClose, onComp
     e.preventDefault();
     if (!metadata.label.trim() || pendingUploadsCount > 0) return;
 
-    // --- OPTIMISTIC UI: Close and Notify Parent Instantly with updated metadata ---
-    const finalContent = { ...content };
+    // Ensure Collection Title is populated
     let finalMetadata = { ...metadata, updatedAt: new Date().toISOString() };
     if (finalMetadata.collectionId && libraryItems.length > 0) {
       const col = libraryItems.find(it => it.id === finalMetadata.collectionId);
       if (col) finalMetadata.collectionTitle = col.title;
     }
-    
+
+    // --- OPTIMISTIC UI: Close and Notify Parent Instantly with updated metadata ---
+    const finalContent = { ...content };
     onComplete(finalMetadata, finalContent);
     
     // START SILENT BACKGROUND PROCESS
@@ -218,7 +219,7 @@ const NoteForm: React.FC<NoteFormProps> = ({ note, collectionId, onClose, onComp
       if (uploadPromises.current.size > 0) {
         await Promise.all(uploadPromises.current.values());
       }
-      // Silent sync to cloud
+      // Silent sync to cloud (Hybrid: GAS -> Supabase)
       await saveNote(finalMetadata, finalContent);
     })();
   };
