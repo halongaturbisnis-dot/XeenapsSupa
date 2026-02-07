@@ -1,10 +1,18 @@
-import { BrainstormingItem, GASResponse, LibraryItem } from '../types';
+import { BrainstormingItem, LibraryItem } from '../types';
 import { GAS_WEB_APP_URL } from '../constants';
 import { callAiProxy } from './gasService';
+import { 
+  fetchBrainstormingPaginatedFromSupabase, 
+  upsertBrainstormingToSupabase, 
+  deleteBrainstormingFromSupabase 
+} from './BrainstormingSupabaseService';
+import { fetchLibraryPaginatedFromSupabase } from './LibrarySupabaseService';
 
 /**
- * XEENAPS BRAINSTORMING SERVICE
- * Coordinates data persistence and AI synthesis for research incubation.
+ * XEENAPS BRAINSTORMING SERVICE (HYBRID)
+ * CRUD -> Supabase
+ * AI Synthesis -> GAS Proxy
+ * Recommendations -> Supabase Query
  */
 
 export const fetchBrainstormingPaginated = async (
@@ -15,55 +23,22 @@ export const fetchBrainstormingPaginated = async (
   sortDir: string = "desc",
   signal?: AbortSignal
 ): Promise<{ items: BrainstormingItem[], totalCount: number }> => {
-  if (!GAS_WEB_APP_URL) return { items: [], totalCount: 0 };
-  try {
-    const url = `${GAS_WEB_APP_URL}?action=getBrainstorming&page=${page}&limit=${limit}&search=${encodeURIComponent(search)}&sortKey=${sortKey}&sortDir=${sortDir}`;
-    const res = await fetch(url, { signal });
-    const result = await res.json();
-    return { 
-      items: result.data || [], 
-      totalCount: result.totalCount || 0 
-    };
-  } catch (error) {
-    return { items: [], totalCount: 0 };
-  }
+  return await fetchBrainstormingPaginatedFromSupabase(page, limit, search, sortKey, sortDir);
 };
 
 export const saveBrainstorming = async (item: BrainstormingItem): Promise<boolean> => {
-  if (!GAS_WEB_APP_URL) return false;
-
   // SILENT BROADCAST FOR OPTIMISTIC UI SYNC
   window.dispatchEvent(new CustomEvent('xeenaps-brainstorming-updated', { detail: item }));
-
-  try {
-    const res = await fetch(GAS_WEB_APP_URL, {
-      method: 'POST',
-      body: JSON.stringify({ action: 'saveBrainstorming', item })
-    });
-    const result = await res.json();
-    return result.status === 'success';
-  } catch (e) {
-    return false;
-  }
+  return await upsertBrainstormingToSupabase(item);
 };
 
 export const deleteBrainstorming = async (id: string): Promise<boolean> => {
-  if (!GAS_WEB_APP_URL) return false;
-
   // SILENT BROADCAST FOR OPTIMISTIC UI SYNC
   window.dispatchEvent(new CustomEvent('xeenaps-brainstorming-deleted', { detail: id }));
-
-  try {
-    const res = await fetch(GAS_WEB_APP_URL, {
-      method: 'POST',
-      body: JSON.stringify({ action: 'deleteBrainstorming', id })
-    });
-    const result = await res.json();
-    return result.status === 'success';
-  } catch (e) {
-    return false;
-  }
+  return await deleteBrainstormingFromSupabase(id);
 };
+
+// --- AI FUNCTIONS (REMAIN ON GAS/AI PROXY) ---
 
 export const synthesizeRoughIdea = async (roughIdea: string): Promise<Partial<BrainstormingItem> | null> => {
   const prompt = `ACT AS A SENIOR RESEARCH STRATEGIST.
@@ -159,14 +134,27 @@ export const getExternalRecommendations = async (item: BrainstormingItem): Promi
 };
 
 export const getInternalRecommendations = async (item: BrainstormingItem): Promise<LibraryItem[]> => {
-  if (!GAS_WEB_APP_URL) return [];
+  // NEW LOGIC: Query Supabase directly
   try {
-    // Broadened Query for Fuzzy Logic: Combine Title and first 5 keywords
-    const conceptualQuery = `${item.proposedTitle} ${(item.keywords || []).join(' ')}`.trim();
-    const internalRes = await fetch(`${GAS_WEB_APP_URL}?action=getLibrary&page=1&limit=10&search=${encodeURIComponent(conceptualQuery)}&type=Literature&path=research`);
-    const internalResult = await internalRes.json();
-    return internalResult.data || [];
+    // Construct search query from Title and first 5 keywords
+    const keywords = Array.isArray(item.keywords) ? item.keywords.slice(0, 5) : [];
+    const query = `${item.proposedTitle} ${keywords.join(' ')}`.trim();
+    
+    // Use existing Library Service logic but directed at Supabase
+    // Using limit 10 as requested (though logic might filter to 2-3 relevant ones in UI if needed, 
+    // but standard paging is safer). The user asked to only show relevant ones, 
+    // fetchLibraryPaginatedFromSupabase already does fuzzy search via search_all.
+    const result = await fetchLibraryPaginatedFromSupabase(
+      1, 
+      10, 
+      query, 
+      'Literature', // Type filter: Literature
+      'research'    // Path filter context (optional)
+    );
+    
+    return result.items || [];
   } catch (error) {
+    console.error("Internal Recs Error:", error);
     return [];
   }
 };
