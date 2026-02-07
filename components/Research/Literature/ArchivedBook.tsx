@@ -356,12 +356,16 @@ const ArchivedBook: React.FC = () => {
                 <div className="w-1.5 h-12 rounded-full shrink-0 bg-[#004A74]/10" />
                 <div className="flex-1 min-w-0">
                   <h4 className="text-sm font-black text-[#004A74] truncate uppercase leading-tight group-hover:text-blue-600 transition-colors">{item.title}</h4>
+                  <p className="text-[10px] font-medium text-gray-500 truncate mt-0.5 italic">{item.citationHarvard?.split('(')[0].trim() || 'Unknown Author'}</p>
                   <div className="flex items-center gap-2 mt-1">
                     <span className="px-2 py-0.5 bg-[#FED400] text-[#004A74] text-[8px] font-black uppercase rounded-md shadow-sm">{item.label}</span>
                     <span className="text-[8px] font-black text-gray-400 uppercase tracking-widest">{formatDateTime(item.createdAt)}</span>
                   </div>
                 </div>
                 <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
+                  <button onClick={(e) => handleToggleFavorite(e, item)} className="p-2 text-[#FED400] bg-yellow-50/30 rounded-xl active:scale-90 transition-all">
+                     <Star size={16} className={item.isFavorite ? 'fill-[#FED400]' : ''} />
+                  </button>
                   <button onClick={() => setDetailItem(item)} className="p-2 text-cyan-600 bg-cyan-50 rounded-xl active:scale-90 transition-all"><Eye size={16} /></button>
                   {item.isbn && <button onClick={() => handleAddToLibrary(item)} className="p-2.5 text-[#004A74] bg-gray-50 rounded-xl active:scale-90 transition-all"><LibraryIcon size={16} /></button>}
                   <button onClick={(e) => handleDelete(e, item.id)} className="p-2 text-red-500 bg-red-50 rounded-xl active:scale-90 transition-all"><Trash2 size={16} /></button>
@@ -409,7 +413,7 @@ const ArchivedBook: React.FC = () => {
                     <StandardTd className="text-[10px] font-bold text-gray-400 text-center">
                        {formatDateTime(item.createdAt)}
                     </StandardTd>
-                    <StandardTd className="sticky right-0 bg-white group-hover:bg-[#f0f7fa] text-center shadow-[-4px_0_10px_rgba(0,0,0,0.02)]" onClick={(e) => e.stopPropagation()}>
+                    <StandardTd className="sticky right-0 bg-white group-hover:bg-[#f0f7fa] text-center shadow-[-4px_0_10px_rgba(0,0,0,0.02)]" onClick={e => e.stopPropagation()}>
                        <div className="flex items-center justify-center gap-1">
                           <button onClick={(e) => handleToggleFavorite(e, item)} className="p-2 text-[#FED400] hover:bg-yellow-50 rounded-lg transition-all" title="Favorite">
                              <Star size={16} className={item.isFavorite ? 'text-[#FED400] fill-[#FED400]' : 'text-gray-200'} />
@@ -463,6 +467,5 @@ const ArchivedBook: React.FC = () => {
     </div>
   );
 };
-
 
 export default ArchivedBook;
