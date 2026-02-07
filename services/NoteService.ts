@@ -39,8 +39,8 @@ export const fetchNoteContent = async (noteJsonId: string, nodeUrl?: string): Pr
   }
 };
 
-export const saveNote = async (item: NoteItem, content: NoteContent): Promise<boolean> => {
-  if (!GAS_WEB_APP_URL) return false;
+export const saveNote = async (item: NoteItem, content: NoteContent): Promise<NoteItem | null> => {
+  if (!GAS_WEB_APP_URL) return null;
   
   try {
     // HYBRID WORKFLOW:
@@ -74,11 +74,12 @@ export const saveNote = async (item: NoteItem, content: NoteContent): Promise<bo
     }
 
     // 2. Save Metadata to Supabase
-    return await upsertNoteToSupabase(updatedItem);
+    const success = await upsertNoteToSupabase(updatedItem);
+    return success ? updatedItem : null;
 
   } catch (e) {
     console.error("Save Note Failed:", e);
-    return false;
+    return null;
   }
 };
 

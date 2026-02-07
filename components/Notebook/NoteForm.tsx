@@ -220,7 +220,12 @@ const NoteForm: React.FC<NoteFormProps> = ({ note, collectionId, onClose, onComp
         await Promise.all(uploadPromises.current.values());
       }
       // Silent sync to cloud (Hybrid: GAS -> Supabase)
-      await saveNote(finalMetadata, finalContent);
+      const savedItem = await saveNote(finalMetadata, finalContent);
+      
+      // BROADCAST UPDATE WITH NEW FILE IDs
+      if (savedItem) {
+        window.dispatchEvent(new CustomEvent('xeenaps-note-updated', { detail: savedItem }));
+      }
     })();
   };
 

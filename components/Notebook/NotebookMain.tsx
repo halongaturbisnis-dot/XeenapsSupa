@@ -80,6 +80,25 @@ const NotebookMain: React.FC<NotebookMainProps> = ({ libraryItems = [], collecti
     loadData();
   }, [loadData]);
 
+  // Global Event Listener for silent updates (Post-Save Patching)
+  useEffect(() => {
+    const handleNoteUpdate = (e: any) => {
+      const updatedNote = e.detail as NoteItem;
+      // Patch list item with new data (specifically noteJsonId)
+      setItems(prev => prev.map(item => item.id === updatedNote.id ? { ...item, ...updatedNote } : item));
+      
+      // Also patch current view if open
+      if (viewNote?.id === updatedNote.id) {
+         setViewNote(prev => prev ? { ...prev, ...updatedNote } : null);
+      }
+    };
+
+    window.addEventListener('xeenaps-note-updated', handleNoteUpdate);
+    return () => {
+      window.removeEventListener('xeenaps-note-updated', handleNoteUpdate);
+    };
+  }, [viewNote]);
+
   const handleToggleFavorite = async (e: React.MouseEvent, note: NoteItem) => {
     e.stopPropagation();
     // Silent Optimistic Update
@@ -90,7 +109,8 @@ const NotebookMain: React.FC<NotebookMainProps> = ({ libraryItems = [], collecti
       (i) => ({ ...i, isFavorite: !i.isFavorite }),
       async (updated) => {
         // Pass empty content to signify metadata-only update (handled in Service)
-        return await saveNote(updated, { description: "", attachments: [] });
+        const result = await saveNote(updated, { description: "", attachments: [] });
+        return !!result;
       }
     );
   };
@@ -106,7 +126,10 @@ const NotebookMain: React.FC<NotebookMainProps> = ({ libraryItems = [], collecti
       setItems,
       selectedIds,
       (i) => ({ ...i, isFavorite: newValue }),
-      async (updated) => await saveNote(updated, { description: "", attachments: [] })
+      async (updated) => {
+        const result = await saveNote(updated, { description: "", attachments: [] });
+        return !!result;
+      }
     );
   };
 
