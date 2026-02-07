@@ -225,7 +225,7 @@ const ConsultationGallery: React.FC<ConsultationGalleryProps> = ({ collection, o
             value={localSearch} 
             onChange={setLocalSearch} 
             onSearch={handleSearchTrigger}
-            phrases={["Search by question...", "Search by question..."]}
+            phrases={["Search by question...", "Search by response..."]}
             className="w-full lg:max-w-xl"
            />
            <div className="text-[10px] font-black uppercase tracking-widest text-[#004A74]/60 px-4">
