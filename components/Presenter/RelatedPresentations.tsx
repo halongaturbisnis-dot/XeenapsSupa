@@ -299,7 +299,7 @@ const RelatedPresentations: React.FC<RelatedPresentationsProps> = ({ collection,
               <p className="text-[9px] md:text-[10px] font-bold text-gray-400 uppercase tracking-widest truncate max-w-[250px] md:max-w-md">Source: {collection.title}</p>
             </div>
           </div>
-          <StandardPrimaryButton onClick={() => setShowSetup(true)} icon={<PlusIcon className="w-5 h-5" />}>Create</StandardPrimaryButton>
+          <StandardPrimaryButton onClick={() => setShowSetup(true)} icon={<PlusIcon className="w-5 h-5" />}>CREATE</StandardPrimaryButton>
         </div>
         <div className="flex flex-col lg:flex-row gap-4 items-center justify-between">
            <SmartSearchBox value={localSearch} onChange={setLocalSearch} onSearch={handleSearchTrigger} phrases={["Search by Presentation Title...", "Search by Presenter..."]} className="w-full lg:max-w-xl" />

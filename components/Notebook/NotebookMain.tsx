@@ -223,7 +223,7 @@ const NotebookMain: React.FC<NotebookMainProps> = ({ libraryItems = [], collecti
                onClick={() => { setSelectedNote(undefined); setIsFormOpen(true); }} 
                icon={<Plus size={20} />}
              >
-               Create Note
+               CREATE
              </StandardPrimaryButton>
           </div>
         </div>

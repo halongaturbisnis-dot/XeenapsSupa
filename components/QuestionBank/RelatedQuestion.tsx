@@ -285,7 +285,13 @@ const RelatedQuestion: React.FC<RelatedQuestionProps> = ({ collection, onBack })
                 <PlayIcon className="w-3.5 h-3.5 md:w-4 md:h-4" /> <span className="hidden sm:inline">Exam Mode</span>
               </button>
             </div>
-            <StandardPrimaryButton onClick={() => setShowSetup(true)} icon={<PlusIcon className="w-5 h-5" />}>Create</StandardPrimaryButton>
+            <button 
+              onClick={() => setShowSetup(true)} 
+              className="flex items-center gap-2 px-5 py-2.5 bg-[#004A74] text-[#FFFFFF] rounded-xl md:rounded-2xl shadow-lg transition-all active:scale-95 group"
+            >
+              <PlusIcon className="w-5 h-5 stroke-[2.5] group-hover:rotate-90 transition-transform duration-300" />
+              <span className="text-[11px] uppercase tracking-widest font-black">Create</span>
+            </button>
           </div>
         </div>
 

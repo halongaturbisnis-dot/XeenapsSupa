@@ -216,7 +216,7 @@ const ConsultationGallery: React.FC<ConsultationGalleryProps> = ({ collection, o
             onClick={() => setIsInputOpen(true)}
             icon={<PlusIcon className="w-5 h-5" />}
           >
-            Add Session
+            NEW
           </StandardPrimaryButton>
         </div>
 

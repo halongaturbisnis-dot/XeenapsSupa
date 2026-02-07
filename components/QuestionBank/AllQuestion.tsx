@@ -354,7 +354,7 @@ const AllQuestion: React.FC<AllQuestionProps> = ({ items }) => {
                 <PlayIcon className="w-3.5 h-3.5 md:w-4 md:h-4" /> <span className="hidden sm:inline">Exam Mode</span>
               </button>
             </div>
-            <StandardPrimaryButton onClick={() => setShowSetup(true)} icon={<PlusIcon className="w-5 h-5" />}>Create</StandardPrimaryButton>
+            <StandardPrimaryButton onClick={() => setShowSetup(true)} icon={<PlusIcon className="w-5 h-5" />}>CREATE</StandardPrimaryButton>
           </div>
         </div>
 

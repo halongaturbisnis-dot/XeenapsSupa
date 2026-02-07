@@ -381,7 +381,7 @@ const AllPresentation: React.FC<AllPresentationProps> = ({ items }) => {
             )}
           </div>
         </div>
-        <StandardPrimaryButton onClick={() => setShowSetup(true)} icon={<PlusIcon className="w-5 h-5" />}>Create</StandardPrimaryButton>
+        <StandardPrimaryButton onClick={() => setShowSetup(true)} icon={<PlusIcon className="w-5 h-5" />}>CREATE</StandardPrimaryButton>
       </div>
 
       <div className="lg:hidden flex items-center justify-start gap-4 px-1 py-1 shrink-0 mb-4">
