@@ -1,10 +1,17 @@
 
 import { ActivityItem, ActivityVaultItem, GASResponse } from '../types';
 import { GAS_WEB_APP_URL } from '../constants';
+import { 
+  fetchActivitiesPaginatedFromSupabase, 
+  upsertActivityToSupabase, 
+  deleteActivityFromSupabase,
+  fetchActivityByIdFromSupabase 
+} from './ActivitySupabaseService';
 
 /**
- * XEENAPS ACTIVITY SERVICE
- * Logic for Portfolio tracking and Sharded Documentation Vault.
+ * XEENAPS ACTIVITY SERVICE (HYBRID MIGRATION)
+ * Metadata: Supabase
+ * Storage: Google Apps Script (Drive)
  */
 
 export const fetchActivitiesPaginated = async (
@@ -16,52 +23,53 @@ export const fetchActivitiesPaginated = async (
   type: string = "All",
   signal?: AbortSignal
 ): Promise<{ items: ActivityItem[], totalCount: number }> => {
-  if (!GAS_WEB_APP_URL) return { items: [], totalCount: 0 };
-  try {
-    const url = `${GAS_WEB_APP_URL}?action=getActivities&page=${page}&limit=${limit}&search=${encodeURIComponent(search)}&startDate=${startDate}&endDate=${endDate}&type=${encodeURIComponent(type)}`;
-    const res = await fetch(url, { signal });
-    const result = await res.json();
-    return { 
-      items: result.data || [], 
-      totalCount: result.totalCount || 0 
-    };
-  } catch (error) {
-    return { items: [], totalCount: 0 };
-  }
+  // Direct call to Supabase Registry
+  return await fetchActivitiesPaginatedFromSupabase(
+    page, 
+    limit, 
+    search, 
+    startDate, 
+    endDate, 
+    type, 
+    "startDate", 
+    "desc"
+  );
 };
 
 export const saveActivity = async (item: ActivityItem): Promise<boolean> => {
-  if (!GAS_WEB_APP_URL) return false;
-
   // SILENT BROADCAST FOR DASHBOARD
   window.dispatchEvent(new CustomEvent('xeenaps-activity-updated', { detail: item }));
-
-  try {
-    const res = await fetch(GAS_WEB_APP_URL, {
-      method: 'POST',
-      body: JSON.stringify({ action: 'saveActivity', item })
-    });
-    const result = await res.json();
-    return result.status === 'success';
-  } catch (e) {
-    return false;
-  }
+  
+  // Direct call to Supabase Registry
+  return await upsertActivityToSupabase(item);
 };
 
 export const deleteActivity = async (id: string): Promise<boolean> => {
-  if (!GAS_WEB_APP_URL) return false;
-
   // SILENT BROADCAST FOR DASHBOARD
   window.dispatchEvent(new CustomEvent('xeenaps-activity-deleted', { detail: id }));
 
   try {
-    const res = await fetch(GAS_WEB_APP_URL, {
-      method: 'POST',
-      body: JSON.stringify({ action: 'deleteActivity', id })
-    });
-    const result = await res.json();
-    return result.status === 'success';
+    // 1. Fetch Item to get File IDs (Cert & Vault)
+    const item = await fetchActivityByIdFromSupabase(id);
+    
+    // 2. Physical File Cleanup (Fire & Forget to GAS)
+    if (item) {
+      if (item.certificateFileId && item.certificateNodeUrl) {
+         deleteRemoteFile(item.certificateFileId, item.certificateNodeUrl);
+      }
+      if (item.vaultJsonId && item.storageNodeUrl) {
+         deleteRemoteFile(item.vaultJsonId, item.storageNodeUrl);
+         // Note: Deep vault content cleanup (files inside vault) is complex in background 
+         // without parsing JSON. We rely on 'Lazy Cleanup' or manual vault purge for now 
+         // to keep UI snappy, or assume specific cleanup isn't critical for orphan files.
+      }
+    }
+
+    // 3. Metadata Cleanup (Supabase)
+    return await deleteActivityFromSupabase(id);
+
   } catch (e) {
+    console.error("Delete Activity Failed:", e);
     return false;
   }
 };
@@ -114,7 +122,6 @@ export const updateVaultContent = async (
     // If we don't have a vault yet, ask the backend for a sharding target first
     if (!vaultJsonId && !nodeUrl) {
       const quotaRes = await fetch(`${GAS_WEB_APP_URL}?action=checkQuota`);
-      const quotaData = await quotaRes.json();
       // Quota management is handled on GAS side via action: 'saveJsonFile' logic 
       // but we ensure we are hitting the master first to let it decide if it needs to proxy.
     }
