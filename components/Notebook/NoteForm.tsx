@@ -347,7 +347,7 @@ const NoteForm: React.FC<NoteFormProps> = ({ note, collectionId, onClose, onComp
                 className={`w-full md:w-auto px-12 py-5 bg-[#004A74] text-[#FED400] rounded-2xl font-black uppercase tracking-[0.2em] text-xs shadow-2xl transition-all flex items-center justify-center gap-3 ${isSubmitting || pendingUploadsCount > 0 ? 'opacity-50 cursor-not-allowed' : 'hover:scale-105 active:scale-95'}`}
               >
                  {isSubmitting ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
-                 {isSubmitting ? 'SYNCHRONIZING...' : 'AUTHORIZE'}
+                 {isSubmitting ? 'SYNCHRONIZING...' : 'SAVE'}
               </button>
            </div>
         </form>
