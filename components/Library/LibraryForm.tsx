@@ -445,6 +445,36 @@ const LibraryForm: React.FC<LibraryFormProps> = ({ onComplete, items = [] }) => 
       if (prev.addMethod === 'LINK') delete (finalEnriched as any).url;
       if (prev.addMethod === 'REF') delete (finalEnriched as any).doi;
 
+      // Decide whether to show review modal or auto-accept based on Safe Source logic
+      // RULE: Show review ONLY for:
+      // a. LINK WEBSITE (Non GDrive Non Youtube) -> !isSafeSource
+      // b. IDENTIFIERS -> formData.addMethod === 'REF'
+      // c. Exclude FILE uploads implicitly by checking addMethod
+      
+      let shouldReview = false;
+      
+      if (prev.addMethod === 'REF') {
+        shouldReview = true;
+      } else if (prev.addMethod === 'LINK') {
+        if (!isSafeSource(prev.url)) {
+           shouldReview = true;
+        }
+      }
+      
+      // If we don't review, we auto-accept the text
+      const finalExtractedText = shouldReview ? '' : extractedText;
+
+      if (shouldReview) {
+        // Trigger Modal
+        setTempExtractedText(extractedText);
+        setShowValidationModal(true);
+      } else {
+        // Auto Accept (Safe Source or File)
+        if (extractedText) {
+          showXeenapsToast('success', 'Content analyzed and auto-filled.');
+        }
+      }
+
       return {
         ...prev,
         ...finalEnriched,
@@ -462,13 +492,9 @@ const LibraryForm: React.FC<LibraryFormProps> = ({ onComplete, items = [] }) => 
         mainInfo: aiEnriched.mainInfo || prev.mainInfo,
         supportingReferences: aiEnriched.supportingReferences || prev.supportingReferences,
         chunks: chunks,
-        extractedText: '' // Don't save yet, wait for validation
+        extractedText: finalExtractedText 
       };
     });
-
-    // TRIGGER VALIDATION MODAL
-    setTempExtractedText(extractedText);
-    setShowValidationModal(true);
   };
 
   const handleExtractionError = (err: any) => {
@@ -653,7 +679,10 @@ const LibraryForm: React.FC<LibraryFormProps> = ({ onComplete, items = [] }) => 
     <FormPageContainer>
       {/* FULL SCREEN VALIDATION OVERLAY */}
       {showValidationModal && (
-        <div className="fixed inset-0 z-[2000] bg-white flex flex-col animate-in fade-in duration-300">
+        <div 
+           className="fixed top-0 right-0 bottom-0 z-[2000] bg-white flex flex-col animate-in fade-in duration-300 border-l border-gray-100 transition-all duration-500 ease-in-out"
+           style={{ left: 'var(--sidebar-offset, 0px)' }}
+        >
           {/* Overlay Header */}
           <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between shrink-0 bg-white shadow-sm z-10">
              <div className="flex items-center gap-3">
