@@ -5,7 +5,7 @@ import { callAiConsult, saveConsultation } from '../../services/ConsultationServ
 import { 
   XMarkIcon, 
   PaperAirplaneIcon,
-  ChatBubbleLeftRightIcon
+  ChatBubbleLeftRightIcon, 
   LightBulbIcon,
   ArrowPathIcon,
   CpuChipIcon
