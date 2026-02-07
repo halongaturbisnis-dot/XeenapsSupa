@@ -379,7 +379,7 @@ const ArchivedArticle: React.FC = () => {
                 </div>
                 <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
                   <button onClick={() => setDetailItem(item)} className="p-2 text-cyan-600 bg-cyan-50 rounded-xl active:scale-90 transition-all"><Eye size={16} /></button>
-                  {item.doi && <button onClick={() => handleAddToLibrary(item)} className="p-2 text-[#004A74] bg-gray-50 rounded-xl active:scale-90 transition-all"><LibraryBig size={16} /></button>}
+                  {item.doi && <button onClick={() => handleAddToLibrary(item)} className="p-2.5 text-[#004A74] bg-gray-50 rounded-xl active:scale-90 transition-all"><LibraryIcon size={16} /></button>}
                   <button onClick={(e) => handleDelete(e, item.id)} className="p-2 text-red-500 bg-red-50 rounded-xl active:scale-90 transition-all"><Trash2 size={16} /></button>
                 </div>
               </div>
@@ -409,12 +409,7 @@ const ArchivedArticle: React.FC = () => {
                     </td>
                     <StandardTd>
                        <ElegantTooltip text={item.title}>
-                          <div className="flex items-center gap-3">
-                             <button onClick={(e) => handleToggleFavorite(e, item)} className="p-1 hover:scale-125 transition-transform">
-                               <Star size={16} className={item.isFavorite ? 'text-[#FED400] fill-[#FED400]' : 'text-gray-200'} />
-                             </button>
-                             <span className="text-sm font-bold text-[#004A74] uppercase line-clamp-2 leading-tight">{item.title}</span>
-                          </div>
+                          <span className="text-sm font-bold text-[#004A74] uppercase line-clamp-2 leading-tight">{item.title}</span>
                        </ElegantTooltip>
                     </StandardTd>
                     <StandardTd>
@@ -432,6 +427,9 @@ const ArchivedArticle: React.FC = () => {
                     </StandardTd>
                     <StandardTd className="sticky right-0 bg-white group-hover:bg-[#f0f7fa] text-center shadow-[-4px_0_10px_rgba(0,0,0,0.02)]" onClick={e => e.stopPropagation()}>
                        <div className="flex items-center justify-center gap-1">
+                          <button onClick={(e) => handleToggleFavorite(e, item)} className="p-2 text-[#FED400] hover:bg-yellow-50 rounded-lg transition-all" title="Favorite">
+                             <Star size={16} className={item.isFavorite ? 'text-[#FED400] fill-[#FED400]' : 'text-gray-200'} />
+                          </button>
                           <button 
                             onClick={() => window.open(item.url || `https://doi.org/${item.doi}`, '_blank')}
                             className="p-2 text-blue-500 hover:bg-blue-50 rounded-lg transition-all"

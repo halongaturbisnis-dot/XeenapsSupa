@@ -145,7 +145,7 @@ const FindBook: React.FC = () => {
               disabled={isSearching}
               className="px-10 py-4 bg-[#004A74] text-[#FED400] rounded-2xl font-black uppercase tracking-[0.2em] text-[11px] shadow-xl shadow-[#004A74]/10 hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
             >
-              {isSearching ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+              {isSearching ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
               Search
             </button>
           </div>
