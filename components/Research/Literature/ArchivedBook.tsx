@@ -468,5 +468,4 @@ const ArchivedBook: React.FC = () => {
   );
 };
 
-
 export default ArchivedBook;
