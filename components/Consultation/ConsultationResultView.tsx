@@ -265,8 +265,8 @@ const ConsultationResultView: React.FC<ConsultationResultViewProps> = ({ collect
                <ArrowLeftIcon className="w-5 h-5" />
             </button>
             <div className="min-w-0">
-               <h2 className="text-sm md:text-base font-black text-[#004A74] uppercase tracking-widest truncate">Consultation Analysis</h2>
-               <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest truncate">From document</p>
+               <h2 className="text-sm md:text-base font-black text-[#004A74] uppercase tracking-widest truncate">Consultation Session</h2>
+               <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest truncate">Dig More Knowledge</p>
             </div>
          </div>
 
@@ -327,7 +327,7 @@ const ConsultationResultView: React.FC<ConsultationResultViewProps> = ({ collect
             <section className="bg-white p-6 md:p-8 rounded-[2.5rem] border border-gray-100 shadow-sm space-y-6 relative overflow-hidden group/question transition-all">
                <div className="flex items-center justify-between">
                   <h3 className="text-[9px] font-black uppercase tracking-[0.2em] text-gray-400 flex items-center gap-2">
-                     Inquiry for Analysis
+                     Consultation Inquiry
                   </h3>
                   
                   {/* EDIT BUTTONS */}
@@ -391,7 +391,6 @@ const ConsultationResultView: React.FC<ConsultationResultViewProps> = ({ collect
                         </>
                       ) : (
                         <>
-                          <PaperAirplaneIcon className="w-3.5 h-3.5 -rotate-45" />
                           Re-Analyze Inquiry
                         </>
                       )}
