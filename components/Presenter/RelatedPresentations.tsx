@@ -326,7 +326,7 @@ const RelatedPresentations: React.FC<RelatedPresentationsProps> = ({ collection,
                     <div onClick={(e) => { e.stopPropagation(); toggleSelectItem(ppt.id); }} className={`shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${isSelected ? 'bg-[#004A74] border-[#004A74] text-white shadow-md' : 'bg-white border-gray-200 hover:border-[#004A74]/30'}`}>{isSelected && <CheckIcon className="w-3 h-3" strokeWidth={2.5} />}</div>
                     <div className="w-1.5 h-12 rounded-full shrink-0" style={{ backgroundColor: ppt.themeConfig.primaryColor }} />
                     <div className="flex-1 min-w-0">
-                       <h4 className="text-sm font-black text-[#004A74] uppercase tracking-tight">{ppt.title}</h4>
+                       <h4 className="text-sm font-black text-[#004A74] uppercase tracking-tight line-clamp-2">{ppt.title}</h4>
                        <p className="text-[10px] font-bold text-gray-500 italic truncate mt-0.5">{(ppt.presenters || []).join(', ')}</p>
                        <div className="flex items-center gap-1.5 text-[9px] font-black text-gray-300 mt-1 uppercase tracking-widest"><CalendarDaysIcon className="w-3 h-3" /> {formatPresentationDate(ppt.createdAt)}</div>
                     </div>
@@ -356,7 +356,7 @@ const RelatedPresentations: React.FC<RelatedPresentationsProps> = ({ collection,
                   {presentations.map((ppt) => (
                     <StandardTr key={ppt.id} onClick={() => setSelectedDetail(ppt)} className="cursor-pointer">
                       <td className="px-6 py-4 sticky left-0 z-20 border-r border-gray-100/50 bg-white group-hover:bg-[#f0f7fa] shadow-sm text-center" onClick={e => { e.stopPropagation(); toggleSelectItem(ppt.id); }}><StandardCheckbox checked={selectedIds.includes(ppt.id)} readOnly /></td>
-                      <StandardTd><ElegantTooltip text={ppt.title}><p className="text-sm font-bold text-[#004A74] uppercase line-clamp-1">{ppt.title}</p></ElegantTooltip></StandardTd>
+                      <StandardTd><ElegantTooltip text={ppt.title}><p className="text-sm font-bold text-[#004A74] uppercase line-clamp-2">{ppt.title}</p></ElegantTooltip></StandardTd>
                       <StandardTd className="text-xs text-gray-500 font-semibold">{(ppt.presenters || []).join(', ')}</StandardTd>
                       <StandardTd className="text-center"><span className="px-3 py-1 bg-gray-50 rounded-lg font-black text-[#004A74] text-[10px]">{ppt.slidesCount}</span></StandardTd>
                       <StandardTd className="text-xs text-gray-400 font-medium text-center">{formatPresentationDate(ppt.createdAt)}</StandardTd>

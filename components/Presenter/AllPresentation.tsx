@@ -497,17 +497,13 @@ const AllPresentation: React.FC<AllPresentationProps> = ({ items }) => {
                     <div onClick={(e) => { e.stopPropagation(); toggleSelectItem(ppt.id); }} className={`shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${isSelected ? 'bg-[#004A74] border-[#004A74] text-white shadow-md' : 'bg-white border-gray-200 hover:border-[#004A74]/30'}`}>{isSelected && <CheckIcon className="w-3 h-3" strokeWidth={2.5} />}</div>
                     <div className="w-1.5 h-16 rounded-full shrink-0" style={{ backgroundColor: ppt.themeConfig.primaryColor }} />
                     <div className="flex-1 min-w-0">
-                      <h4 className="text-sm font-black text-[#004A74] uppercase leading-tight line-clamp-1">{ppt.title}</h4>
+                      <h4 className="text-sm font-black text-[#004A74] uppercase leading-tight line-clamp-2">{ppt.title}</h4>
                       <p className="text-[10px] font-bold text-gray-500 italic truncate mt-0.5">{(ppt.presenters || []).join(', ')}</p>
                       
                       <div className="mt-2 space-y-1 border-t border-gray-50 pt-2">
                          <div className="flex items-center gap-2">
                             <BuildingLibraryIcon className="w-3 h-3 text-gray-400" />
                             <span className="text-[9px] font-bold text-gray-400 uppercase truncate">{sourceTitles}</span>
-                         </div>
-                         <div className="flex items-center gap-2">
-                            <UserIcon className="w-3 h-3 text-gray-400" />
-                            <span className="text-[9px] font-bold text-gray-400 uppercase truncate">{sourceAuthors}</span>
                          </div>
                       </div>
 
