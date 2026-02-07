@@ -1,9 +1,14 @@
 
-import { PublicationItem, GASResponse } from '../types';
-import { GAS_WEB_APP_URL } from '../constants';
+import { PublicationItem } from '../types';
+import { 
+  fetchPublicationsPaginatedFromSupabase, 
+  upsertPublicationToSupabase, 
+  deletePublicationFromSupabase 
+} from './PublicationSupabaseService';
 
 /**
- * XEENAPS PUBLICATION SERVICE
+ * XEENAPS PUBLICATION SERVICE (HYBRID MIGRATION)
+ * Migrated to use Supabase Registry for Metadata.
  */
 
 export const fetchPublicationsPaginated = async (
@@ -14,52 +19,17 @@ export const fetchPublicationsPaginated = async (
   sortDir: string = "desc",
   signal?: AbortSignal
 ): Promise<{ items: PublicationItem[], totalCount: number }> => {
-  if (!GAS_WEB_APP_URL) return { items: [], totalCount: 0 };
-  try {
-    const url = `${GAS_WEB_APP_URL}?action=getPublication&page=${page}&limit=${limit}&search=${encodeURIComponent(search)}&sortKey=${sortKey}&sortDir=${sortDir}`;
-    const res = await fetch(url, { signal });
-    const result = await res.json();
-    return { 
-      items: result.data || [], 
-      totalCount: result.totalCount || 0 
-    };
-  } catch (error) {
-    return { items: [], totalCount: 0 };
-  }
+  return await fetchPublicationsPaginatedFromSupabase(page, limit, search, sortKey, sortDir);
 };
 
 export const savePublication = async (item: PublicationItem): Promise<boolean> => {
-  if (!GAS_WEB_APP_URL) return false;
-
   // SILENT BROADCAST FOR DASHBOARD
   window.dispatchEvent(new CustomEvent('xeenaps-publication-updated', { detail: item }));
-
-  try {
-    const res = await fetch(GAS_WEB_APP_URL, {
-      method: 'POST',
-      body: JSON.stringify({ action: 'savePublication', item })
-    });
-    const result = await res.json();
-    return result.status === 'success';
-  } catch (e) {
-    return false;
-  }
+  return await upsertPublicationToSupabase(item);
 };
 
 export const deletePublication = async (id: string): Promise<boolean> => {
-  if (!GAS_WEB_APP_URL) return false;
-
   // SILENT BROADCAST FOR DASHBOARD
   window.dispatchEvent(new CustomEvent('xeenaps-publication-deleted', { detail: id }));
-
-  try {
-    const res = await fetch(GAS_WEB_APP_URL, {
-      method: 'POST',
-      body: JSON.stringify({ action: 'deletePublication', id })
-    });
-    const result = await res.json();
-    return result.status === 'success';
-  } catch (e) {
-    return false;
-  }
+  return await deletePublicationFromSupabase(id);
 };
