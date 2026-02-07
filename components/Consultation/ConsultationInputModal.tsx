@@ -5,6 +5,7 @@ import { callAiConsult, saveConsultation } from '../../services/ConsultationServ
 import { 
   XMarkIcon, 
   PaperAirplaneIcon,
+  ChatBubbleLeftRightIcon
   LightBulbIcon,
   ArrowPathIcon,
   CpuChipIcon
@@ -64,11 +65,11 @@ const ConsultationInputModal: React.FC<ConsultationInputModalProps> = ({ collect
         <div className="px-8 py-6 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
            <div className="flex items-center gap-4">
               <div className="w-10 h-10 bg-[#004A74] text-[#FED400] rounded-xl flex items-center justify-center shadow-lg">
-                 <CpuChipIcon className="w-6 h-6" />
+                 <ChatBubbleLeftRightIcon className="w-6 h-6" />
               </div>
               <div>
                  <h3 className="text-lg font-black text-[#004A74] uppercase tracking-tight">New Consultation</h3>
-                 <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Ask Groq Reasoner Engine</p>
+                 <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Ask Everything You Want</p>
               </div>
            </div>
            <button onClick={onClose} className="p-2 hover:bg-red-50 text-gray-400 hover:text-red-500 rounded-full transition-all">
@@ -100,12 +101,11 @@ const ConsultationInputModal: React.FC<ConsultationInputModalProps> = ({ collect
               {isThinking ? (
                 <>
                   <ArrowPathIcon className="w-5 h-5 animate-spin" />
-                  Traversing knowledge nodes...
+                  Digging information...
                 </>
               ) : (
                 <>
-                  <PaperAirplaneIcon className="w-5 h-5 -rotate-45" />
-                  Analyze Knowledge
+                  Start Session
                 </>
               )}
            </button>

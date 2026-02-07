@@ -266,7 +266,7 @@ const ConsultationResultView: React.FC<ConsultationResultViewProps> = ({ collect
             </button>
             <div className="min-w-0">
                <h2 className="text-sm md:text-base font-black text-[#004A74] uppercase tracking-widest truncate">Consultation Analysis</h2>
-               <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest truncate">Synthesized by Groq AI</p>
+               <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest truncate">From document</p>
             </div>
          </div>
 
@@ -306,9 +306,6 @@ const ConsultationResultView: React.FC<ConsultationResultViewProps> = ({ collect
             {/* 1. SOURCE HEADER (Replaces Blue Banner) */}
             <header className="space-y-4">
                <div className="flex flex-wrap gap-2">
-                  <span className="px-3 py-1 bg-[#004A74] text-white text-[8px] font-black uppercase tracking-widest rounded-full flex items-center gap-2">
-                     <BookOpenIcon className="w-3 h-3" /> Target Knowledge Root
-                  </span>
                   <span className="px-3 py-1 bg-[#FED400] text-[#004A74] text-[8px] font-black uppercase tracking-widest rounded-full">
                      {collection.topic}
                   </span>
@@ -330,7 +327,7 @@ const ConsultationResultView: React.FC<ConsultationResultViewProps> = ({ collect
             <section className="bg-white p-6 md:p-8 rounded-[2.5rem] border border-gray-100 shadow-sm space-y-6 relative overflow-hidden group/question transition-all">
                <div className="flex items-center justify-between">
                   <h3 className="text-[9px] font-black uppercase tracking-[0.2em] text-gray-400 flex items-center gap-2">
-                     <CpuChipIcon className="w-3.5 h-3.5" /> Inquiry Context (Editable)
+                     Inquiry for Analysis
                   </h3>
                   
                   {/* EDIT BUTTONS */}
@@ -395,7 +392,7 @@ const ConsultationResultView: React.FC<ConsultationResultViewProps> = ({ collect
                       ) : (
                         <>
                           <PaperAirplaneIcon className="w-3.5 h-3.5 -rotate-45" />
-                          Re-Analyze Knowledge
+                          Re-Analyze Inquiry
                         </>
                       )}
                     </button>
@@ -438,7 +435,7 @@ const ConsultationResultView: React.FC<ConsultationResultViewProps> = ({ collect
                  {/* 4. FINAL SYNTHESIS BUBBLE (Clean Reading Layout) */}
                  <section className="space-y-4">
                     <h3 className="text-[9px] font-black uppercase tracking-[0.2em] text-gray-400 flex items-center gap-2 px-2">
-                       <SparklesIcon className="w-3.5 h-3.5 text-[#FED400]" /> Knowledge Synthesis Output
+                      Consultation Response
                     </h3>
                     <div className="p-8 md:p-12 bg-white border border-gray-100 rounded-[3rem] shadow-xl relative min-h-[400px] overflow-hidden">
                        <div className="absolute top-0 right-0 w-64 h-64 bg-[#FED400]/5 -translate-y-24 translate-x-24 rounded-full" />
