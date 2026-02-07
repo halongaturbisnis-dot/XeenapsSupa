@@ -14,13 +14,13 @@ import {
   LinkIcon, 
   DocumentIcon, 
   CloudArrowUpIcon, 
-  ArrowPathIcon,
-  SparklesIcon,
-  FingerPrintIcon,
-  XMarkIcon,
-  EyeIcon,
-  TrashIcon,
-  CheckCircleIcon
+  ArrowPathIcon, 
+  SparklesIcon, 
+  FingerPrintIcon, 
+  XMarkIcon, 
+  EyeIcon, 
+  TrashIcon, 
+  CheckCircleIcon 
 } from '@heroicons/react/24/outline';
 import { 
   CheckCircleIcon as CheckCircleSolidIcon 
@@ -526,7 +526,7 @@ const LibraryForm: React.FC<LibraryFormProps> = ({ onComplete, items = [] }) => 
             const ids = { 
               doi: result.detectedDoi, 
               isbn: result.detectedIsbn, 
-              issn: result.detectedIssn,
+              issn: result.detectedIssn, 
               pmid: result.detectedPmid, 
               arxivId: result.detectedArxiv 
             };
@@ -597,8 +597,10 @@ const LibraryForm: React.FC<LibraryFormProps> = ({ onComplete, items = [] }) => 
       fieldsToRemove.forEach(f => delete newItem[f]);
       
       // LOGIC OPTIMIZATION: Only call GAS if there is content (Text or File)
+      // FIX: YouTube Guard - Do not create JSON/Insight shards for YouTube links
       let result = { status: 'success' } as any;
-      const hasContent = formData.extractedText && formData.extractedText.length > 0;
+      const isYouTube = finalUrl && (finalUrl.includes('youtube.com') || finalUrl.includes('youtu.be'));
+      const hasContent = formData.extractedText && formData.extractedText.length > 0 && !isYouTube;
       const hasFile = !!fileUploadData;
 
       if (hasContent || hasFile) {
