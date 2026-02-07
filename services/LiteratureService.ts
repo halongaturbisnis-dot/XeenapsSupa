@@ -1,9 +1,17 @@
 import { LiteratureArticle, ArchivedArticleItem, ArchivedBookItem, GASResponse } from '../types';
 import { GAS_WEB_APP_URL } from '../constants';
+import { 
+  fetchArchivedArticlesPaginatedFromSupabase, 
+  upsertArchivedArticleToSupabase, 
+  deleteArchivedArticleFromSupabase 
+} from './LiteratureSupabaseService';
 
 /**
  * XEENAPS LITERATURE SEARCH SERVICE
- * Integrasi OpenAlex (Discovery via GAS Proxy) & GAS (Archiving)
+ * Hybrid Integration:
+ * - Articles Registry -> Supabase (Primary Source of Truth)
+ * - Books Registry -> Google Sheets (Legacy / GAS)
+ * - External Search (OpenAlex/OpenLibrary) -> GAS Proxy
  */
 
 // Client-side Session Cache (Non-persistent on F5, but survives route navigation)
@@ -79,6 +87,8 @@ export const searchBooks = async (
   }
 };
 
+// --- ARCHIVED ARTICLES (MIGRATED TO SUPABASE) ---
+
 export const fetchArchivedArticlesPaginated = async (
   page: number = 1,
   limit: number = 25,
@@ -87,22 +97,45 @@ export const fetchArchivedArticlesPaginated = async (
   sortDir: string = "desc",
   signal?: AbortSignal
 ): Promise<{ items: ArchivedArticleItem[], totalCount: number }> => {
-  if (!GAS_WEB_APP_URL) return { items: [], totalCount: 0 };
+  // Direct call to Supabase Registry
+  return await fetchArchivedArticlesPaginatedFromSupabase(page, limit, search, sortKey, sortDir);
+};
+
+export const archiveArticle = async (article: LiteratureArticle, label: string): Promise<boolean> => {
   try {
-    const url = `${GAS_WEB_APP_URL}?action=getArchivedArticles&page=${page}&limit=${limit}&search=${encodeURIComponent(search)}&sortKey=${sortKey}&sortDir=${sortDir}`;
-    const response = await fetch(url, { signal });
-    const result = await response.json();
-    if (result.status === 'success') {
-      return {
-        items: result.data || [],
-        totalCount: result.totalCount || 0
-      };
-    }
-    return { items: [], totalCount: 0 };
+    const authorList = article.authors?.map(a => a.name).join(', ') || 'Anonymous';
+    const citation = `${authorList} (${article.year || 'n.d.'}). '${article.title}'. ${article.venue || 'Global Database'}.`;
+
+    const archivedItem: ArchivedArticleItem = {
+      id: crypto.randomUUID(),
+      title: article.title,
+      citationHarvard: citation,
+      doi: article.doi || '',
+      url: article.url || '',
+      info: article.abstract || '',
+      label: label.toUpperCase(),
+      isFavorite: false,
+      createdAt: new Date().toISOString()
+    };
+
+    // Save to Supabase
+    return await upsertArchivedArticleToSupabase(archivedItem);
   } catch (error) {
-    return { items: [], totalCount: 0 };
+    return false;
   }
 };
+
+export const deleteArchivedArticle = async (id: string): Promise<boolean> => {
+  // Delete from Supabase
+  return await deleteArchivedArticleFromSupabase(id);
+};
+
+export const toggleFavoriteArticle = async (id: string, status: boolean): Promise<boolean> => {
+  // Update in Supabase
+  return await upsertArchivedArticleToSupabase({ id, isFavorite: status });
+};
+
+// --- ARCHIVED BOOKS (LEGACY / GAS) ---
 
 export const fetchArchivedBooksPaginated = async (
   page: number = 1,
@@ -126,35 +159,6 @@ export const fetchArchivedBooksPaginated = async (
     return { items: [], totalCount: 0 };
   } catch (error) {
     return { items: [], totalCount: 0 };
-  }
-};
-
-export const archiveArticle = async (article: LiteratureArticle, label: string): Promise<boolean> => {
-  if (!GAS_WEB_APP_URL) return false;
-  try {
-    const authorList = article.authors?.map(a => a.name).join(', ') || 'Anonymous';
-    const citation = `${authorList} (${article.year || 'n.d.'}). '${article.title}'. ${article.venue || 'Global Database'}.`;
-
-    const archivedItem: Partial<ArchivedArticleItem> = {
-      id: crypto.randomUUID(),
-      title: article.title,
-      citationHarvard: citation,
-      doi: article.doi || '',
-      url: article.url || '',
-      info: article.abstract || '',
-      label: label.toUpperCase(),
-      isFavorite: false,
-      createdAt: new Date().toISOString()
-    };
-
-    const response = await fetch(GAS_WEB_APP_URL, {
-      method: 'POST',
-      body: JSON.stringify({ action: 'saveArchivedArticle', item: archivedItem })
-    });
-    const result = await response.json();
-    return result.status === 'success';
-  } catch (error) {
-    return false;
   }
 };
 
@@ -187,40 +191,12 @@ export const archiveBook = async (book: LiteratureArticle, label: string): Promi
   }
 };
 
-export const deleteArchivedArticle = async (id: string): Promise<boolean> => {
-  if (!GAS_WEB_APP_URL) return false;
-  try {
-    const response = await fetch(GAS_WEB_APP_URL, {
-      method: 'POST',
-      body: JSON.stringify({ action: 'deleteArchivedArticle', id })
-    });
-    const result = await response.json();
-    return result.status === 'success';
-  } catch (error) {
-    return false;
-  }
-};
-
 export const deleteArchivedBook = async (id: string): Promise<boolean> => {
   if (!GAS_WEB_APP_URL) return false;
   try {
     const response = await fetch(GAS_WEB_APP_URL, {
       method: 'POST',
       body: JSON.stringify({ action: 'deleteArchivedBook', id })
-    });
-    const result = await response.json();
-    return result.status === 'success';
-  } catch (error) {
-    return false;
-  }
-};
-
-export const toggleFavoriteArticle = async (id: string, status: boolean): Promise<boolean> => {
-  if (!GAS_WEB_APP_URL) return false;
-  try {
-    const response = await fetch(GAS_WEB_APP_URL, {
-      method: 'POST',
-      body: JSON.stringify({ action: 'toggleFavoriteArticle', id, status })
     });
     const result = await response.json();
     return result.status === 'success';
