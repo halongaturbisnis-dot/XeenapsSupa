@@ -1,7 +1,6 @@
-
 import React, { useState, useEffect } from 'react';
 import { LibraryItem, LibraryType } from '../../../types';
-import { fetchLibraryPaginated } from '../../../services/gasService';
+import { fetchLibraryPaginatedFromSupabase } from '../../../services/LibrarySupabaseService';
 import { 
   XMarkIcon, 
   CheckIcon, 
@@ -39,7 +38,16 @@ const ReviewSourceSelectorModal: React.FC<ReviewSourceSelectorModalProps> = ({ o
   useEffect(() => {
     const loadData = async () => {
       setIsLoading(true);
-      const result = await fetchLibraryPaginated(currentPage, itemsPerPage, appliedSearch, LibraryType.LITERATURE, 'research', 'createdAt', 'desc');
+      // Switched to Supabase Service for faster, consistent registry access
+      const result = await fetchLibraryPaginatedFromSupabase(
+        currentPage, 
+        itemsPerPage, 
+        appliedSearch, 
+        'Literature', // Type: Literature only
+        'research',   // Path filter if any
+        'createdAt', 
+        'desc'
+      );
       setItems(result.items.filter(it => !!it.extractedJsonId));
       setTotalCount(result.totalCount);
       setIsLoading(false);

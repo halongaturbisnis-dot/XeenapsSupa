@@ -22,7 +22,9 @@ import {
   Star,
   RefreshCcw,
   Languages,
-  Globe
+  Globe,
+  Check,
+  X
 } from 'lucide-react';
 import ReviewSourceSelectorModal from './ReviewSourceSelectorModal';
 import { showXeenapsToast } from '../../../utils/toastUtils';
@@ -72,6 +74,9 @@ const ReviewDetail: React.FC<ReviewDetailProps> = ({ libraryItems, isMobileSideb
   const [translatingSynthesis, setTranslatingSynthesis] = useState(false);
   const [openTranslationMenu, setOpenTranslationMenu] = useState<string | null>(null);
 
+  // --- NEW: Local Question State for Interactive Editing ---
+  const [localQuestion, setLocalQuestion] = useState(review?.centralQuestion || '');
+
   const lastKnownGoodContent = useRef<ReviewContent | null>(null);
   const [selectedSourceForDetail, setSelectedSourceForDetail] = useState<LibraryItem | null>(null);
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -85,6 +90,9 @@ const ReviewDetail: React.FC<ReviewDetailProps> = ({ libraryItems, isMobileSideb
         
         if (found) {
           setReview(prev => prev ? { ...prev, ...found } : found);
+          // Sync local question state on load
+          setLocalQuestion(found.centralQuestion || '');
+          
           const detail = await fetchReviewContent(found.reviewJsonId, found.storageNodeUrl);
           if (detail) {
             setContent(detail);
@@ -111,13 +119,15 @@ const ReviewDetail: React.FC<ReviewDetailProps> = ({ libraryItems, isMobileSideb
       const updated = e.detail as ReviewItem;
       if (updated.id === id) {
         setReview(prev => prev ? { ...prev, ...updated } : updated);
+        // Optional: Sync local question if external update happens? 
+        // For now, prioritize local user edits to avoid overwriting typing.
       }
     };
     window.addEventListener('xeenaps-review-updated', handleRemoteUpdate);
     return () => window.removeEventListener('xeenaps-review-updated', handleRemoteUpdate);
   }, [id]);
 
-  // AUTO-SAVE ENGINE
+  // AUTO-SAVE ENGINE (Excluding Central Question which uses manual trigger)
   useEffect(() => {
     // CRITICAL GUARD: Never save if still loading, not hydrated, or busy
     if (!review || isLoading || !isHydrated || isBusy) return;
@@ -129,13 +139,16 @@ const ReviewDetail: React.FC<ReviewDetailProps> = ({ libraryItems, isMobileSideb
 
     if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
     saveTimeoutRef.current = setTimeout(async () => {
-      const success = await saveReview(review, content);
-      if (success) {
-        lastKnownGoodContent.current = content;
+      // Only auto-save if review matches local question to avoid overwriting unsaved question drafts
+      if (review.centralQuestion === localQuestion) {
+         const success = await saveReview(review, content);
+         if (success) {
+           lastKnownGoodContent.current = content;
+         }
       }
     }, 2000);
     return () => { if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current); };
-  }, [review?.label, review?.centralQuestion, review?.isFavorite, content, isLoading, isHydrated, isBusy]);
+  }, [review?.label, review?.isFavorite, content, isLoading, isHydrated, isBusy]); // Removed review.centralQuestion from auto-save dep
 
   const handleToggleFavorite = async () => {
     if (!review || isBusy) return;
@@ -147,6 +160,23 @@ const ReviewDetail: React.FC<ReviewDetailProps> = ({ libraryItems, isMobileSideb
     // 2. Immediate Global Broadcast & Cloud Sync
     await saveReview(updated, content);
   };
+
+  // --- NEW: Handle Question Logic ---
+  const handleSaveQuestion = async () => {
+    if (!review) return;
+    const updatedReview = { ...review, centralQuestion: localQuestion, updatedAt: new Date().toISOString() };
+    setReview(updatedReview);
+    
+    // Explicitly call save to ensure immediate persistence
+    await saveReview(updatedReview, content);
+    showXeenapsToast('success', 'Review question updated');
+  };
+
+  const handleRevertQuestion = () => {
+    setLocalQuestion(review?.centralQuestion || '');
+  };
+
+  const isQuestionDirty = review && localQuestion !== review.centralQuestion;
 
   const handleStartExtraction = async (selectedLibs: LibraryItem[]) => {
     if (!review?.centralQuestion.trim()) {
@@ -343,12 +373,34 @@ const ReviewDetail: React.FC<ReviewDetailProps> = ({ libraryItems, isMobileSideb
                {isLoading || !review ? (
                  <div className="h-24 w-full skeleton rounded-[3rem]" />
                ) : (
-                 <textarea 
-                   className="w-full bg-white p-8 pl-16 border border-gray-200 rounded-[3rem] outline-none text-base md:text-lg font-bold text-[#004A74] placeholder:text-gray-200 resize-none transition-all focus:border-[#FED400] focus:ring-8 focus:ring-[#FED400]/5 min-h-[120px]"
-                   placeholder="What specific question should AI answer across all selected literatures?"
-                   value={review.centralQuestion}
-                   onChange={(e) => setReview({ ...review, centralQuestion: e.target.value })}
-                 />
+                 <>
+                   <textarea 
+                     className="w-full bg-white p-8 pl-16 border border-gray-200 rounded-[3rem] outline-none text-base md:text-lg font-bold text-[#004A74] placeholder:text-gray-200 resize-none transition-all focus:border-[#FED400] focus:ring-8 focus:ring-[#FED400]/5 min-h-[120px]"
+                     placeholder="What specific question should AI answer across all selected literatures?"
+                     value={localQuestion}
+                     onChange={(e) => setLocalQuestion(e.target.value)}
+                   />
+                   
+                   {/* ACTION BUTTONS: Only appear if dirty */}
+                   {isQuestionDirty && (
+                      <div className="absolute top-4 right-4 flex flex-col gap-2 animate-in fade-in zoom-in-95 duration-300">
+                         <button 
+                           onClick={handleSaveQuestion}
+                           className="p-2.5 bg-green-500 text-white rounded-xl shadow-lg hover:scale-110 active:scale-90 transition-all"
+                           title="Save Changes"
+                         >
+                           <Check size={18} strokeWidth={3} />
+                         </button>
+                         <button 
+                           onClick={handleRevertQuestion}
+                           className="p-2.5 bg-red-100 text-red-500 rounded-xl shadow-md hover:bg-red-200 active:scale-90 transition-all"
+                           title="Revert Changes"
+                         >
+                           <X size={18} strokeWidth={3} />
+                         </button>
+                      </div>
+                   )}
+                 </>
                )}
             </div>
          </section>
