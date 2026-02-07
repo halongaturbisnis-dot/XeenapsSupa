@@ -440,7 +440,26 @@ const BrainstormingDetail: React.FC<{ libraryItems: LibraryItem[] }> = ({ librar
               />
            </div>
 
-           {/* c, d, e, f, g: Logic Elements Stacked */}
+           {/* MOVED: The White Space (Gap) - Now under Title */}
+           <div className="space-y-3">
+             <label className="text-[9px] font-black uppercase tracking-widest text-gray-400 flex items-center gap-2">
+               <Search size={14} /> The White Space (Gap)
+             </label>
+             <textarea 
+               className="w-full bg-[#004A74] p-6 border border-[#004A74]/10 rounded-3xl outline-none text-xs font-bold text-white leading-relaxed transition-all focus:border-[#FED400] focus:ring-4 focus:ring-[#FED400]/5 resize-none"
+               value={item.researchGap}
+               placeholder="Define the knowledge gap..."
+               onChange={(e) => {
+                 setItem({ ...item, researchGap: e.target.value.replace(/—/g, '-') });
+                 adjustHeight(e.target);
+               }}
+               onFocus={(e) => adjustHeight(e.target)}
+               rows={1}
+               ref={(el) => adjustHeight(el)}
+             />
+           </div>
+
+           {/* c, d, e, f, g: Logic Elements Stacked (Gap removed from here) */}
            <div className="space-y-8">
               <div className="space-y-3">
                 <label className="text-[9px] font-black uppercase tracking-widest text-gray-400 flex items-center gap-2">
@@ -452,24 +471,6 @@ const BrainstormingDetail: React.FC<{ libraryItems: LibraryItem[] }> = ({ librar
                   placeholder="State the core problem..."
                   onChange={(e) => {
                     setItem({ ...item, problemStatement: e.target.value.replace(/—/g, '-') });
-                    adjustHeight(e.target);
-                  }}
-                  onFocus={(e) => adjustHeight(e.target)}
-                  rows={1}
-                  ref={(el) => adjustHeight(el)}
-                />
-              </div>
-
-              <div className="space-y-3">
-                <label className="text-[9px] font-black uppercase tracking-widest text-gray-400 flex items-center gap-2">
-                  <Search size={14} /> The White Space (Gap)
-                </label>
-                <textarea 
-                  className="w-full bg-[#004A74] p-6 border border-[#004A74]/10 rounded-3xl outline-none text-xs font-bold text-white leading-relaxed transition-all focus:border-[#FED400] focus:ring-4 focus:ring-[#FED400]/5 resize-none"
-                  value={item.researchGap}
-                  placeholder="Define the knowledge gap..."
-                  onChange={(e) => {
-                    setItem({ ...item, researchGap: e.target.value.replace(/—/g, '-') });
                     adjustHeight(e.target);
                   }}
                   onFocus={(e) => adjustHeight(e.target)}
@@ -574,88 +575,44 @@ const BrainstormingDetail: React.FC<{ libraryItems: LibraryItem[] }> = ({ librar
               </div>
            </div>
 
-           {/* j. Benchmarks Section: PERSISTENT Results */}
-           <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-              
-              {/* External Literature (OpenAlex) */}
-              <div className="space-y-6">
-                 <div className="flex items-center justify-between">
-                    <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-400 flex items-center gap-2">Recommendation References</h3>
-                    <button 
-                      onClick={handleFetchExternal} 
-                      disabled={isFetchingExternal}
-                      className="p-2.5 bg-white border border-gray-100 rounded-xl text-[#004A74] hover:bg-[#FED400]/20 transition-all shadow-sm disabled:opacity-50"
-                    >
-                      {isFetchingExternal ? <Loader2 size={14} className="animate-spin" /> : <RefreshCcw size={14} />}
-                    </button>
-                 </div>
-                 <div className="space-y-4">
-                    {isFetchingExternal ? [...Array(3)].map((_, i) => <div key={i} className="h-20 w-full skeleton rounded-2xl" />) : ensureArray(item.externalRefs).length > 0 ? ensureArray(item.externalRefs).map((ref, idx) => {
-                      const urlMatch = typeof ref === 'string' ? ref.match(/https?:\/\/[^\s<]+/) : null;
-                      const url = urlMatch ? urlMatch[0].replace(/[.,;)]+$/, '') : null;
-                      return (
-                        <div 
-                          key={idx} 
-                          onClick={() => url && window.open(url, '_blank')}
-                          className={`p-5 bg-white border border-gray-200 rounded-3xl shadow-sm transition-all group ${url ? 'cursor-pointer hover:border-[#004A74]/30 hover:bg-[#004A74]/5' : ''}`}
-                        >
-                           <div className="flex gap-4">
-                              <span className="shrink-0 w-7 h-7 rounded-full bg-[#004A74] text-[#FED400] text-[10px] font-black flex items-center justify-center">{idx+1}</span>
-                              <div className="space-y-2 flex-1">
-                                 <p className="text-[11px] font-bold text-[#004A74]/80 leading-relaxed" dangerouslySetInnerHTML={{ __html: String(ref).replace(/—/g, '-') }} />
-                                 {url && <span className="text-[8px] font-black text-[#004A74]/40 uppercase tracking-widest flex items-center gap-1 group-hover:text-[#004A74]">Access External DOI <ExternalLink size={10} /></span>}
-                              </div>
+           {/* j. Benchmarks Section: PERSISTENT Results - MODIFIED TO FULL WIDTH GRID */}
+           <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                 <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-400 flex items-center gap-2">Recommendation References</h3>
+                 <button 
+                   onClick={handleFetchExternal} 
+                   disabled={isFetchingExternal}
+                   className="p-2.5 bg-white border border-gray-100 rounded-xl text-[#004A74] hover:bg-[#FED400]/20 transition-all shadow-sm disabled:opacity-50"
+                 >
+                   {isFetchingExternal ? <Loader2 size={14} className="animate-spin" /> : <RefreshCcw size={14} />}
+                 </button>
+              </div>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                 {isFetchingExternal ? [...Array(6)].map((_, i) => <div key={i} className="h-20 w-full skeleton rounded-2xl" />) : ensureArray(item.externalRefs).length > 0 ? ensureArray(item.externalRefs).map((ref, idx) => {
+                   const urlMatch = typeof ref === 'string' ? ref.match(/https?:\/\/[^\s<]+/) : null;
+                   const url = urlMatch ? urlMatch[0].replace(/[.,;)]+$/, '') : null;
+                   return (
+                     <div 
+                       key={idx} 
+                       onClick={() => url && window.open(url, '_blank')}
+                       className={`p-5 bg-white border border-gray-200 rounded-3xl shadow-sm transition-all group ${url ? 'cursor-pointer hover:border-[#004A74]/30 hover:bg-[#004A74]/5' : ''}`}
+                     >
+                        <div className="flex gap-4">
+                           <span className="shrink-0 w-7 h-7 rounded-full bg-[#004A74] text-[#FED400] text-[10px] font-black flex items-center justify-center">{idx+1}</span>
+                           <div className="space-y-2 flex-1">
+                              <p className="text-[11px] font-bold text-[#004A74]/80 leading-relaxed" dangerouslySetInnerHTML={{ __html: String(ref).replace(/—/g, '-') }} />
+                              {url && <span className="text-[8px] font-black text-[#004A74]/40 uppercase tracking-widest flex items-center gap-1 group-hover:text-[#004A74]">Access External DOI <ExternalLink size={10} /></span>}
                            </div>
                         </div>
-                      );
-                    }) : (
-                      <div className="py-10 text-center opacity-20 bg-white border border-dashed border-gray-200 rounded-3xl">
-                        <BookOpen size={32} className="mx-auto mb-2" />
-                        <p className="text-[9px] font-black uppercase tracking-widest">No benchmarks stored</p>
-                      </div>
-                    )}
-                 </div>
+                     </div>
+                   );
+                 }) : (
+                   <div className="col-span-2 py-10 text-center opacity-20 bg-white border border-dashed border-gray-200 rounded-3xl">
+                     <BookOpen size={32} className="mx-auto mb-2" />
+                     <p className="text-[9px] font-black uppercase tracking-widest">No benchmarks stored</p>
+                   </div>
+                 )}
               </div>
-
-              {/* Internal Collection (Smart Relevant Library) */}
-              <div className="space-y-6">
-                 <div className="flex items-center justify-between">
-                    <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-400 flex items-center gap-2">Internal Library (Relevant)</h3>
-                    <button 
-                      onClick={handleFetchInternal} 
-                      disabled={isFetchingInternal}
-                      className="p-2.5 bg-white border border-gray-100 rounded-xl text-[#004A74] hover:bg-[#FED400]/20 transition-all shadow-sm disabled:opacity-50"
-                    >
-                      {isFetchingInternal ? <Loader2 size={14} className="animate-spin" /> : <RefreshCcw size={14} />}
-                    </button>
-                 </div>
-                 <div className="space-y-4">
-                    {isFetchingInternal ? [...Array(3)].map((_, i) => <div key={i} className="h-20 w-full skeleton rounded-2xl" />) : internalRecoms.length > 0 ? internalRecoms.map((lib, idx) => (
-                      <div 
-                        key={lib.id} 
-                        onClick={() => setSelectedInternalItem(lib)}
-                        className="p-5 bg-white border border-gray-200 rounded-3xl shadow-sm transition-all group cursor-pointer hover:border-[#FED400] hover:bg-[#FED400]/5"
-                      >
-                         <div className="flex gap-4">
-                            <span className="shrink-0 w-7 h-7 rounded-full bg-[#FED400] text-[#004A74] text-[10px] font-black flex items-center justify-center shadow-sm">0{idx+1}</span>
-                            <div className="space-y-1 flex-1">
-                               <h5 className="text-[11px] font-black text-[#004A74] uppercase leading-tight group-hover:underline">{lib.title}</h5>
-                               <p className="text-[9px] font-bold text-gray-400 uppercase">{lib.authors[0]} • {lib.year}</p>
-                               <div className="flex items-center gap-1.5 pt-2 text-[8px] font-black text-[#004A74]/40 uppercase tracking-widest group-hover:text-[#004A74]">
-                                 View Internal Detail <ChevronRight size={10} />
-                               </div>
-                            </div>
-                         </div>
-                      </div>
-                    )) : (
-                      <div className="py-10 text-center opacity-20 bg-white border border-dashed border-gray-200 rounded-3xl">
-                        <Library size={32} className="mx-auto mb-2" />
-                        <p className="text-[9px] font-black uppercase tracking-widest">No local relevant docs found</p>
-                      </div>
-                    )}
-                 </div>
-              </div>
-
            </div>
 
            {/* l. Abstract full width editable */}
@@ -695,5 +652,6 @@ const BrainstormingDetail: React.FC<{ libraryItems: LibraryItem[] }> = ({ librar
     </div>
   );
 };
+
 
 export default BrainstormingDetail;
