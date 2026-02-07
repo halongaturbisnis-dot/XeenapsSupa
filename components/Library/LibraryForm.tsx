@@ -17,12 +17,15 @@ import {
   ArrowPathIcon,
   SparklesIcon,
   FingerPrintIcon,
-  PlayIcon,
   XMarkIcon,
   EyeIcon,
-  TrashIcon
+  TrashIcon,
+  CheckCircleIcon
 } from '@heroicons/react/24/outline';
-import { Bold, Italic, FileText, ShieldAlert } from 'lucide-react';
+import { 
+  CheckCircleIcon as CheckCircleSolidIcon 
+} from '@heroicons/react/24/solid';
+import { Bold, Italic, FileText, ShieldAlert, Check } from 'lucide-react';
 import { showXeenapsAlert, XEENAPS_SWAL_CONFIG } from '../../utils/swalUtils';
 import { showXeenapsToast } from '../../utils/toastUtils';
 import { 
@@ -287,6 +290,7 @@ const LibraryForm: React.FC<LibraryFormProps> = ({ onComplete, items = [] }) => 
     if (isRisk) {
       const result = await Swal.fire({
         ...XEENAPS_SWAL_CONFIG,
+        width: '600px',
         icon: 'warning',
         title: 'SOURCE WARNING',
         html: `Direct Website/Identifier extraction may result in incomplete data due to paywalls or bot protection.<br/><br/>
@@ -566,7 +570,15 @@ const LibraryForm: React.FC<LibraryFormProps> = ({ onComplete, items = [] }) => 
       const fieldsToRemove = ['addMethod', 'extractedText', 'chunks', 'journalName', 'volume', 'issue', 'pages', 'doi', 'issn', 'isbn', 'pmid', 'arxivId', 'bibcode', 'keywords', 'labels'];
       fieldsToRemove.forEach(f => delete newItem[f]);
       
-      const result = await processLibraryFileInCloud(newItem, fileUploadData, formData.extractedText);
+      // LOGIC OPTIMIZATION: Only call GAS if there is content (Text or File)
+      let result = { status: 'success' } as any;
+      const hasContent = formData.extractedText && formData.extractedText.length > 0;
+      const hasFile = !!fileUploadData;
+
+      if (hasContent || hasFile) {
+        // Heavy lifting via GAS
+        result = await processLibraryFileInCloud(newItem, fileUploadData, formData.extractedText);
+      }
       
       if (result.status === 'success') { 
         const patchedItem = {
@@ -639,59 +651,58 @@ const LibraryForm: React.FC<LibraryFormProps> = ({ onComplete, items = [] }) => 
 
   return (
     <FormPageContainer>
-      {/* VALIDATION MODAL */}
+      {/* FULL SCREEN VALIDATION OVERLAY */}
       {showValidationModal && (
-        <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-in fade-in duration-300">
-          <div className="bg-white rounded-[3rem] w-full max-w-4xl shadow-2xl flex flex-col max-h-[85vh] border border-white/20">
-            {/* Header */}
-            <div className="px-8 py-6 border-b border-gray-100 flex items-center justify-between shrink-0 bg-gray-50/50">
-               <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-[#004A74] text-[#FED400] rounded-2xl flex items-center justify-center shadow-lg">
-                     <FileText className="w-6 h-6" />
-                  </div>
-                  <div>
-                     <h3 className="text-xl font-black text-[#004A74] uppercase tracking-tight">Review Extracted Content</h3>
-                     <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Verify the text quality before saving</p>
-                  </div>
+        <div className="fixed inset-0 z-[2000] bg-white flex flex-col animate-in fade-in duration-300">
+          {/* Overlay Header */}
+          <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between shrink-0 bg-white shadow-sm z-10">
+             <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-[#004A74] text-[#FED400] rounded-xl flex items-center justify-center shadow-lg">
+                   <FileText className="w-5 h-5" />
+                </div>
+                <div>
+                   <h3 className="text-lg font-black text-[#004A74] uppercase tracking-tight">Content Review</h3>
+                   <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Verify quality before saving</p>
+                </div>
+             </div>
+             <button onClick={() => setShowValidationModal(false)} className="p-2 hover:bg-gray-100 text-gray-400 hover:text-red-500 rounded-full transition-all">
+                <XMarkIcon className="w-6 h-6" />
+             </button>
+          </div>
+
+          {/* Overlay Body */}
+          <div className="flex-1 overflow-hidden p-6 bg-gray-50/50 flex flex-col gap-4">
+             {tempExtractedText ? (
+               <textarea 
+                  className="w-full h-full p-8 bg-white border border-gray-200 rounded-[2rem] text-sm text-[#004A74] font-medium leading-relaxed outline-none focus:ring-4 focus:ring-[#004A74]/5 resize-none custom-scrollbar shadow-sm font-mono"
+                  value={tempExtractedText}
+                  onChange={(e) => setTempExtractedText(e.target.value)}
+                  placeholder="Extracted text will appear here..."
+                  autoFocus
+               />
+             ) : (
+               <div className="flex-1 flex flex-col items-center justify-center opacity-30">
+                  <ShieldAlert size={64} className="text-[#004A74] mb-4" />
+                  <p className="text-base font-black text-gray-400 uppercase tracking-widest">No text content retrieved</p>
+                  <p className="text-xs text-gray-400 mt-2">Only metadata will be saved.</p>
                </div>
-               <button onClick={() => setShowValidationModal(false)} className="p-2 hover:bg-red-50 text-gray-400 hover:text-red-500 rounded-full transition-all">
-                  <XMarkIcon className="w-8 h-8" />
-               </button>
-            </div>
+             )}
+          </div>
 
-            {/* Body - Textarea */}
-            <div className="flex-1 overflow-hidden p-8 flex flex-col gap-4">
-               {tempExtractedText ? (
-                 <textarea 
-                    className="w-full h-full p-6 bg-gray-50 border border-gray-200 rounded-[2rem] text-sm text-[#004A74] font-medium leading-relaxed outline-none focus:bg-white focus:ring-4 focus:ring-[#004A74]/5 resize-none custom-scrollbar"
-                    value={tempExtractedText}
-                    onChange={(e) => setTempExtractedText(e.target.value)}
-                    placeholder="Extracted text will appear here..."
-                 />
-               ) : (
-                 <div className="flex-1 flex flex-col items-center justify-center opacity-30">
-                    <ShieldAlert size={48} className="text-[#004A74] mb-4" />
-                    <p className="text-sm font-black text-gray-400 uppercase tracking-widest">No text content retrieved</p>
-                    <p className="text-xs text-gray-400 mt-2">Only metadata will be saved.</p>
-                 </div>
-               )}
-            </div>
-
-            {/* Footer Actions */}
-            <div className="px-8 py-6 border-t border-gray-100 flex items-center justify-end gap-3 bg-gray-50/50">
-               <button 
-                 onClick={handleRejectExtraction}
-                 className="px-8 py-4 bg-red-50 text-red-500 rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-red-100 transition-all flex items-center gap-2"
-               >
-                 <TrashIcon className="w-4 h-4" /> Reject Extraction
-               </button>
-               <button 
-                 onClick={handleSaveExtraction}
-                 className="px-10 py-4 bg-[#004A74] text-[#FED400] rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-xl hover:scale-105 active:scale-95 transition-all flex items-center gap-2"
-               >
-                 <CheckIcon className="w-4 h-4 stroke-[3]" /> Save Extraction
-               </button>
-            </div>
+          {/* Overlay Footer */}
+          <div className="px-6 py-4 border-t border-gray-100 flex items-center justify-end gap-4 bg-white z-10">
+             <button 
+               onClick={handleRejectExtraction}
+               className="px-6 py-3 border-2 border-red-100 text-red-500 rounded-xl font-black uppercase tracking-widest text-[10px] hover:bg-red-50 transition-all flex items-center gap-2"
+             >
+               <TrashIcon className="w-4 h-4" /> Reject Extraction
+             </button>
+             <button 
+               onClick={handleSaveExtraction}
+               className="px-8 py-3 bg-[#004A74] text-[#FED400] rounded-xl font-black uppercase tracking-widest text-[10px] shadow-xl hover:scale-105 active:scale-95 transition-all flex items-center gap-2"
+             >
+               <CheckCircleSolidIcon className="w-4 h-4" /> Save Content
+             </button>
           </div>
         </div>
       )}
@@ -713,17 +724,21 @@ const LibraryForm: React.FC<LibraryFormProps> = ({ onComplete, items = [] }) => 
                       <div className="absolute left-4 top-1/2 -translate-y-1/2 flex items-center">
                         {isExtracting ? <ArrowPathIcon className="w-5 h-5 text-[#004A74] animate-spin" /> : <LinkIcon className="w-5 h-5 text-gray-300 group-focus-within:text-[#004A74]" />}
                       </div>
-                      <input className={`w-full pl-12 pr-4 py-4 bg-gray-50 rounded-2xl focus:ring-2 border ${!formData.url ? 'border-red-300' : 'border-gray-200'} text-sm font-medium transition-all`} placeholder="Paste your link..." value={formData.url} onChange={(e) => setFormData({...formData, url: e.target.value})} disabled={isFormDisabled} />
+                      <input className={`w-full pl-12 pr-12 py-4 bg-gray-50 rounded-2xl focus:ring-2 border ${!formData.url ? 'border-red-300' : 'border-gray-200'} text-sm font-medium transition-all`} placeholder="Paste your link..." value={formData.url} onChange={(e) => setFormData({...formData, url: e.target.value})} disabled={isFormDisabled} />
+                      
+                      {/* Integrated Action Button */}
+                      {formData.url && !isExtracting && (
+                        <button 
+                          type="button"
+                          onClick={handleManualAnalysis}
+                          disabled={isFormDisabled}
+                          className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-emerald-500 hover:scale-110 transition-transform animate-in fade-in zoom-in"
+                          title="Analyze Content"
+                        >
+                           <CheckCircleSolidIcon className="w-8 h-8" />
+                        </button>
+                      )}
                    </div>
-                   <button 
-                     type="button"
-                     onClick={handleManualAnalysis}
-                     disabled={isFormDisabled || !formData.url}
-                     className="p-4 bg-[#004A74] text-white rounded-2xl hover:scale-105 active:scale-95 transition-all shadow-lg disabled:opacity-50"
-                     title="Analyze Content"
-                   >
-                      <PlayIcon className="w-5 h-5" />
-                   </button>
                 </div>
               </FormField>
             ) : formData.addMethod === 'REF' ? (
@@ -733,17 +748,21 @@ const LibraryForm: React.FC<LibraryFormProps> = ({ onComplete, items = [] }) => 
                       <div className="absolute left-4 top-1/2 -translate-y-1/2 flex items-center">
                         {isExtracting ? <ArrowPathIcon className="w-5 h-5 text-[#004A74] animate-spin" /> : <FingerPrintIcon className="w-5 h-5 text-gray-300 group-focus-within:text-[#004A74]" />}
                       </div>
-                      <input className={`w-full pl-12 pr-4 py-4 bg-gray-50 rounded-2xl focus:ring-2 border ${!formData.doi ? 'border-red-300' : 'border-gray-200'} text-sm font-mono font-bold transition-all`} placeholder="Enter DOI, ISBN, PMID..." value={formData.doi} onChange={(e) => setFormData({...formData, doi: e.target.value})} disabled={isFormDisabled} />
+                      <input className={`w-full pl-12 pr-12 py-4 bg-gray-50 rounded-2xl focus:ring-2 border ${!formData.doi ? 'border-red-300' : 'border-gray-200'} text-sm font-mono font-bold transition-all`} placeholder="Enter DOI, ISBN, PMID..." value={formData.doi} onChange={(e) => setFormData({...formData, doi: e.target.value})} disabled={isFormDisabled} />
+                      
+                      {/* Integrated Action Button */}
+                      {formData.doi && !isExtracting && (
+                        <button 
+                          type="button"
+                          onClick={handleManualAnalysis}
+                          disabled={isFormDisabled}
+                          className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-emerald-500 hover:scale-110 transition-transform animate-in fade-in zoom-in"
+                          title="Lookup & Analyze"
+                        >
+                           <CheckCircleSolidIcon className="w-8 h-8" />
+                        </button>
+                      )}
                    </div>
-                   <button 
-                     type="button"
-                     onClick={handleManualAnalysis}
-                     disabled={isFormDisabled || !formData.doi}
-                     className="p-4 bg-[#004A74] text-white rounded-2xl hover:scale-105 active:scale-95 transition-all shadow-lg disabled:opacity-50"
-                     title="Lookup & Analyze"
-                   >
-                      <PlayIcon className="w-5 h-5" />
-                   </button>
                 </div>
               </FormField>
             ) : (
