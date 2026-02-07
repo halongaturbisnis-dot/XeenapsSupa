@@ -63,10 +63,17 @@ export const analyzeSingleSourceGap = async (snippet: string, title: string): Pr
     const aiRes = await callAiProxy('gemini', prompt);
     if (!aiRes) return null;
 
-    let cleanJson = aiRes.trim();
-    if (cleanJson.includes('{')) {
-      cleanJson = cleanJson.substring(cleanJson.indexOf('{'), cleanJson.lastIndexOf('}') + 1);
+    // Robust JSON Cleaning: Remove Markdown fences first
+    let cleanJson = aiRes.replace(/```json/gi, '').replace(/```/g, '').trim();
+    
+    // Find outer braces
+    const start = cleanJson.indexOf('{');
+    const end = cleanJson.lastIndexOf('}');
+    
+    if (start !== -1 && end !== -1 && end > start) {
+      cleanJson = cleanJson.substring(start, end + 1);
     }
+    
     return JSON.parse(cleanJson);
   } catch (e) {
     console.error("AI Analysis failed:", e);
@@ -144,10 +151,17 @@ export const synthesizeOverallNovelty = async (allGaps: GapAnalysisRow[]): Promi
     const aiRes = await callAiProxy('gemini', prompt);
     if (!aiRes) return null;
 
-    let cleanJson = aiRes.trim();
-    if (cleanJson.includes('{')) {
-      cleanJson = cleanJson.substring(cleanJson.indexOf('{'), cleanJson.lastIndexOf('}') + 1);
+    // Robust JSON Cleaning: Remove Markdown fences first
+    let cleanJson = aiRes.replace(/```json/gi, '').replace(/```/g, '').trim();
+    
+    // Find outer braces
+    const start = cleanJson.indexOf('{');
+    const end = cleanJson.lastIndexOf('}');
+    
+    if (start !== -1 && end !== -1 && end > start) {
+      cleanJson = cleanJson.substring(start, end + 1);
     }
+    
     return JSON.parse(cleanJson);
   } catch (e) {
     console.error("Synthesis failed:", e);

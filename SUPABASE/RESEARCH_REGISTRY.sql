@@ -45,13 +45,14 @@ ALTER TABLE public.research_sources ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Public Access Research Projects" ON public.research_projects FOR ALL USING (true);
 CREATE POLICY "Public Access Research Sources" ON public.research_sources FOR ALL USING (true);
 
--- Triggers untuk search_all (Projects)
+-- Triggers untuk search_all (Projects) - UPDATED: Include noveltyNarrative
 CREATE OR REPLACE FUNCTION public.update_research_project_search_index()
 RETURNS TRIGGER AS $$
 BEGIN
     NEW."search_all" := LOWER(
         COALESCE(NEW."projectName", '') || ' ' || 
         COALESCE(NEW."proposedTitle", '') || ' ' ||
+        COALESCE(NEW."noveltyNarrative", '') || ' ' ||
         COALESCE(NEW."status", '')
     );
     RETURN NEW;
