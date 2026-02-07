@@ -235,10 +235,9 @@ const NotebookMain: React.FC<NotebookMainProps> = ({ libraryItems = [], collecti
                 onChange={setLocalSearch} 
                 onSearch={() => { setAppliedSearch(localSearch); setCurrentPage(1); }}
                 phrases={[
-                  "Search labels...", 
-                  "Search in descriptions...", 
-                  "Search collection titles...", 
-                  "Search attachment labels..."
+                  "Search label...", 
+                  "Search in description...", 
+                  "Search attachment..."
                 ]}
                 className="w-full"
               />
