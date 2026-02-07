@@ -194,29 +194,47 @@ const BrainstormingDetail: React.FC<{ libraryItems: LibraryItem[] }> = ({ librar
   };
 
   const handleFetchInternal = async () => {
-    if (!item?.proposedTitle) return;
+    if (!item?.proposedTitle && (!item?.keywords || item.keywords.length === 0)) return;
     setIsFetchingInternal(true);
     showXeenapsToast('info', 'Searching Internal Relevance...');
+    
+    // NEW: Get Objects directly
     const data = await getInternalRecommendations(item!);
-    const updatedItem = { ...item!, internalRefs: ensureArray(data.map(lib => lib.id)) };
+    
+    // FILTER: Remove empty titles
+    const validData = data.filter(d => d.id && d.title && d.title !== 'Untitled');
+
+    if (validData.length === 0) {
+      showXeenapsToast('warning', 'No relevant internal documents found.');
+    } else {
+      showXeenapsToast('success', `Found ${validData.length} Relevant Items`);
+    }
+
+    // UPDATE UI DIRECTLY (Skip ID Resolution Lag)
+    setInternalRecoms(validData);
+
+    // SAVE IDs FOR PERSISTENCE
+    const updatedItem = { ...item!, internalRefs: ensureArray(validData.map(lib => lib.id)) };
     setItem(updatedItem);
     handleSave(updatedItem);
+    
     setIsFetchingInternal(false);
-    showXeenapsToast('success', 'Internal Relevance Synchronized');
   };
 
   // ID Resolver: Match stored internalRefs (IDs) with current libraryItems
+  // UPDATED: Only resolve if internalRecoms is empty (initial load) to avoid overwriting search results with stale libraryItems
   useEffect(() => {
     const refs = ensureArray(item?.internalRefs);
-    if (refs.length) {
+    if (refs.length > 0 && internalRecoms.length === 0) {
       const resolved = refs
         .map(refId => libraryItems.find(lib => lib.id === refId))
         .filter(Boolean) as LibraryItem[];
-      setInternalRecoms(resolved);
-    } else {
-      setInternalRecoms([]);
+      
+      if (resolved.length > 0) {
+         setInternalRecoms(resolved);
+      }
     }
-  }, [item?.internalRefs, libraryItems]);
+  }, [item?.internalRefs, libraryItems, internalRecoms.length]);
 
   const handleTranslate = async (langCode: string) => {
     if (!item) return;
@@ -304,6 +322,7 @@ const BrainstormingDetail: React.FC<{ libraryItems: LibraryItem[] }> = ({ librar
           item={selectedInternalItem} 
           onClose={() => setSelectedInternalItem(null)} 
           isLoading={false}
+          isLocalOverlay={true}
         />
       )}
 
@@ -601,7 +620,7 @@ const BrainstormingDetail: React.FC<{ libraryItems: LibraryItem[] }> = ({ librar
               {/* Internal Collection (Smart Relevant Library) */}
               <div className="space-y-6">
                  <div className="flex items-center justify-between">
-                    <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-400 flex items-center gap-2">Internal Library (MAY INVALID)</h3>
+                    <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-400 flex items-center gap-2">Internal Library (Relevant)</h3>
                     <button 
                       onClick={handleFetchInternal} 
                       disabled={isFetchingInternal}
@@ -631,7 +650,7 @@ const BrainstormingDetail: React.FC<{ libraryItems: LibraryItem[] }> = ({ librar
                     )) : (
                       <div className="py-10 text-center opacity-20 bg-white border border-dashed border-gray-200 rounded-3xl">
                         <Library size={32} className="mx-auto mb-2" />
-                        <p className="text-[9px] font-black uppercase tracking-widest">No local docs stored</p>
+                        <p className="text-[9px] font-black uppercase tracking-widest">No local relevant docs found</p>
                       </div>
                     )}
                  </div>

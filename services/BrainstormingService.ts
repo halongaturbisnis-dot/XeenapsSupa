@@ -134,25 +134,41 @@ export const getExternalRecommendations = async (item: BrainstormingItem): Promi
 };
 
 export const getInternalRecommendations = async (item: BrainstormingItem): Promise<LibraryItem[]> => {
-  // NEW LOGIC: Query Supabase directly
   try {
-    // Construct search query from Title and first 5 keywords
-    const keywords = Array.isArray(item.keywords) ? item.keywords.slice(0, 5) : [];
-    const query = `${item.proposedTitle} ${keywords.join(' ')}`.trim();
+    const keywords = Array.isArray(item.keywords) ? item.keywords : [];
     
-    // Use existing Library Service logic but directed at Supabase
-    // Using limit 10 as requested (though logic might filter to 2-3 relevant ones in UI if needed, 
-    // but standard paging is safer). The user asked to only show relevant ones, 
-    // fetchLibraryPaginatedFromSupabase already does fuzzy search via search_all.
+    // STRATEGY FOR RELEVANCE:
+    // 1. Use the PRIMARY keyword (first one) as the main anchor.
+    //    Concatenating multiple keywords with spaces often leads to zero results in 'ilike' search 
+    //    because it looks for that EXACT phrase sequence.
+    // 2. Fallback to Title if no keywords exist.
+    
+    let query = "";
+    if (keywords.length > 0) {
+       query = keywords[0]; // Most significant keyword
+    } else {
+       query = item.proposedTitle || "";
+    }
+
+    if (!query) return [];
+
     const result = await fetchLibraryPaginatedFromSupabase(
       1, 
       10, 
       query, 
       'Literature', // Type filter: Literature
-      'research'    // Path filter context (optional)
+      'research'    // Path filter context
     );
     
-    return result.items || [];
+    // Client-side Filtering for Quality Control
+    const filtered = (result.items || []).filter(lib => 
+        lib.title && 
+        lib.title.trim() !== "" && 
+        lib.title !== "Untitled" &&
+        lib.id !== item.id
+    );
+    
+    return filtered;
   } catch (error) {
     console.error("Internal Recs Error:", error);
     return [];
