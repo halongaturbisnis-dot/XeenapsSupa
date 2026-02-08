@@ -1,10 +1,16 @@
-
-import { ColleagueItem, GASResponse } from '../types';
+import { ColleagueItem } from '../types';
 import { GAS_WEB_APP_URL } from '../constants';
+import { 
+  fetchColleaguesPaginatedFromSupabase, 
+  upsertColleagueToSupabase, 
+  deleteColleagueFromSupabase,
+  fetchColleagueByIdFromSupabase
+} from './ColleagueSupabaseService';
 
 /**
- * XEENAPS COLLEAGUE SERVICE
- * Pure data management for Professional Network with Server-Side processing.
+ * XEENAPS COLLEAGUE SERVICE (HYBRID ARCHITECTURE)
+ * Metadata: Supabase Registry
+ * Storage: Google Apps Script (Drive)
  */
 
 export const fetchColleaguesPaginated = async (
@@ -15,50 +21,48 @@ export const fetchColleaguesPaginated = async (
   sortDir: string = "asc",
   signal?: AbortSignal
 ): Promise<{ items: ColleagueItem[], totalCount: number }> => {
-  if (!GAS_WEB_APP_URL) return { items: [], totalCount: 0 };
-  try {
-    const url = `${GAS_WEB_APP_URL}?action=getColleagues&page=${page}&limit=${limit}&search=${encodeURIComponent(search)}&sortKey=${sortKey}&sortDir=${sortDir}`;
-    const res = await fetch(url, { signal });
-    const result = await res.json();
-    return { 
-      items: result.data || [], 
-      totalCount: result.totalCount || 0 
-    };
-  } catch (error) {
-    return { items: [], totalCount: 0 };
-  }
+  // Direct call to Supabase Registry
+  return await fetchColleaguesPaginatedFromSupabase(page, limit, search, sortKey, sortDir);
 };
 
 export const saveColleague = async (item: ColleagueItem): Promise<boolean> => {
-  if (!GAS_WEB_APP_URL) return false;
-  try {
-    const res = await fetch(GAS_WEB_APP_URL, {
-      method: 'POST',
-      body: JSON.stringify({ action: 'saveColleague', item })
-    });
-    const result = await res.json();
-    return result.status === 'success';
-  } catch (e) {
-    return false;
-  }
+  // SILENT BROADCAST
+  window.dispatchEvent(new CustomEvent('xeenaps-colleague-updated', { detail: item }));
+  
+  // Direct call to Supabase Registry
+  return await upsertColleagueToSupabase(item);
 };
 
 export const deleteColleague = async (id: string): Promise<boolean> => {
-  if (!GAS_WEB_APP_URL) return false;
+  // SILENT BROADCAST
+  window.dispatchEvent(new CustomEvent('xeenaps-colleague-deleted', { detail: id }));
+
   try {
-    const res = await fetch(GAS_WEB_APP_URL, {
-      method: 'POST',
-      body: JSON.stringify({ action: 'deleteColleague', id })
-    });
-    const result = await res.json();
-    return result.status === 'success';
+    // 1. Fetch Item to get Photo File ID
+    const item = await fetchColleagueByIdFromSupabase(id);
+
+    // 2. Physical File Cleanup (Fire & Forget to GAS)
+    if (item && item.photoFileId && item.photoNodeUrl) {
+       // Cleanup logic reusing existing endpoint pattern
+       if (GAS_WEB_APP_URL) {
+         fetch(item.photoNodeUrl, {
+           method: 'POST',
+           body: JSON.stringify({ action: 'deleteRemoteFiles', fileIds: [item.photoFileId] })
+         }).catch(e => console.warn("Background photo cleanup failed", e));
+       }
+    }
+
+    // 3. Metadata Cleanup (Supabase)
+    return await deleteColleagueFromSupabase(id);
+
   } catch (e) {
+    console.error("Delete Colleague Failed:", e);
     return false;
   }
 };
 
 /**
- * Dynamic Sharded Binary Upload for Colleague Photos
+ * Dynamic Sharded Binary Upload for Colleague Photos (Keep pointing to GAS)
  */
 export const uploadColleaguePhoto = async (file: File): Promise<{ photoUrl: string, fileId: string, nodeUrl: string } | null> => {
   if (!GAS_WEB_APP_URL) return null;
@@ -73,7 +77,7 @@ export const uploadColleaguePhoto = async (file: File): Promise<{ photoUrl: stri
     const response = await fetch(GAS_WEB_APP_URL, { 
       method: 'POST', 
       body: JSON.stringify({ 
-        action: 'vaultFileUpload', // Reusing dynamic sharding logic from Activity Vault
+        action: 'vaultFileUpload', // Reusing dynamic sharding logic
         fileData: base64Data, 
         fileName: `colleague_${Date.now()}_${file.name}`, 
         mimeType: file.type 

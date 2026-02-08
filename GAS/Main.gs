@@ -1,3 +1,4 @@
+
 /**
  * XEENAPS PKM - MAIN ROUTER
  */
@@ -140,16 +141,8 @@ function doGet(e) {
     // DEPRECATED: getConsultations (Moved to Supabase)
     // if (action === 'getConsultations') { ... }
 
-    // NEW: getColleagues (SERVER-SIDE SEARCH & PAGINATION)
-    if (action === 'getColleagues') {
-      const page = parseInt(e.parameter.page || "1");
-      const limit = parseInt(e.parameter.limit || "20");
-      const search = e.parameter.search || "";
-      const sortKey = e.parameter.sortKey || "name";
-      const sortDir = e.parameter.sortDir || "asc";
-      const result = getColleaguesFromRegistry(page, limit, search, sortKey, sortDir);
-      return createJsonResponse({ status: 'success', data: result.items, totalCount: result.totalCount });
-    }
+    // DEPRECATED: getColleagues (Moved to Supabase)
+    // if (action === 'getColleagues') { ... }
 
     // NEW: getTeaching (UPDATED FOR SERVER-SIDE DATE FILTERING)
     if (action === 'getTeaching') {
@@ -344,7 +337,7 @@ function doPost(e) {
     if (action === 'setupDatabase') return createJsonResponse(setupDatabase());
     if (action === 'setupSharboxDatabase') return createJsonResponse(setupSharboxDatabase());
     // NOTEBOOK SETUP DEPRECATED: if (action === 'setupNotebookDatabase') ...
-    if (action === 'setupColleagueDatabase') return createJsonResponse(setupColleagueDatabase());
+    // COLLEAGUE SETUP DEPRECATED: if (action === 'setupColleagueDatabase') ...
     if (action === 'setupTeachingDatabase') return createJsonResponse(setupTeachingDatabase());
     if (action === 'setupResearchDatabase') return createJsonResponse(setupResearchDatabase());
     if (action === 'setupBrainstormingDatabase') return createJsonResponse(setupBrainstormingDatabase());
@@ -429,14 +422,11 @@ function doPost(e) {
       return createJsonResponse(handleAiConsultRequest(body.collectionId, body.question));
     }
 
-    // NEW ACTION: saveColleague
-    if (action === 'saveColleague') {
-      return createJsonResponse(saveColleagueToRegistry(body.item));
-    }
-    // NEW ACTION: deleteColleague
-    if (action === 'deleteColleague') {
-      return createJsonResponse(deleteColleagueFromRegistry(body.id));
-    }
+    // DEPRECATED: saveColleague (Moved to Supabase)
+    // if (action === 'saveColleague') { ... }
+    
+    // DEPRECATED: deleteColleague (Moved to Supabase)
+    // if (action === 'deleteColleague') { ... }
 
     // NEW ACTION: saveTeaching
     if (action === 'saveTeaching') {
@@ -495,7 +485,8 @@ function doPost(e) {
 
     // NEW ACTION: generateCV_PDF
     if (action === 'generateCV_PDF') {
-      return createJsonResponse(handleGenerateCV_PDF(body.config));
+      // FIX: Pass FULL BODY so engine can extract payload properly
+      return createJsonResponse(handleGenerateCV_PDF(body));
     }
 
     // NEW ACTION: saveArchivedArticle

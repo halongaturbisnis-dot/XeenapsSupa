@@ -7,11 +7,16 @@
 
 function handleGenerateCV_PDF(body) {
   try {
-    const config = body.config;
-    const payload = body.payload;
+    // Robustness: Handle if body is passed as just config (legacy) or full body
+    const config = body.config || body; 
+    const payload = body.payload; 
 
-    if (!payload || !payload.profile || !payload.profile.fullName) {
-      return { status: 'error', message: 'Profile incomplete or missing payload.' };
+    if (!payload) {
+       return { status: 'error', message: 'Missing Payload in Request. Ensure Frontend passes { config, payload }.' };
+    }
+
+    if (!payload.profile || !payload.profile.fullName) {
+      return { status: 'error', message: 'Profile data incomplete.' };
     }
 
     const profile = payload.profile;
@@ -116,7 +121,7 @@ function formatDateSafe(dateStr) {
       return dateStr;
     }
     const day = d.getDate().toString().padStart(2, '0');
-    const months = ["January", "February", "March", "April", "May", "June", "July", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const months = ["January", "February", "March", "April", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
     const month = months[d.getMonth()];
     const year = d.getFullYear();
     return `${day} ${month} ${year}`;
@@ -134,6 +139,26 @@ function createCVHTML(profile, edu, career, pubs, acts, summary, photoBase64, lo
   const grey = "#4B5563";
   
   const hasData = (list) => Array.isArray(list) && list.length > 0;
+
+  // Helper to validate data against placeholders
+  const isReal = (val) => {
+    if (!val) return false;
+    const str = String(val).trim();
+    const placeholders = ["Researcher", "Independent", "user@xeenaps.app", "Not set", "-", ""];
+    return !placeholders.includes(str);
+  };
+
+  // Helper to render profile row only if data exists
+  const getProfileRow = (label, val) => {
+     if (!isReal(val)) return '';
+     return `<div class="label">${label}</div><div class="value">${val}</div>`;
+  };
+
+  // Prepare Contact String (Avoids empty separators)
+  const contactVal = [
+    isReal(profile.email) ? profile.email : null,
+    isReal(profile.phone) ? profile.phone : null
+  ].filter(Boolean).join(' | ');
 
   return `
   <!DOCTYPE html>
@@ -194,7 +219,6 @@ function createCVHTML(profile, edu, career, pubs, acts, summary, photoBase64, lo
         color: ${navy}; 
         font-weight: 800; 
         font-size: 18pt; 
-        text-transform: uppercase;
       }
       .profile-details { 
         display: grid; 
@@ -274,12 +298,12 @@ function createCVHTML(profile, edu, career, pubs, acts, summary, photoBase64, lo
         <div class="profile-info">
           <h2>${profile.fullName}</h2>
           <div class="profile-details">
-            <div class="label">Position</div><div class="value">${profile.jobTitle || '-'}</div>
-            <div class="label">Affiliation</div><div class="value">${profile.affiliation || '-'}</div>
-            <div class="label">Birth Date</div><div class="value">${formatDateSafe(profile.birthDate) || '-'}</div>
-            <div class="label">Contact</div><div class="value">${[profile.email, profile.phone].filter(Boolean).join(' | ') || '-'}</div>
-            <div class="label">Social</div><div class="value">${profile.socialMedia || '-'}</div>
-            <div class="label">Location</div><div class="value">${profile.address || '-'}</div>
+            ${getProfileRow('Position', profile.jobTitle)}
+            ${getProfileRow('Affiliation', profile.affiliation)}
+            ${getProfileRow('Birth Date', formatDateSafe(profile.birthDate))}
+            ${getProfileRow('Contact', contactVal)}
+            ${getProfileRow('Social', profile.socialMedia)}
+            ${getProfileRow('Location', profile.address)}
           </div>
         </div>
       </div>
@@ -290,31 +314,36 @@ function createCVHTML(profile, edu, career, pubs, acts, summary, photoBase64, lo
         ${hasData(edu) ? `
         <div class="section">
           <div class="section-title">Education</div>
-          ${edu.map(e => `
+          ${edu.map(e => {
+            const majorStr = e.major ? `${e.level} in ${e.major}` : e.level;
+            const subLine = [majorStr, e.degree].filter(x => x && x.trim()).join(' <span class="separator">|</span> ');
+            return `
             <div class="item">
               <div class="item-header">
                 <div class="item-title">${e.institution}</div>
                 <div class="item-date">${e.startYear} — ${e.endYear}</div>
               </div>
-              <div class="item-sub">${[e.level + " in " + e.major, e.degree].filter(Boolean).join(' <span class="separator">|</span> ')}</div>
+              <div class="item-sub">${subLine}</div>
             </div>
-          `).join('')}
+          `}).join('')}
         </div>
         ` : ''}
         
         ${hasData(career) ? `
         <div class="section">
           <div class="section-title">Career Journey</div>
-          ${career.map(c => `
+          ${career.map(c => {
+             const subLine = [c.company, c.location].filter(x => x && x.trim()).join(' <span class="separator">|</span> ');
+             return `
             <div class="item">
               <div class="item-header">
                 <div class="item-title">${c.position}</div>
                 <div class="item-date">${c.startDate} — ${c.endDate}</div>
               </div>
-              <div class="item-sub">${[c.company, c.location].filter(Boolean).join(' <span class="separator">|</span> ')}</div>
+              <div class="item-sub">${subLine}</div>
               ${c.description ? `<div class="item-desc">${c.description}</div>` : ''}
             </div>
-          `).join('')}
+          `}).join('')}
         </div>
         ` : ''}
         

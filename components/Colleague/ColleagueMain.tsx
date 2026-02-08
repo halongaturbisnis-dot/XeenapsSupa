@@ -15,6 +15,7 @@ import { StandardPrimaryButton, StandardQuickAccessBar, StandardQuickActionButto
 import { CardGridSkeleton } from '../Common/LoadingComponents';
 import { StandardTableFooter } from '../Common/TableComponents';
 import { useAsyncWorkflow } from '../../hooks/useAsyncWorkflow';
+import { useOptimisticUpdate } from '../../hooks/useOptimisticUpdate';
 import { showXeenapsDeleteConfirm } from '../../utils/confirmUtils';
 import { showXeenapsToast } from '../../utils/toastUtils';
 import ColleagueForm from './ColleagueForm';
@@ -23,6 +24,7 @@ import { BRAND_ASSETS } from '../../assets';
 
 const ColleagueMain: React.FC = () => {
   const workflow = useAsyncWorkflow(30000);
+  const { performUpdate, performDelete } = useOptimisticUpdate<ColleagueItem>();
   
   const [items, setItems] = useState<ColleagueItem[]>([]);
   const [totalCount, setTotalCount] = useState(0);
@@ -73,12 +75,39 @@ const ColleagueMain: React.FC = () => {
     loadData();
   }, [loadData]);
 
+  // Global Sync Listeners
+  useEffect(() => {
+    const handleUpdate = (e: any) => {
+      const updatedItem = e.detail as ColleagueItem;
+      setItems(prev => {
+        const idx = prev.findIndex(i => i.id === updatedItem.id);
+        if (idx > -1) return prev.map(i => i.id === updatedItem.id ? updatedItem : i);
+        return [updatedItem, ...prev];
+      });
+    };
+    const handleDeleteEvent = (e: any) => {
+      const id = e.detail;
+      setItems(prev => prev.filter(i => i.id !== id));
+    };
+
+    window.addEventListener('xeenaps-colleague-updated', handleUpdate);
+    window.addEventListener('xeenaps-colleague-deleted', handleDeleteEvent);
+    return () => {
+      window.removeEventListener('xeenaps-colleague-updated', handleUpdate);
+      window.removeEventListener('xeenaps-colleague-deleted', handleDeleteEvent);
+    };
+  }, []);
+
   const handleToggleFavorite = async (e: React.MouseEvent, item: ColleagueItem) => {
     e.stopPropagation();
-    const updated = { ...item, isFavorite: !item.isFavorite };
-    setItems(prev => prev.map(i => i.id === item.id ? updated : i));
-    await saveColleague(updated);
-    showXeenapsToast('success', updated.isFavorite ? 'Marked as favorite' : 'Removed from favorites');
+    await performUpdate(
+      items,
+      setItems,
+      [item.id],
+      (i) => ({ ...i, isFavorite: !i.isFavorite }),
+      async (updated) => await saveColleague(updated)
+    );
+    showXeenapsToast('success', !item.isFavorite ? 'Marked as favorite' : 'Removed from favorites');
   };
 
   const toggleSelectItem = (id: string) => {
@@ -89,12 +118,14 @@ const ColleagueMain: React.FC = () => {
     e.stopPropagation();
     const confirmed = await showXeenapsDeleteConfirm(1);
     if (confirmed) {
-      const success = await deleteColleague(id);
-      if (success) {
-        showXeenapsToast('success', 'Colleague removed');
-        setSelectedIds(prev => prev.filter(i => i !== id));
-        loadData();
-      }
+      await performDelete(
+        items,
+        setItems,
+        [id],
+        async (delId) => await deleteColleague(delId)
+      );
+      showXeenapsToast('success', 'Colleague removed');
+      setSelectedIds(prev => prev.filter(i => i !== id));
     }
   };
 
@@ -102,12 +133,16 @@ const ColleagueMain: React.FC = () => {
     if (selectedIds.length === 0) return;
     const confirmed = await showXeenapsDeleteConfirm(selectedIds.length);
     if (confirmed) {
-      for (const id of selectedIds) {
-        await deleteColleague(id);
-      }
-      showXeenapsToast('success', `${selectedIds.length} colleagues removed`);
-      setSelectedIds([]);
-      loadData();
+      const idsToDelete = [...selectedIds];
+      setSelectedIds([]); // Clear selection UI immediately
+      
+      await performDelete(
+        items,
+        setItems,
+        idsToDelete,
+        async (id) => await deleteColleague(id)
+      );
+      showXeenapsToast('success', `${idsToDelete.length} colleagues removed`);
     }
   };
 
@@ -117,16 +152,13 @@ const ColleagueMain: React.FC = () => {
     const anyUnfav = selectedItems.some(i => !i.isFavorite);
     const newValue = anyUnfav;
 
-    // Optimistic Update
-    setItems(prev => prev.map(i => selectedIds.includes(i.id) ? { ...i, isFavorite: newValue } : i));
-    
-    // Background Sync
-    for (const id of selectedIds) {
-      const target = items.find(it => it.id === id);
-      if (target) {
-        await saveColleague({ ...target, isFavorite: newValue });
-      }
-    }
+    await performUpdate(
+      items,
+      setItems,
+      selectedIds,
+      (i) => ({ ...i, isFavorite: newValue }),
+      async (updated) => await saveColleague(updated)
+    );
     showXeenapsToast('success', `Bulk update complete`);
   };
 

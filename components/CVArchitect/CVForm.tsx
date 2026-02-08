@@ -147,7 +147,7 @@ const CVForm: React.FC = () => {
 
   const handleFinalSubmit = async () => {
     setIsGenerating(true);
-    Swal.fire({ title: 'Synthesizing PDF...', allowOutsideClick: false, didOpen: () => Swal.showLoading(), ...XEENAPS_SWAL_CONFIG });
+    Swal.fire({ title: 'Synthesizing CV...', allowOutsideClick: false, didOpen: () => Swal.showLoading(), ...XEENAPS_SWAL_CONFIG });
     try {
       // Pass sourceData to generator to avoid refetching
       const result = await generateCVPdf(config, sourceData);
@@ -384,7 +384,7 @@ const CVForm: React.FC = () => {
               className={`w-full max-w-2xl py-6 bg-[#004A74] text-[#FED400] rounded-[2.5rem] font-black uppercase tracking-[0.4em] text-sm shadow-2xl transition-all flex items-center justify-center gap-4 ${isGenerating || isLoading ? 'opacity-50 grayscale' : 'hover:scale-105 active:scale-95'}`}
             >
               {isGenerating ? <Loader2 size={24} className="animate-spin" /> : <Save size={24} />}
-              {isGenerating ? 'Architecting PDF...' : isLoading ? 'Synchronizing...' : 'Generate CV'}
+              {isGenerating ? 'Architecting...' : isLoading ? 'Synchronizing...' : 'Generate CV'}
             </button>
           </div>
         </div>
