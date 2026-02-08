@@ -807,11 +807,7 @@ const LibraryDetailView: React.FC<LibraryDetailViewProps> = ({ item, onClose, is
                     <button onClick={() => { setShowNotebook(true); setIsMenuOpen(false); }} className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-gray-600 hover:bg-[#004A74] hover:text-white rounded-xl transition-all">
                       <NotebookPen className="w-4 h-4" /> Note
                     </button>
-                    <button 
-                      onClick={() => {  setIsTracerPickerOpen(true); setIsMenuOpen(false);  }} 
-                    
-                      className={`w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-gray-600 rounded-xl transition-all ${hasContent ? 'hover:bg-[#004A74] hover:text-white' : 'opacity-50 cursor-not-allowed bg-gray-50'}`}
-                    >
+                    <button onClick={() => {  setIsTracerPickerOpen(true); setIsMenuOpen(false);  }} className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-gray-600 hover:bg-[#004A74] hover:text-white rounded-xl transition-all">
                       <Target className="w-4 h-4" /> Tracer Attachment
                     </button>
                     <button onClick={() => { setIsTeachingPickerOpen(true); setIsMenuOpen(false); }} className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-gray-600 hover:bg-[#004A74] hover:text-white rounded-xl transition-all"><Grip className="w-4 h-4" /> Teaching Attachment</button>
