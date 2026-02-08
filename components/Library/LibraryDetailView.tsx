@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 // @ts-ignore
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -43,7 +44,7 @@ import {
   StickyNote, 
   Share2, 
   Target, 
-  BookOpenCheck,
+  BookOpenCheck, 
   Presentation,
   ListTodo,
   NotebookPen,
@@ -931,6 +932,7 @@ const LibraryDetailView: React.FC<LibraryDetailViewProps> = ({ item, onClose, is
                 )}
               </section>
 
+              {currentItem.extractedJsonId && (
               <section className="space-y-6">
                 <div className="flex items-center justify-between">
                   <h2 className="text-lg font-black text-[#004A74] flex items-center gap-2">
@@ -1013,6 +1015,7 @@ const LibraryDetailView: React.FC<LibraryDetailViewProps> = ({ item, onClose, is
                   </div>
                 </div>
               </section>
+              )}
 
               <section className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-gray-50">
                 <div className="space-y-4">
@@ -1025,83 +1028,57 @@ const LibraryDetailView: React.FC<LibraryDetailViewProps> = ({ item, onClose, is
                         const urlMatch = ref.match(/https?:\/\/[^\s<]+/);
                         const url = urlMatch ? urlMatch[0].replace(/[.,;)]+$/, '') : null;
                         return (
-                          <div key={idx} className="bg-gray-50/50 p-4 rounded-3xl border border-gray-100 flex flex-col gap-4 transition-all hover:bg-white group">
-                            <div className="flex gap-4">
-                              <span className="shrink-0 w-7 h-7 rounded-full bg-[#004A74] text-[#FED400] text-[10px] font-black flex items-center justify-center shadow-sm">{idx + 1}</span>
-                              <p className="text-xs font-bold text-[#004A74]/80 leading-relaxed flex-1" dangerouslySetInnerHTML={{ __html: ref }} />
+                          <div key={idx} className="bg-white p-5 rounded-3xl border border-gray-100 flex flex-col gap-3 transition-all hover:bg-[#004A74]/5 group">
+                            <div className="flex gap-3">
+                              <span className="shrink-0 w-6 h-6 rounded-full bg-[#004A74] text-[#FED400] text-[10px] font-black flex items-center justify-center shadow-sm">{idx+1}</span>
+                              <p className="text-[10px] font-bold text-[#004A74]/80 leading-relaxed flex-1" dangerouslySetInnerHTML={{ __html: ref }} />
                             </div>
-                            <div className="flex items-center justify-end gap-2">
-                              {/* Fix: Added missing event argument to handleCopy call to fix the "Expected 2 arguments, but got 1" error. */}
-                              <button 
-                                onClick={(e) => handleCopy(e, ref.replace(/<[^>]*>/g, ''))}
-                                className="flex items-center gap-1.5 px-3 py-1.5 bg-white text-[#004A74] rounded-lg border border-gray-100 text-[9px] font-black uppercase tracking-tight shadow-sm hover:bg-[#FED400] transition-all"
-                              >
-                                <DocumentDuplicateIcon className="w-3 h-3" /> Copy
-                              </button>
-                              {url && (
-                                <button 
-                                  onClick={() => handleOpenLink(url)}
-                                  className="flex items-center gap-1.5 px-3 py-1.5 bg-[#004A74] text-white rounded-lg text-[9px] font-black uppercase tracking-tight shadow-sm hover:scale-105 transition-all"
-                                >
-                                  <ArrowTopRightOnSquareIcon className="w-3 h-3" /> Visit
-                                </button>
-                              )}
+                            <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <button onClick={(e) => handleCopy(e, ref.replace(/<[^>]*>/g, ''))} className="flex items-center gap-2 px-3 py-1.5 bg-white text-[#004A74] rounded-lg border border-gray-100 text-[8px] font-black uppercase tracking-tight shadow-sm hover:bg-[#FED400] transition-all"><DocumentDuplicateIcon className="w-3 h-3" /> Copy</button>
+                              {url && <button onClick={() => handleOpenLink(url)} className="flex items-center gap-2 px-3 py-1.5 bg-[#004A74] text-white rounded-lg text-[8px] font-black uppercase tracking-tight shadow-sm hover:scale-105 transition-all"><ArrowTopRightOnSquareIcon className="w-3 h-3" /> Visit</button>}
                             </div>
                           </div>
                         );
-                      }) : <div className="py-6 text-center text-gray-300 text-[10px] font-bold uppercase italic">No supporting links.</div>
+                      }) : <p className="text-[10px] font-bold text-gray-300 uppercase italic">No supporting references found.</p>
                     )}
                   </div>
                 </div>
 
-                <div className="bg-[#004A74] p-6 rounded-[2.5rem] shadow-xl space-y-4 flex flex-col">
-                  <h3 className="text-[9px] font-black uppercase tracking-widest text-white/50 flex items-center gap-2"><VideoCameraIcon className="w-3.5 h-3.5" /> Video Recommendation</h3>
-                  <div className="1-flex flex-col justify-center">
-                    {isLoading && !isSyncing ? <div className="aspect-video w-full skeleton rounded-2xl" /> : (
-                      supportingData.videoUrl ? (
-                        <div className="aspect-video rounded-2xl overflow-hidden bg-black shadow-2xl border-4 border-white/10 group transition-all hover:scale-[1.01]">
-                          <iframe className="w-full h-full" src={supportingData.videoUrl} frameBorder="0" allowFullScreen></iframe>
-                        </div>
-                      ) : (
-                        <div className="aspect-video rounded-2xl bg-white/5 flex flex-col items-center justify-center border-2 border-dashed border-white/10">
-                          <VideoCameraIcon className="w-10 h-10 text-white/10 mb-2" />
-                          <p className="text-[8px] font-black text-white/20 uppercase tracking-[0.2em]">Video recommendation unavailable</p>
-                        </div>
-                      )
+                <div className="bg-[#004A74] p-8 rounded-[3rem] text-white space-y-6 flex flex-col">
+                  <h3 className="text-[9px] font-black uppercase tracking-widest text-white/40 flex items-center gap-2"><VideoCameraIcon className="w-4 h-4" /> Visual Insights</h3>
+                  <div className="flex-1 flex flex-col justify-center">
+                    {currentItem.youtubeId || supportingData.videoUrl ? (
+                      <div className="aspect-video rounded-[2rem] overflow-hidden bg-black shadow-2xl border-4 border-white/10">
+                        <iframe className="w-full h-full" src={currentItem.youtubeId || supportingData.videoUrl} frameBorder="0" allowFullScreen></iframe>
+                      </div>
+                    ) : (
+                      <div className="aspect-video rounded-[2rem] bg-white/5 border-2 border-dashed border-white/10 flex flex-col items-center justify-center space-y-4">
+                        <VideoCameraIcon className="w-12 h-12 text-white/10" />
+                        <p className="text-[9px] font-black text-white/20 uppercase tracking-[0.2em]">Video node unavailable</p>
+                      </div>
                     )}
-                    <p className="mt-4 text-[10px] text-[#FED400]/80 font-bold italic text-center px-4 leading-relaxed">"This video may irrelevant, please watch it thoroughly."</p>
                   </div>
+                  <p className="text-[10px] text-[#FED400]/80 font-bold italic text-center px-4">"Multimedia triangulation anchors knowledge 40% faster than text alone."</p>
                 </div>
               </section>
 
-              <footer className="py-8 text-center">
-                 <div className="w-10 h-0.5 bg-gray-100 mx-auto mb-4 rounded-full" />
-                 <p className="text-[8px] font-black text-gray-300 uppercase tracking-[0.6em]">XEENAPS PKM SYSTEMS</p>
+              <footer className="py-20 text-center opacity-20">
+                <div className="w-10 h-0.5 bg-[#004A74] mx-auto mb-4 rounded-full" />
+                <p className="text-[8px] font-black text-[#004A74] uppercase tracking-[0.8em]">XEENAPS ANALYTIC INFRASTRUCTURE</p>
               </footer>
             </div>
           </div>
         )}
       </div>
 
-      {showTips && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 bg-black/50 backdrop-blur-sm animate-in fade-in duration-300">
-          <div className="bg-[#004A74] text-white p-8 md:p-12 rounded-[3rem] max-w-lg shadow-2xl relative border border-white/10">
-            <button onClick={() => setShowTips(false)} className="absolute top-6 right-6 p-2 bg-white/10 hover:bg-white/20 rounded-full transition-all"><XMarkIcon className="w-6 h-6" /></button>
-            <LightBulbIcon className="w-10 h-10 text-[#FED400] mb-6 drop-shadow-[0_0_10px_rgba(254,212,0,0.5)]" />
-            <h3 className="text-xl font-black mb-4 uppercase tracking-widest">Knowledge Anchor Tips</h3>
-            <p className="text-sm font-medium italic leading-relaxed opacity-90 border-l-2 border-[#FED400] pl-4">"{currentItem.quickTipsForYou || 'Generate AI insights to unlock specific tips for this collection.'}"</p>
-          </div>
-        </div>
-      )}
-
       <style>{`
-        .custom-scrollbar::-webkit-scrollbar { width: 3px; }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #004A7430; border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(0, 74, 116, 0.1); border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(0, 74, 116, 0.2); }
       `}</style>
     </div>
   );
-}; 
-
+};
 
 export default LibraryDetailView;

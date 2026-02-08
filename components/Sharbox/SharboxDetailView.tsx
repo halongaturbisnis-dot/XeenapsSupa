@@ -470,11 +470,6 @@ const SharboxDetailView: React.FC<SharboxDetailViewProps> = ({ item, activeTab, 
                 <p className="text-[10px] text-[#FED400]/80 font-bold italic text-center px-4">"Multimedia triangulation anchors knowledge 40% faster than text alone."</p>
              </div>
           </section>
-
-          <footer className="py-20 text-center opacity-20">
-             <BuildingLibraryIcon className="w-12 h-12 mx-auto mb-4 text-[#004A74]" />
-             <p className="text-[8px] font-black uppercase tracking-[0.8em]">XEENAPS TRANSIT ARCHIVE</p>
-          </footer>
         </div>
       </div>
 
