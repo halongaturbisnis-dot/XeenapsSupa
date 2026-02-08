@@ -142,10 +142,8 @@ const AllPublication: React.FC = () => {
         updatedAt: new Date().toISOString()
       };
 
-      const success = await savePublication(newItem);
-      if (success) {
-        navigate(`/research/publication/${id}`, { state: { item: newItem } });
-      }
+      // OPTIMISTIC CREATION: Navigate directly with Draft State (In-Memory)
+      navigate(`/research/publication/${id}`, { state: { item: newItem, isNew: true } });
     }
   };
 

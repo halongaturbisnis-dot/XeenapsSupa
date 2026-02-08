@@ -36,14 +36,17 @@ const PublicationDetail: React.FC = () => {
   
   // State Management for Manual Save
   const [isBusy, setIsBusy] = useState(false);
-  const [isDirty, setIsDirty] = useState(false);
+  // Initialize isDirty to true if it is a new draft
+  const [isDirty, setIsDirty] = useState(() => (location.state as any)?.isNew || false);
   const [isSaving, setIsSaving] = useState(false);
   
   const titleRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     const load = async () => {
+      // If item exists in state (passed from navigation), skip fetch
       if (item && item.id === id) return;
+      
       const res = await fetchPublicationsPaginated(1, 1000);
       const found = res.items.find(i => i.id === id);
       if (found) setItem(found);
