@@ -20,6 +20,15 @@ const sanitizeSharboxPayload = (item: SharboxItem, target: 'INBOX' | 'SENT') => 
   // We must remove it when saving to Sent box.
   if (target === 'SENT') {
     delete cleanItem.isRead;
+    
+    // Remove Sender fields from Sent items (Sent box tracks Receivers)
+    delete cleanItem.senderName;
+    delete cleanItem.senderPhotoUrl;
+    delete cleanItem.senderAffiliation;
+    delete cleanItem.senderUniqueAppId;
+    delete cleanItem.senderEmail;
+    delete cleanItem.senderPhone;
+    delete cleanItem.senderSocialMedia;
   }
 
   return cleanItem;
