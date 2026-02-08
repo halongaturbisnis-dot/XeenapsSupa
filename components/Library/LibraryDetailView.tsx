@@ -583,7 +583,10 @@ const LibraryDetailView: React.FC<LibraryDetailViewProps> = ({ item, onClose, is
     
     if (frozenState?.returnToTeaching) {
       navigate(`/teaching/${frozenState.returnToTeaching}`, { 
-        state: { activeTab: frozenState.activeTab || 'substance' }, 
+        state: { 
+           activeTab: frozenState.activeTab || 'substance',
+           item: frozenState.teachingItem // Pass back full teaching object for hydration
+        }, 
         replace: true 
       });
       return;

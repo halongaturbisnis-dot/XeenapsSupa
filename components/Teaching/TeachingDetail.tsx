@@ -20,9 +20,9 @@ import {
   Clock, 
   BookOpen, 
   ClipboardCheck, 
-  MapPin,
-  Users,
-  Plus,
+  MapPin, 
+  Users, 
+  Plus, 
   Trash2 as TrashIcon,
   Zap,
   Eye,
@@ -203,6 +203,26 @@ const TeachingDetail: React.FC = () => {
     setIsDirty(true);
   };
 
+  const handleAutoSaveField = async (field: keyof TeachingItem, val: any, message: string) => {
+    if (!item) return;
+    const updated = { ...item, [field]: val, updatedAt: new Date().toISOString() };
+    
+    // 1. Optimistic Update
+    setItem(updated);
+    
+    // 2. Immediate Save (Auto Save Strategy)
+    try {
+      await saveTeachingItem(updated);
+      showXeenapsToast('success', message);
+      // Since we saved, we can technically clean the dirty flag, 
+      // but only if there are no other pending changes. 
+      // For simplicity in this Hybrid model: We reset isDirty because we just synced the WHOLE object.
+      setIsDirty(false);
+    } catch (e) {
+      showXeenapsToast('error', 'Auto-save failed');
+    }
+  };
+
   const handleSaveChanges = async () => {
     if (!item) return;
     setIsSaving(true);
@@ -269,7 +289,7 @@ const TeachingDetail: React.FC = () => {
 
     if (formValues && formValues[0] && formValues[1]) {
       const newLinks = [...(item?.attachmentLink || []), { label: formValues[0], url: formValues[1] }];
-      handleFieldChange('attachmentLink', newLinks);
+      handleAutoSaveField('attachmentLink', newLinks, 'External link added');
     }
   };
 
@@ -286,14 +306,14 @@ const TeachingDetail: React.FC = () => {
       const newItems = data.filter(res => !current.some(r => r.id === res.id))
                            .map(res => ({ id: res.id, title: res.title }));
       if (newItems.length > 0) {
-        handleFieldChange('referenceLinks', [...current, ...newItems]);
+        handleAutoSaveField('referenceLinks', [...current, ...newItems], 'Library resources attached');
       }
     } else if (pickerType === 'PRESENTATION') {
       const current = item.presentationId || [];
       const newItems = data.filter(res => !current.some(p => p.id === res.id))
                            .map(res => ({ id: res.id, title: res.title, gSlidesId: res.gSlidesId }));
       if (newItems.length > 0) {
-        handleFieldChange('presentationId', [...current, ...newItems]);
+        handleAutoSaveField('presentationId', [...current, ...newItems], 'Slides attached');
       }
     } else if (pickerType === 'QUESTION') {
       const current = item.questionBankId || [];
@@ -304,7 +324,7 @@ const TeachingDetail: React.FC = () => {
                              questionText: res.questionText 
                            }));
       if (newItems.length > 0) {
-        handleFieldChange('questionBankId', [...current, ...newItems]);
+        handleAutoSaveField('questionBankId', [...current, ...newItems], 'Questions attached');
       }
     }
     setIsPickerOpen(false);
@@ -508,8 +528,8 @@ const TeachingDetail: React.FC = () => {
                                <div key={lib.id} className="flex items-start justify-between gap-2 p-2.5 bg-white rounded-xl group border border-gray-100 hover:border-[#004A74]/20 transition-all shadow-sm">
                                   <span className="text-[9px] font-bold text-[#004A74] leading-tight break-words flex-1">{lib.title}</span>
                                   <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all shrink-0">
-                                     <button onClick={() => navigate('/', { state: { openItem: { id: lib.id, title: lib.title }, returnToTeaching: item.id, activeTab: 'substance' } })} className="p-1 text-cyan-600 hover:bg-gray-50 rounded-md transition-all"><Eye size={12} /></button>
-                                     <button onClick={() => handleFieldChange('referenceLinks', item.referenceLinks.filter(i => i.id !== lib.id))} className="p-1 text-red-400 hover:text-red-600 hover:bg-gray-50 rounded-md transition-all"><TrashIcon size={12} /></button>
+                                     <button onClick={() => navigate('/', { state: { openItem: { id: lib.id, title: lib.title }, returnToTeaching: item.id, activeTab: 'substance', teachingItem: item } })} className="p-1 text-cyan-600 hover:bg-gray-50 rounded-md transition-all"><Eye size={12} /></button>
+                                     <button onClick={() => handleAutoSaveField('referenceLinks', item.referenceLinks.filter(i => i.id !== lib.id), 'Resource removed')} className="p-1 text-red-400 hover:text-red-600 hover:bg-gray-50 rounded-md transition-all"><TrashIcon size={12} /></button>
                                   </div>
                                </div>
                              ))
@@ -540,7 +560,7 @@ const TeachingDetail: React.FC = () => {
                                      >
                                        <Eye size={12} />
                                      </button>
-                                     <button onClick={() => handleFieldChange('presentationId', item.presentationId.filter(i => i.id !== ppt.id))} className="p-1 text-red-400 hover:text-red-600 hover:bg-gray-50 rounded-md transition-all"><TrashIcon size={12} /></button>
+                                     <button onClick={() => handleAutoSaveField('presentationId', item.presentationId.filter(i => i.id !== ppt.id), 'Slide removed')} className="p-1 text-red-400 hover:text-red-600 hover:bg-gray-50 rounded-md transition-all"><TrashIcon size={12} /></button>
                                   </div>
                                </div>
                              ))
@@ -571,7 +591,7 @@ const TeachingDetail: React.FC = () => {
                                   <span className="text-[9px] font-bold text-[#004A74] leading-tight line-clamp-2 overflow-hidden flex-1 italic">
                                     {q.label || q.questionText}
                                   </span>
-                                  <button onClick={() => handleFieldChange('questionBankId', item.questionBankId.filter(i => i.id !== q.id))} className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-600 transition-all p-1 hover:bg-gray-50 rounded-md shrink-0"><TrashIcon size={12} /></button>
+                                  <button onClick={() => handleAutoSaveField('questionBankId', item.questionBankId.filter(i => i.id !== q.id), 'Question set removed')} className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-600 transition-all p-1 hover:bg-gray-50 rounded-md shrink-0"><TrashIcon size={12} /></button>
                                </div>
                              ))
                            }
@@ -590,7 +610,7 @@ const TeachingDetail: React.FC = () => {
                                   <a href={link.url} target="_blank" rel="noreferrer" className="text-[9px] font-bold text-blue-600 truncate hover:underline flex items-center gap-1 flex-1">
                                     {link.label} <ExternalLink size={8} />
                                   </a>
-                                  <button onClick={() => handleFieldChange('attachmentLink', item.attachmentLink.filter((_, i) => i !== idx))} className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-600 transition-all p-1 hover:bg-gray-50 rounded-md shrink-0"><TrashIcon size={12} /></button>
+                                  <button onClick={() => handleAutoSaveField('attachmentLink', item.attachmentLink.filter((_, i) => i !== idx), 'Link removed')} className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-600 transition-all p-1 hover:bg-gray-50 rounded-md shrink-0"><TrashIcon size={12} /></button>
                                </div>
                              ))
                            }
