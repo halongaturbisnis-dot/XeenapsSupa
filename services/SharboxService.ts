@@ -9,6 +9,7 @@ import {
   deleteSentItemFromSupabase 
 } from './SharboxSupabaseService';
 import { upsertLibraryItemToSupabase } from './LibrarySupabaseService';
+import { fetchProfileFromSupabase } from './ProfileSupabaseService';
 
 /**
  * XEENAPS SHARBOX SERVICE (HYBRID ARCHITECTURE)
@@ -95,6 +96,9 @@ export const shareToColleague = async (
   const transactionId = crypto.randomUUID();
 
   try {
+    // CORRECTION: Fetch Sender Profile from Supabase to ensure accurate identity
+    const senderProfile = await fetchProfileFromSupabase();
+
     // 1. Transport via GAS (To Receiver's Sheet)
     const res = await fetch(GAS_WEB_APP_URL, {
       method: 'POST',
@@ -105,7 +109,8 @@ export const shareToColleague = async (
         receiverPhotoUrl,
         message,
         item, // GAS Script needs full item to write to Receiver's Inbox
-        receiverContacts
+        receiverContacts,
+        senderProfile // Pass Supabase profile data to GAS
       })
     });
     const result = await res.json();

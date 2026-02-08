@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { ColleagueItem, LibraryItem } from '../../types';
 import { fetchColleaguesPaginated } from '../../services/ColleagueService';
-import { fetchLibraryPaginated } from '../../services/gasService';
+// CORRECTION: Use Supabase service for Library items
+import { fetchLibraryPaginatedFromSupabase } from '../../services/LibrarySupabaseService';
 import { shareToColleague } from '../../services/SharboxService';
 import { 
   XMarkIcon, 
@@ -61,7 +62,8 @@ const SharboxWorkflowModal: React.FC<SharboxWorkflowModalProps> = ({ initialItem
         setDataList(result.items);
         setTotalCount(result.totalCount);
       } else if (step === 'PICK_LIBRARY') {
-        const result = await fetchLibraryPaginated(currentPage, itemsPerPage, search, 'All', 'research');
+        // CORRECTION: Fetch Library Data ONLY FROM SUPABASE
+        const result = await fetchLibraryPaginatedFromSupabase(currentPage, itemsPerPage, search, 'All', 'research', 'createdAt', 'desc');
         setDataList(result.items);
         setTotalCount(result.totalCount);
       }
