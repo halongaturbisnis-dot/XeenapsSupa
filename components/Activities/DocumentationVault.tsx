@@ -1,33 +1,34 @@
 import React, { useState, useEffect, useRef } from 'react';
 // @ts-ignore
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { ActivityVaultItem, ActivityItem } from '../../types';
+import { TeachingVaultItem, TeachingItem, ActivityVaultItem, ActivityItem } from '../../types';
 import { fetchVaultContent, updateVaultContent, uploadVaultFile, deleteRemoteFile, saveActivity } from '../../services/ActivityService';
 import { 
   Plus, 
   Trash2, 
   FileText, 
   Link as LinkIcon, 
-  ExternalLink, 
-  Image as ImageIcon,
+  X, 
+  PlusCircle, 
+  FileIcon, 
+  Eye, 
+  ArrowLeft, 
+  LayoutGrid, 
   Loader2,
-  X,
-  PlusCircle,
-  FileIcon,
-  Download,
-  Eye,
-  Settings,
+  CloudUpload,
   Globe,
-  ArrowLeft,
-  LayoutGrid,
-  CheckCircle2,
   Save,
-  CloudUpload
+  ChevronRight,
+  FileCode,
+  FileCheck
 } from 'lucide-react';
 import { showXeenapsToast } from '../../utils/toastUtils';
 import { showXeenapsConfirm } from '../../utils/swalUtils';
-import Swal from 'sweetalert2';
-import { XEENAPS_SWAL_CONFIG } from '../../utils/swalUtils';
+
+interface LinkQueueItem {
+  url: string;
+  label: string;
+}
 
 interface FileUploadQueueItem {
   file: File;
@@ -36,23 +37,16 @@ interface FileUploadQueueItem {
   status: 'pending' | 'uploading' | 'success' | 'error';
 }
 
-interface LinkQueueItem {
-  url: string;
-  label: string;
-}
-
 const DocumentationVault: React.FC = () => {
   const { id: urlActivityId } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const location = useLocation();
   
-  // States
   const [metadata, setMetadata] = useState<ActivityItem | null>((location.state as any)?.item || null);
   const [items, setItems] = useState<ActivityVaultItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   
-  // Unified Modal States
   const [isFileModalOpen, setIsFileModalOpen] = useState(false);
   const [isLinkModalOpen, setIsLinkModalOpen] = useState(false);
   const [fileQueue, setFileQueue] = useState<FileUploadQueueItem[]>([]);
@@ -83,7 +77,7 @@ const DocumentationVault: React.FC = () => {
       setIsLoading(false);
     };
     loadVault();
-  }, [metadata?.vaultJsonId]);
+  }, [metadata?.vaultJsonId, metadata?.storageNodeUrl]);
 
   const handleSyncVault = async (newItems: ActivityVaultItem[]) => {
     if (!metadata || !urlActivityId) return;
@@ -124,16 +118,15 @@ const DocumentationVault: React.FC = () => {
     setIsFileModalOpen(false);
 
     // 1. OPTIMISTIC UPDATE: Add placeholder items to UI immediately
-    const optimisticItems: ActivityVaultItem[] = fileQueue.map(q => ({
+    const optimisticBatchId = crypto.randomUUID();
+    const optimisticItems: ActivityVaultItem[] = fileQueue.map((q, idx) => ({
       type: 'FILE',
       label: q.label,
       mimeType: q.file.type,
-      // For images, we can use the local object URL for instant sharp preview in gallery
-      fileId: q.previewUrl ? `optimistic_${q.previewUrl}` : undefined,
+      fileId: `optimistic_${optimisticBatchId}_${idx}_${q.previewUrl || 'no-preview'}`,
       nodeUrl: metadata?.storageNodeUrl
     }));
     
-    const prevItems = [...items];
     setItems(prev => [...prev, ...optimisticItems]);
 
     // 2. BACKGROUND UPLOAD PROCESS
@@ -152,11 +145,16 @@ const DocumentationVault: React.FC = () => {
         }
       }
 
-      const finalGallery = [...prevItems, ...uploadedItems];
-      setItems(finalGallery);
-      await handleSyncVault(finalGallery);
+      // Finalize: Replace optimistic items
+      setItems(prev => {
+        const filtered = prev.filter(item => !item.fileId?.startsWith(`optimistic_${optimisticBatchId}`));
+        const finalGallery = [...filtered, ...uploadedItems];
+        handleSyncVault(finalGallery);
+        return finalGallery;
+      });
     } catch (err) {
-      setItems(prevItems);
+      // Rollback optimistic
+      setItems(prev => prev.filter(item => !item.fileId?.startsWith(`optimistic_${optimisticBatchId}`)));
       showXeenapsToast('error', 'Batch upload synchronization failed');
     } finally {
       setFileQueue([]);
@@ -178,7 +176,6 @@ const DocumentationVault: React.FC = () => {
       label: l.label
     }));
 
-    const prevItems = [...items];
     const updatedGallery = [...items, ...newVaultItems];
     setItems(updatedGallery); 
 
@@ -186,7 +183,7 @@ const DocumentationVault: React.FC = () => {
     try {
       await handleSyncVault(updatedGallery);
     } catch (err) {
-      setItems(prevItems);
+      setItems(items); // Revert on error
       showXeenapsToast('error', 'Link synchronization failed');
     }
     
@@ -218,13 +215,23 @@ const DocumentationVault: React.FC = () => {
     }
   };
 
+  // --- HYBRID STATE LOCKING LOGIC ---
+  const isLocked = isProcessing || items.some(i => i.fileId?.startsWith('optimistic_'));
+
   return (
     <div className="flex-1 flex flex-col h-full bg-[#f8fafc] animate-in slide-in-from-right duration-500 overflow-hidden">
       
       {/* PAGE HEADER */}
       <header className="px-6 md:px-10 py-4 bg-white/80 backdrop-blur-md border-b border-gray-100 flex items-center justify-between shrink-0 z-50">
          <div className="flex items-center gap-4">
-            <button onClick={() => navigate(`/activities/${urlActivityId}`, { state: { item: metadata } })} className="p-2.5 bg-gray-50 text-gray-400 hover:text-[#004A74] hover:bg-[#FED400]/20 rounded-xl transition-all shadow-sm active:scale-90">
+            <button 
+              onClick={() => {
+                if (isLocked) return;
+                navigate(`/activities/${urlActivityId}`, { state: { item: metadata } });
+              }} 
+              disabled={isLocked}
+              className={`p-2.5 bg-gray-50 text-gray-400 hover:text-[#004A74] hover:bg-[#FED400]/20 rounded-xl transition-all shadow-sm active:scale-90 ${isLocked ? 'opacity-50 cursor-not-allowed' : ''}`}
+            >
                <ArrowLeft size={18} strokeWidth={3} />
             </button>
             <div className="min-w-0">
@@ -236,17 +243,17 @@ const DocumentationVault: React.FC = () => {
          <div className="flex items-center gap-2">
             <button 
               onClick={() => setIsLinkModalOpen(true)}
-              disabled={isProcessing}
-              className="flex items-center gap-2 px-5 py-2.5 bg-white text-[#004A74] rounded-2xl text-[9px] font-black uppercase tracking-widest border border-gray-200 transition-all hover:bg-gray-50 active:scale-95 shadow-sm"
+              disabled={isLocked}
+              className={`flex items-center gap-2 px-5 py-2.5 bg-white text-[#004A74] rounded-2xl text-[9px] font-black uppercase tracking-widest border border-gray-200 transition-all hover:bg-gray-50 active:scale-95 shadow-sm ${isLocked ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
               <LinkIcon size={14} /> Add Links
             </button>
             <button 
               onClick={() => setIsFileModalOpen(true)}
-              disabled={isProcessing}
-              className="flex items-center gap-2 px-6 py-2.5 bg-[#004A74] text-white rounded-2xl text-[9px] font-black uppercase tracking-widest transition-all hover:shadow-lg active:scale-95"
+              disabled={isLocked}
+              className={`flex items-center gap-2 px-6 py-2.5 bg-[#004A74] text-white rounded-2xl text-[9px] font-black uppercase tracking-widest transition-all hover:shadow-lg active:scale-95 ${isLocked ? 'opacity-70 cursor-not-allowed' : ''}`}
             >
-              {isProcessing ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />} Upload Files
+              {isLocked ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />} Upload Files
             </button>
          </div>
       </header>
@@ -265,20 +272,35 @@ const DocumentationVault: React.FC = () => {
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
             {items.map((item, idx) => {
               const isOptimistic = item.fileId?.startsWith('optimistic_');
-              const isImage = item.type === 'FILE' && (item.mimeType?.startsWith('image/') || isOptimistic);
+              // Strictly detect if it is an image based on mimeType
+              const isImage = item.type === 'FILE' && item.mimeType?.startsWith('image/');
               
-              const previewUrl = isOptimistic 
-                ? item.fileId?.replace('optimistic_', '') 
-                : item.type === 'LINK' ? item.url : `https://lh3.googleusercontent.com/d/${item.fileId}`;
+              let displayUrl = '';
+              if (item.type === 'LINK') {
+                displayUrl = item.url || '';
+              } else if (isOptimistic) {
+                // For optimistic items, we rely on the blob URL stored in the ID
+                const parts = item.fileId?.split('_') || [];
+                const rawUrl = parts.length > 3 ? parts.slice(3).join('_') : '';
+                displayUrl = rawUrl === 'no-preview' ? '' : rawUrl;
+              } else if (item.fileId) {
+                // FIXED LOGIC: Strict distinction between Image (LH3) and File (Drive Viewer)
+                if (isImage) {
+                  displayUrl = `https://lh3.googleusercontent.com/d/${item.fileId}`;
+                } else {
+                  displayUrl = `https://drive.google.com/file/d/${item.fileId}/view`;
+                }
+              }
 
               return (
                 <div 
                   key={idx}
-                  className={`group relative aspect-square bg-white border border-gray-100 rounded-[2.5rem] shadow-sm overflow-hidden hover:shadow-2xl hover:-translate-y-2 transition-all duration-500 flex flex-col ${isOptimistic ? 'opacity-60' : ''}`}
+                  className={`group relative aspect-square bg-white border border-gray-100 rounded-[2.5rem] shadow-sm overflow-hidden hover:shadow-2xl hover:-translate-y-2 transition-all duration-500 flex flex-col ${isOptimistic ? 'opacity-80 ring-2 ring-[#FED400]/50' : ''}`}
                 >
                   <div className="flex-1 bg-gray-50 flex items-center justify-center overflow-hidden relative">
+                    {/* Render Image only if it is actually an image */}
                     {isImage ? (
-                      <img src={previewUrl!} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" alt={item.label} />
+                      <img src={displayUrl} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" alt={item.label} />
                     ) : item.type === 'LINK' ? (
                       <div className="flex flex-col items-center gap-2 text-[#004A74]/30 group-hover:text-[#FED400] transition-colors">
                          <Globe size={40} strokeWidth={1.5} />
@@ -291,28 +313,29 @@ const DocumentationVault: React.FC = () => {
                       </div>
                     )}
 
-                    {/* HOVER ACTIONS */}
-                    <div className="absolute inset-0 bg-[#004A74]/90 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-3">
-                       {!isOptimistic && (
+                    {/* PER-ITEM IN-FRAME LOADER */}
+                    {isOptimistic && (
+                      <div className="absolute inset-0 bg-white/60 backdrop-blur-[2px] flex flex-col items-center justify-center z-20">
+                        <Loader2 size={32} className="text-[#004A74] animate-spin" />
+                        <span className="text-[7px] font-black uppercase mt-2 text-[#004A74] tracking-widest animate-pulse">Syncing...</span>
+                      </div>
+                    )}
+
+                    {/* ACTIONS: ONLY SHOW IF READY */}
+                    {!isOptimistic && (
+                      <div className="absolute inset-0 bg-[#004A74]/90 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-3 z-30">
                          <button 
-                            onClick={() => previewUrl && window.open(previewUrl, '_blank')}
+                            onClick={() => displayUrl && window.open(displayUrl, '_blank')}
                             className="p-3 bg-[#FED400] text-[#004A74] rounded-full hover:scale-110 active:scale-95 transition-all shadow-lg"
                          >
                             <Eye size={18} />
                          </button>
-                       )}
-                       <button 
-                          onClick={() => handleRemoveItem(idx)}
-                          className="p-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition-all active:scale-95"
-                       >
-                          <Trash2 size={14} />
-                       </button>
-                    </div>
-                    {isOptimistic && (
-                      <div className="absolute inset-x-0 bottom-0 p-2 bg-black/40 backdrop-blur-md">
-                         <div className="h-1 bg-white/20 rounded-full overflow-hidden">
-                            <div className="h-full bg-[#FED400] animate-pulse w-full" />
-                         </div>
+                         <button 
+                            onClick={() => handleRemoveItem(idx)}
+                            className="p-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition-all active:scale-95"
+                         >
+                            <Trash2 size={14} />
+                         </button>
                       </div>
                     )}
                   </div>
@@ -335,7 +358,7 @@ const DocumentationVault: React.FC = () => {
                     <div className="w-12 h-12 bg-[#004A74] text-[#FED400] rounded-2xl flex items-center justify-center shadow-lg"><CloudUpload size={24} /></div>
                     <h2 className="text-xl font-black text-[#004A74] uppercase tracking-tight">Batch File Upload</h2>
                  </div>
-                 <button onClick={() => setIsFileModalOpen(false)} className="p-2 hover:bg-red-50 text-gray-400 hover:text-red-500 rounded-full transition-all"><X size={24} /></button>
+                 <button onClick={() => { setFileQueue([]); setIsFileModalOpen(false); }} className="p-2 hover:bg-red-50 text-gray-400 hover:text-red-500 rounded-full transition-all"><X size={24} /></button>
               </div>
               <div className="flex-1 overflow-y-auto custom-scrollbar p-8 space-y-6">
                  {fileQueue.length === 0 ? (

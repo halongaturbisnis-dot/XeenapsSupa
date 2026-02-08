@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 // @ts-ignore
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
@@ -129,22 +128,22 @@ const ActivityDetail: React.FC = () => {
   // Prevent accidental browser closure
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      if (isDirty) {
+      if (isDirty || isUploading || isSaving) {
         e.preventDefault();
         e.returnValue = '';
       }
     };
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-  }, [isDirty]);
+  }, [isDirty, isUploading, isSaving]);
 
   // Sync Global Dirty Flag for Sidebar Interception
   useEffect(() => {
-    (window as any).xeenapsIsDirty = isDirty;
+    (window as any).xeenapsIsDirty = isDirty || isUploading || isSaving;
     return () => {
       (window as any).xeenapsIsDirty = false;
     };
-  }, [isDirty]);
+  }, [isDirty, isUploading, isSaving]);
 
   // Manual Field Change Handler (No Auto-Save)
   const handleFieldChange = (field: keyof ActivityItem, val: any) => {
@@ -206,7 +205,9 @@ const ActivityDetail: React.FC = () => {
 
     const result = await uploadVaultFile(file);
     if (result) {
-      // 2. FORCE SYNC: Update state and save immediately to Registry (Exceptions for file uploads)
+      // 2. FORCE SYNC: Transition to Global Saving Overlay
+      setIsSaving(true); 
+      
       const updatedItem = { 
         ...item, 
         certificateFileId: result.fileId, 
@@ -215,7 +216,7 @@ const ActivityDetail: React.FC = () => {
       };
       
       setItem(updatedItem);
-      // For file uploads, we generally want to persist metadata immediately to link the file
+      // For file uploads, we persist immediately and show global saver
       await saveActivity(updatedItem); 
       
       // 3. PERMANENT DELETION OF OLD CERTIFICATE
@@ -225,6 +226,8 @@ const ActivityDetail: React.FC = () => {
       
       showXeenapsToast('success', 'Certificate Secured');
       setOptimisticCertPreview(null);
+      
+      setIsSaving(false); 
     } else {
       showXeenapsToast('error', 'Upload failed');
       setOptimisticCertPreview(null);
@@ -260,6 +263,9 @@ const ActivityDetail: React.FC = () => {
   };
 
   const handleSafeBack = async () => {
+    // LOCK NAVIGATION IF UPLOADING/SAVING
+    if (isUploading || isSaving) return;
+
     if (isDirty) {
       const result = await Swal.fire({
         ...XEENAPS_SWAL_CONFIG,
@@ -283,6 +289,9 @@ const ActivityDetail: React.FC = () => {
 
   const hasCertificate = !!(item.certificateFileId || optimisticCertPreview);
   const certificateUrl = optimisticCertPreview || (item.certificateFileId ? `https://lh3.googleusercontent.com/d/${item.certificateFileId}` : null);
+  
+  // Guard for header back button visual state
+  const isLocked = isUploading || isSaving;
 
   return (
     <FormPageContainer>
@@ -299,8 +308,8 @@ const ActivityDetail: React.FC = () => {
             {isDirty ? (
               <button 
                 onClick={handleSaveChanges}
-                disabled={isSaving}
-                className={`flex items-center gap-2 px-6 py-3 bg-[#004A74] text-[#FED400] rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg transition-all animate-in zoom-in-95 ${isSaving ? 'opacity-70 cursor-not-allowed' : 'hover:scale-105 active:scale-95'}`}
+                disabled={isLocked}
+                className={`flex items-center gap-2 px-6 py-3 bg-[#004A74] text-[#FED400] rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg transition-all animate-in zoom-in-95 ${isLocked ? 'opacity-70 cursor-not-allowed' : 'hover:scale-105 active:scale-95'}`}
               >
                 {isSaving ? (
                   <>
@@ -323,6 +332,7 @@ const ActivityDetail: React.FC = () => {
                      // To be consistent with "Manual Save" request, mark dirty.
                      setIsDirty(true);
                   }}
+                  disabled={isLocked}
                   className={`p-2.5 rounded-xl border transition-all shadow-sm active:scale-90 ${item.isFavorite ? 'bg-yellow-50 border-yellow-200 text-[#FED400]' : 'bg-white border-gray-100 text-gray-300 hover:text-[#FED400]'}`}
                   title="Favorite"
                 >
@@ -330,6 +340,7 @@ const ActivityDetail: React.FC = () => {
                 </button>
                 <button 
                   onClick={() => navigate(`/activities/${item.id}/vault`, { state: { item } })}
+                  disabled={isLocked}
                   className="p-2.5 bg-white border border-gray-100 text-[#004A74] hover:bg-blue-50 rounded-xl transition-all shadow-sm active:scale-90"
                   title="Documentation Gallery"
                 >
@@ -337,6 +348,7 @@ const ActivityDetail: React.FC = () => {
                 </button>
                 <button 
                   onClick={handleDelete}
+                  disabled={isLocked}
                   className="p-2.5 bg-white border border-gray-100 text-red-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all shadow-sm active:scale-90"
                   title="Delete"
                 >
@@ -359,6 +371,7 @@ const ActivityDetail: React.FC = () => {
                 placeholder="ENTER ACTIVITY TITLE..."
                 value={item.eventName}
                 onChange={(e) => handleFieldChange('eventName', e.target.value)}
+                disabled={isLocked}
                 rows={2}
               />
             </FormField>
@@ -370,7 +383,8 @@ const ActivityDetail: React.FC = () => {
                   <input className="w-full pl-11 pr-4 py-4 bg-gray-50 border border-gray-200 rounded-2xl text-xs font-bold text-blue-500 underline outline-none focus:bg-white focus:ring-2 focus:ring-[#004A74]/10 transition-all" 
                     placeholder="https://event-link.com/..."
                     value={item.link} 
-                    onChange={(e) => handleFieldChange('link', e.target.value)} 
+                    onChange={(e) => handleFieldChange('link', e.target.value)}
+                    disabled={isLocked} 
                   />
                </div>
             </FormField>
@@ -382,32 +396,32 @@ const ActivityDetail: React.FC = () => {
                   <div className="relative">
                     <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300" />
                     <input className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-[#004A74]" 
-                      value={item.organizer} onChange={(e) => handleFieldChange('organizer', e.target.value)} placeholder="Organization name..." />
+                      value={item.organizer} onChange={(e) => handleFieldChange('organizer', e.target.value)} disabled={isLocked} placeholder="Organization name..." />
                   </div>
                 </FormField>
                 <FormField label="Specific Location">
                   <div className="relative">
                     <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300" />
                     <input className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-[#004A74]" 
-                      value={item.location} onChange={(e) => handleFieldChange('location', e.target.value)} placeholder="City / Venue / Online..." />
+                      value={item.location} onChange={(e) => handleFieldChange('location', e.target.value)} disabled={isLocked} placeholder="City / Venue / Online..." />
                   </div>
                 </FormField>
                 <div className="grid grid-cols-2 gap-4">
-                   <FormField label="Start Date"><input type="date" className="w-full bg-gray-50 border border-gray-200 px-4 py-2.5 rounded-xl text-xs font-bold text-[#004A74]" value={item.startDate} onChange={(e) => handleFieldChange('startDate', e.target.value)} /></FormField>
-                   <FormField label="End Date"><input type="date" className="w-full bg-gray-50 border border-gray-200 px-4 py-2.5 rounded-xl text-xs font-bold text-[#004A74]" value={item.endDate} onChange={(e) => handleFieldChange('endDate', e.target.value)} /></FormField>
+                   <FormField label="Start Date"><input type="date" className="w-full bg-gray-50 border border-gray-200 px-4 py-2.5 rounded-xl text-xs font-bold text-[#004A74]" value={item.startDate} onChange={(e) => handleFieldChange('startDate', e.target.value)} disabled={isLocked} /></FormField>
+                   <FormField label="End Date"><input type="date" className="w-full bg-gray-50 border border-gray-200 px-4 py-2.5 rounded-xl text-xs font-bold text-[#004A74]" value={item.endDate} onChange={(e) => handleFieldChange('endDate', e.target.value)} disabled={isLocked} /></FormField>
                 </div>
               </div>
 
               {/* Right Stack */}
               <div className="space-y-6">
                 <FormField label="Activity Type">
-                  <FormDropdown value={item.type} options={Object.values(ActivityType)} onChange={(v) => handleFieldChange('type', v)} placeholder="Select type" allowCustom={false} />
+                  <FormDropdown value={item.type} options={Object.values(ActivityType)} onChange={(v) => handleFieldChange('type', v)} placeholder="Select type" allowCustom={false} disabled={isLocked} />
                 </FormField>
                 <FormField label="Recognition Magnitude">
-                  <FormDropdown value={item.level} options={Object.values(ActivityLevel)} onChange={(v) => handleFieldChange('level', v)} placeholder="Select level" allowCustom={false} />
+                  <FormDropdown value={item.level} options={Object.values(ActivityLevel)} onChange={(v) => handleFieldChange('level', v)} placeholder="Select level" allowCustom={false} disabled={isLocked} />
                 </FormField>
                 <FormField label="Assigned Role">
-                  <FormDropdown value={item.role} options={Object.values(ActivityRole)} onChange={(v) => handleFieldChange('role', v)} placeholder="Select role" allowCustom={false} />
+                  <FormDropdown value={item.role} options={Object.values(ActivityRole)} onChange={(v) => handleFieldChange('role', v)} placeholder="Select role" allowCustom={false} disabled={isLocked} />
                 </FormField>
               </div>
             </div>
@@ -419,14 +433,22 @@ const ActivityDetail: React.FC = () => {
             <div className="space-y-2">
               <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Primary Certificate File (A4 Landscape)</label>
               <div 
-                onClick={() => !isUploading && fileInputRef.current?.click()}
+                onClick={() => !isLocked && fileInputRef.current?.click()}
                 className={`relative group w-full aspect-[1.414/1] bg-gray-50 border-2 border-dashed rounded-[2.5rem] flex flex-col items-center justify-center cursor-pointer transition-all overflow-hidden hover:bg-white hover:border-[#004A74]/30 ${hasCertificate ? 'border-[#004A74]/20' : 'border-gray-200'}`}
               >
-                {isUploading && !optimisticCertPreview ? (
-                  <div className="flex flex-col items-center gap-3">
-                    <Loader2 className="w-10 h-10 text-[#004A74] animate-spin" />
-                    <p className="text-[10px] font-black text-[#004A74] uppercase tracking-widest">Securing Document...</p>
-                  </div>
+                {/* SEAMLESS LOADING STATE: IN-FRAME ONLY */}
+                {isUploading ? (
+                   <>
+                     {optimisticCertPreview && (
+                        <div className="absolute inset-0 z-0">
+                           <img src={optimisticCertPreview} className="w-full h-full object-cover opacity-50 blur-[2px]" alt="Uploading..." />
+                        </div>
+                     )}
+                     <div className="absolute inset-0 bg-white/40 backdrop-blur-sm flex flex-col items-center justify-center z-20">
+                       <Loader2 className="w-10 h-10 text-[#004A74] animate-spin" />
+                       <p className="text-[10px] font-black text-[#004A74] uppercase tracking-widest mt-2">Securing Document...</p>
+                     </div>
+                   </>
                 ) : hasCertificate ? (
                   <div className="relative w-full h-full">
                      {/* INSTANT SHARP PREVIEW */}
@@ -446,6 +468,7 @@ const ActivityDetail: React.FC = () => {
                           onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }}
                           className="p-2.5 bg-white/90 text-[#004A74] hover:bg-[#FED400] rounded-xl shadow-lg transition-all active:scale-90"
                           title="Reload / Upload New"
+                          disabled={isLocked}
                         >
                           <RefreshCcw size={16} strokeWidth={3} />
                         </button>
@@ -453,6 +476,7 @@ const ActivityDetail: React.FC = () => {
                           onClick={handleClearCertificate}
                           className="p-2.5 bg-white/90 text-red-500 hover:bg-red-500 hover:text-white rounded-xl shadow-lg transition-all active:scale-90"
                           title="Delete Certificate"
+                          disabled={isLocked}
                         >
                           <Trash2 size={16} strokeWidth={3} />
                         </button>
@@ -464,8 +488,6 @@ const ActivityDetail: React.FC = () => {
                            <Eye size={32} />
                         </div>
                      </div>
-
-                     {isUploading && <div className="absolute bottom-0 left-0 right-0 h-1.5 bg-[#FED400] animate-pulse" />}
                   </div>
                 ) : (
                   <div className="flex flex-col items-center group-hover:scale-105 transition-transform">
@@ -486,7 +508,7 @@ const ActivityDetail: React.FC = () => {
                     <FileCheck className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300" />
                     <input className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-xs font-mono font-bold text-[#004A74]" 
                       placeholder="e.g. CERT-2024-XXXX"
-                      value={item.certificateNumber} onChange={(e) => handleFieldChange('certificateNumber', e.target.value)} />
+                      value={item.certificateNumber} onChange={(e) => handleFieldChange('certificateNumber', e.target.value)} disabled={isLocked} />
                   </div>
                </FormField>
                <FormField label="Academic Credit Points">
@@ -494,7 +516,7 @@ const ActivityDetail: React.FC = () => {
                     <Zap className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300" />
                     <input className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-[#004A74]" 
                       placeholder="e.g. 2.0 SKP"
-                      value={item.credit} onChange={(e) => handleFieldChange('credit', e.target.value)} />
+                      value={item.credit} onChange={(e) => handleFieldChange('credit', e.target.value)} disabled={isLocked} />
                   </div>
                </FormField>
             </div>
@@ -506,6 +528,7 @@ const ActivityDetail: React.FC = () => {
                 <SummaryEditor 
                   value={item.description}
                   onChange={(val) => handleFieldChange('description', val)}
+                  disabled={isLocked}
                 />
              </FormField>
           </section>
