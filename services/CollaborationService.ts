@@ -43,9 +43,6 @@ export const fetchCollaborations = async (): Promise<CollaborationItem[]> => {
     const rows = csvText.split(/\r?\n/).filter(row => row.trim().length > 0);
     const dataRows = rows.slice(1); // Skip header
     
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
     const items: CollaborationItem[] = [];
 
     dataRows.forEach(row => {
@@ -55,23 +52,17 @@ export const fetchCollaborations = async (): Promise<CollaborationItem[]> => {
       // Indices: 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11
       
       if (cols.length >= 12) {
-        const startDateStr = cols[4];
-        const endDateStr = cols[6];
-        
-        let start = new Date(startDateStr);
-        let end = new Date(endDateStr);
+        const status = cols[1]?.toUpperCase() || '';
 
-        // Fallback date parsing if needed (simple YYYY-MM-DD or MM/DD/YYYY detection could be added here if spreadsheet format varies)
-        if (isNaN(start.getTime())) start = new Date(); // Fail safe
-        if (isNaN(end.getTime())) end = new Date();     // Fail safe
-
-        // FILTER: StartDate <= TODAY AND EndDate >= TODAY
-        if (start <= today && end >= today) {
+        // FILTER: Status column (Col B) must be "ACTIVE"
+        if (status === 'ACTIVE') {
+           const startDateStr = cols[4];
+           const endDateStr = cols[6];
            const images = cols[10].split(';').map(url => url.trim()).filter(Boolean);
 
            items.push({
              id: cols[0],
-             status: cols[1],
+             status: cols[1], // Keep original casing for display
              category: cols[2],
              collaboratorName: cols[3],
              startDate: startDateStr,
