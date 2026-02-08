@@ -858,7 +858,7 @@ function generateFinanceExportFileFromRegistry(payload) {
     
     if (!transactions || transactions.length === 0) return { status: 'error', message: 'No transaction data available.' };
 
-    const filename = `Ledger_${projectTitle.substring(0, 20)}_${new Date().toISOString().split('T')[0]}`;
+    const filename = `Research Financial Report_${projectTitle.substring(0, 20)}_${new Date().toISOString().split('T')[0]}`;
     
     // FORMATTING 2D ARRAY FOR PDF TEMPLATE
     const rows = transactions.map(d => {
@@ -905,8 +905,7 @@ function generateFinanceExportFileFromRegistry(payload) {
     <body>
       <div class="header">
         <div class="header-info">
-            <h1>Financial Ledger Report</h1>
-            <p>Xeenaps Premium Research Tracer</p>
+            <h1>Research Financial Report</h1>
         </div>
         <div class="logo">XEENAPS<span>.</span></div>
       </div>
@@ -960,7 +959,7 @@ function generateFinanceExportFileFromRegistry(payload) {
           `).join('')}
         </tbody>
       </table>
-      <div class="footer">Xeenaps PKM • Project Audit Protocol • System Identity Verified</div>
+      <div class="footer">Xeenaps Smart Scholar Ecosystem • System Verified</div>
     </body>
     </html>`;
 

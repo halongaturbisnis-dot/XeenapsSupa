@@ -204,9 +204,10 @@ export const fetchTracerFinance = async (projectId: string, startDate = "", endD
 /**
  * EXPORT PDF LOGIC (Hybrid Stitching)
  * 1. Fetch metadata from Supabase
- * 2. Fetch attachments info (sharded JSON)
- * 3. Construct payload
- * 4. POST payload to GAS PDF Engine
+ * 2. Calculate Running Balance
+ * 3. Fetch attachments info (sharded JSON)
+ * 4. Construct payload
+ * 5. POST payload to GAS PDF Engine
  */
 export const exportFinanceLedger = async (projectId: string, currency: string): Promise<{ base64: string, filename: string } | null> => {
   if (!GAS_WEB_APP_URL) return null;
@@ -215,14 +216,23 @@ export const exportFinanceLedger = async (projectId: string, currency: string): 
      const financeItems = await fetchTracerFinanceFromSupabase(projectId);
      if (financeItems.length === 0) return null;
 
-     // 2. Fetch Project Info
+     // 2. Calculate Running Balance for Export
+     // Ensure items are sorted chronologically before calculating
+     const sortedItems = [...financeItems].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+     let runningBalance = 0;
+     const calculatedItems = sortedItems.map(item => {
+         runningBalance += (item.credit || 0) - (item.debit || 0);
+         return { ...item, balance: runningBalance };
+     });
+
+     // 3. Fetch Project Info
      const { items: projects } = await fetchTracerProjectsFromSupabase(1, 1000, ""); 
      const project = projects.find(p => p.id === projectId);
      const projectTitle = project?.title || project?.label || "Financial Report";
      const projectAuthors = Array.isArray(project?.authors) ? project.authors.join(", ") : "Xeenaps User";
 
-     // 3. Enrich Items with Attachment Links (Async Batch)
-     const enrichedTransactions = await Promise.all(financeItems.map(async (item) => {
+     // 4. Enrich Items with Attachment Links (Async Batch)
+     const enrichedTransactions = await Promise.all(calculatedItems.map(async (item) => {
         let linkString = "-";
         if (item.attachmentsJsonId) {
            try {
@@ -238,7 +248,7 @@ export const exportFinanceLedger = async (projectId: string, currency: string): 
         return { ...item, links: linkString };
      }));
 
-     // 4. Construct Payload
+     // 5. Construct Payload
      const payload = {
         transactions: enrichedTransactions,
         projectTitle,
@@ -246,7 +256,7 @@ export const exportFinanceLedger = async (projectId: string, currency: string): 
         currency
      };
 
-     // 5. Send to GAS
+     // 6. Send to GAS
      const res = await fetch(GAS_WEB_APP_URL, {
         method: 'POST',
         body: JSON.stringify({

@@ -54,7 +54,7 @@ const ReferenceTab: React.FC<ReferenceTabProps> = ({ projectId, libraryItems, re
 
     let successCount = 0;
     for (const item of newItems) {
-      // Optimistic Add
+      // Optimistic Add - Append to bottom
       const tempId = crypto.randomUUID();
       const mockRef: TracerReference = {
         id: tempId,
@@ -64,7 +64,7 @@ const ReferenceTab: React.FC<ReferenceTabProps> = ({ projectId, libraryItems, re
         storageNodeUrl: '',
         createdAt: new Date().toISOString()
       };
-      setReferences(prev => [mockRef, ...prev]);
+      setReferences(prev => [...prev, mockRef]);
 
       // Background Sync
       const realData = await linkTracerReference({ projectId, collectionId: item.id });

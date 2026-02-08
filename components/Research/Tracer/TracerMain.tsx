@@ -180,7 +180,7 @@ const TracerMain: React.FC = () => {
             value={searchQuery} 
             onChange={setSearchQuery} 
             onSearch={() => setAppliedSearch(searchQuery)} 
-            phrases={["Search label...", "Search Research Title...", "Search Research Author(s)..."]}
+            phrases={["Search label...", "Search Research Title..."]}
             className="w-full lg:max-w-md" 
           />
           <StandardPrimaryButton onClick={handleCreate} icon={<Plus size={18} />}>CREATE</StandardPrimaryButton>
