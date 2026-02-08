@@ -1,7 +1,7 @@
 
-import { GAS_WEB_APP_URL } from '../constants';
 import { SharboxItem, TracerTodo } from '../types';
 import { fetchAllPendingTodosFromSupabase } from './TracerSupabaseService';
+import { fetchInboxFromSupabase } from './SharboxSupabaseService';
 
 export interface NotificationData {
   sharbox: SharboxItem[];
@@ -12,21 +12,16 @@ export const fetchNotifications = async (): Promise<NotificationData> => {
   let sharboxData: SharboxItem[] = [];
   let todosData: TracerTodo[] = [];
 
-  // 1. Fetch Sharbox from GAS (Existing Source)
-  if (GAS_WEB_APP_URL) {
-    try {
-      const response = await fetch(`${GAS_WEB_APP_URL}?action=getNotifications`);
-      const result = await response.json();
-      if (result.status === 'success') {
-        sharboxData = result.data.sharbox || [];
-        // Note: We intentionally ignore result.data.todos from GAS now
-      }
-    } catch (error) {
-      console.error("Failed to fetch GAS notifications:", error);
-    }
+  // 1. Fetch Sharbox from Supabase (REPLACING GAS SOURCE)
+  try {
+    const allInbox = await fetchInboxFromSupabase();
+    // Filter only unread items for notification
+    sharboxData = allInbox.filter(item => !item.isRead);
+  } catch (error) {
+    console.error("Failed to fetch Supabase inbox notifications:", error);
   }
 
-  // 2. Fetch Todos from Supabase (New Source)
+  // 2. Fetch Todos from Supabase
   try {
     const allPending = await fetchAllPendingTodosFromSupabase();
     

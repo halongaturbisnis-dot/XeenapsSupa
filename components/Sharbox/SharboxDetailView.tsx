@@ -325,7 +325,7 @@ const SharboxDetailView: React.FC<SharboxDetailViewProps> = ({ item, activeTab, 
                   <div className="bg-white/5 border border-white/10 rounded-[2.5rem] p-6 relative">
                      <ChatBubbleBottomCenterTextIcon className="absolute -top-3 -left-3 w-10 h-10 text-[#FED400]/20" />
                      <p className="text-sm md:text-base font-medium italic leading-relaxed text-white/90">
-                       "{currentItem.message || "Empty message"}"
+                       "{currentItem.message || "No message provided."}"
                      </p>
                   </div>
                </div>
