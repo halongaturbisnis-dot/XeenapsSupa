@@ -104,6 +104,7 @@ export const deleteActivityFromSupabase = async (id: string): Promise<boolean> =
   return true;
 };
 
+
 // Helper to get single item for file cleanup
 export const fetchActivityByIdFromSupabase = async (id: string): Promise<ActivityItem | null> => {
   const client = getSupabase();
