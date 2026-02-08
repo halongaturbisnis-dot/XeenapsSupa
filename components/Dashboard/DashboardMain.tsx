@@ -24,7 +24,7 @@ import {
   PublicationStatus
 } from '../../types';
 import { 
-  Library, 
+  LibraryBig, 
   TrendingUp, 
   Target, 
   BookOpenCheck, 
@@ -212,10 +212,8 @@ const DashboardMain: React.FC<DashboardMainProps> = ({
          <div className="flex items-center justify-between mb-10 relative z-10">
             <div className="space-y-1">
                <h3 className="text-xl font-black text-[#004A74] flex items-center gap-3">
-                  <TrendingUp className="text-[#FED400]" size={24} strokeWidth={3} />
-                  Knowledge Base Velocity
+                  Library Growth
                </h3>
-               <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-1">12-Month Cumulative Library Expansion</p>
             </div>
             <div className="flex flex-wrap justify-end gap-x-4 gap-y-2 max-w-[200px] md:max-w-none">
                <div className="flex items-center gap-2">
@@ -292,8 +290,8 @@ const DashboardMain: React.FC<DashboardMainProps> = ({
          <div className="bg-[#004A74] rounded-[2.5rem] p-8 text-white shadow-xl flex flex-col justify-between relative overflow-hidden group">
             <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 -translate-y-12 translate-x-12 rounded-full group-hover:scale-110 transition-transform duration-700" />
             <div className="relative z-10">
-               <Library size={32} className="text-[#FED400] mb-4" />
-               <p className="text-[10px] font-black uppercase tracking-[0.4em] opacity-60">Total Knowledge Assets</p>
+               <LibraryBig size={32} className="text-[#FED400] mb-4" />
+               <p className="text-[10px] font-black uppercase tracking-[0.4em] opacity-60">Total Library Collection</p>
                <h2 className="text-6xl font-black tracking-tighter mt-2">{libraryItems.length}</h2>
             </div>
             <button 
@@ -306,7 +304,7 @@ const DashboardMain: React.FC<DashboardMainProps> = ({
 
          {/* Category Chart */}
          <div className="bg-white border border-gray-100 rounded-[2.5rem] p-6 shadow-sm flex flex-col items-center">
-            <h4 className="text-[9px] font-black text-gray-400 uppercase tracking-[0.4em] mb-6">Source Categories</h4>
+            <h4 className="text-[9px] font-black text-gray-400 uppercase tracking-[0.4em] mb-6">Categories</h4>
             <div className="w-full h-40">
                <Doughnut data={categoryDistribution} options={{ maintainAspectRatio: false, plugins: { legend: { display: false }, datalabels: { display: false }}}} />
             </div>
@@ -322,7 +320,7 @@ const DashboardMain: React.FC<DashboardMainProps> = ({
 
          {/* Topic Chart */}
          <div className="bg-white border border-gray-100 rounded-[2.5rem] p-6 shadow-sm flex flex-col items-center">
-            <h4 className="text-[9px] font-black text-gray-400 uppercase tracking-[0.4em] mb-6">Top Research Topics</h4>
+            <h4 className="text-[9px] font-black text-gray-400 uppercase tracking-[0.4em] mb-6">Topics</h4>
             <div className="w-full h-40">
                <Doughnut data={topicDistribution} options={{ maintainAspectRatio: false, plugins: { legend: { display: false }, datalabels: { display: false }}}} />
             </div>
@@ -341,8 +339,8 @@ const DashboardMain: React.FC<DashboardMainProps> = ({
       <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
          <div className="bg-white border border-gray-100 rounded-[2.5rem] p-8 shadow-sm flex flex-col justify-center space-y-6">
             <div className="space-y-1">
-               <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.4em]">Research Tracer</h4>
-               <p className="text-xl font-black text-[#004A74] uppercase tracking-tighter">Strategic Pipeline</p>
+               <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.4em]">Tracer</h4>
+               <p className="text-xl font-black text-[#004A74] uppercase tracking-tighter">Research Pipeline</p>
             </div>
             <div className="space-y-3">
                <div className="flex items-center justify-between p-4 bg-emerald-50 rounded-2xl border border-emerald-100">
@@ -365,7 +363,7 @@ const DashboardMain: React.FC<DashboardMainProps> = ({
          <div className="bg-white border border-gray-100 rounded-[2.5rem] p-8 shadow-sm flex flex-col items-center col-span-2">
             <div className="flex items-center justify-between w-full mb-6">
                <h3 className="text-sm font-black text-[#004A74] uppercase tracking-tighter flex items-center gap-2">
-                  <PieChartIcon size={18} className="text-[#FED400]" /> Publication Lifecycle
+                  <PieChartIcon size={18} className="text-[#FED400]" /> Publication Status
                </h3>
                <span className="text-[8px] font-black text-gray-400 uppercase tracking-widest">Total: {publicationItems.length} Papers</span>
             </div>
@@ -403,7 +401,7 @@ const DashboardMain: React.FC<DashboardMainProps> = ({
                <h3 className="text-[11px] font-black uppercase tracking-[0.3em] text-[#004A74] flex items-center gap-2">
                   <BookOpenCheck size={18} className="text-[#FED400]" /> Upcoming Teaching
                </h3>
-               <button onClick={() => navigate('/teaching')} className="text-[9px] font-black text-gray-400 hover:text-[#004A74] uppercase tracking-widest">Full Schedule</button>
+               <button onClick={() => navigate('/teaching')} className="text-[9px] font-black text-gray-400 hover:text-[#004A74] uppercase tracking-widest">Schedule</button>
             </div>
             <div className="space-y-3">
                {upcomingTeaching.length === 0 ? (
@@ -439,7 +437,7 @@ const DashboardMain: React.FC<DashboardMainProps> = ({
                <h3 className="text-[11px] font-black uppercase tracking-[0.3em] text-[#004A74] flex items-center gap-2">
                   <ClipboardCheck size={18} className="text-[#FED400]" /> Recent Portfolio
                </h3>
-               <button onClick={() => navigate('/activities')} className="text-[9px] font-black text-gray-400 hover:text-[#004A74] uppercase tracking-widest">All Activities</button>
+               <button onClick={() => navigate('/activities')} className="text-[9px] font-black text-gray-400 hover:text-[#004A74] uppercase tracking-widest">Activities</button>
             </div>
             <div className="space-y-3">
                {recentActivities.length === 0 ? (
