@@ -6,6 +6,18 @@ import { SharboxItem } from '../types';
  * Registry Metadata untuk modul Sharbox (Inbox & Sent).
  */
 
+// Helper to clean object for Transport Tables (Inbox/Sent)
+// Removes Library-specific local states that don't exist in Sharbox schema
+const sanitizeSharboxPayload = (item: SharboxItem) => {
+  const { 
+    search_all, 
+    isFavorite, 
+    isBookmarked, 
+    ...cleanItem 
+  } = item as any;
+  return cleanItem;
+};
+
 // --- INBOX OPERATIONS ---
 
 export const fetchInboxFromSupabase = async (): Promise<SharboxItem[]> => {
@@ -28,8 +40,8 @@ export const upsertInboxItemToSupabase = async (item: SharboxItem): Promise<bool
   const client = getSupabase();
   if (!client) return false;
 
-  const { search_all, ...cleanItem } = item as any;
-  const { error } = await client.from('sharbox_inbox').upsert(cleanItem);
+  const payload = sanitizeSharboxPayload(item);
+  const { error } = await client.from('sharbox_inbox').upsert(payload);
 
   if (error) {
     console.error("Supabase Inbox Upsert Error:", error);
@@ -67,8 +79,8 @@ export const upsertSentItemToSupabase = async (item: SharboxItem): Promise<boole
   const client = getSupabase();
   if (!client) return false;
 
-  const { search_all, ...cleanItem } = item as any;
-  const { error } = await client.from('sharbox_sent').upsert(cleanItem);
+  const payload = sanitizeSharboxPayload(item);
+  const { error } = await client.from('sharbox_sent').upsert(payload);
 
   if (error) {
     console.error("Supabase Sent Upsert Error:", error);
