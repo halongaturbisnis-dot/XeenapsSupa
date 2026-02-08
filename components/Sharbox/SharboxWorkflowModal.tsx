@@ -51,6 +51,7 @@ const SharboxWorkflowModal: React.FC<SharboxWorkflowModalProps> = ({ initialItem
   const [isSharing, setIsSharing] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [search, setSearch] = useState('');
+  const [appliedSearch, setAppliedSearch] = useState('');
   
   const itemsPerPage = 10;
 
@@ -58,12 +59,12 @@ const SharboxWorkflowModal: React.FC<SharboxWorkflowModalProps> = ({ initialItem
     setIsLoading(true);
     try {
       if (step === 'PICK_COLLEAGUE') {
-        const result = await fetchColleaguesPaginated(currentPage, itemsPerPage, search);
+        const result = await fetchColleaguesPaginated(currentPage, itemsPerPage, appliedSearch);
         setDataList(result.items);
         setTotalCount(result.totalCount);
       } else if (step === 'PICK_LIBRARY') {
         // CORRECTION: Fetch Library Data ONLY FROM SUPABASE
-        const result = await fetchLibraryPaginatedFromSupabase(currentPage, itemsPerPage, search, 'All', 'research', 'createdAt', 'desc');
+        const result = await fetchLibraryPaginatedFromSupabase(currentPage, itemsPerPage, appliedSearch, 'All', 'research', 'createdAt', 'desc');
         setDataList(result.items);
         setTotalCount(result.totalCount);
       }
@@ -72,7 +73,7 @@ const SharboxWorkflowModal: React.FC<SharboxWorkflowModalProps> = ({ initialItem
     } finally {
       setIsLoading(false);
     }
-  }, [step, currentPage, search]);
+  }, [step, currentPage, appliedSearch]);
 
   useEffect(() => {
     if (step !== 'CONFIRM') loadData();
@@ -192,7 +193,10 @@ const SharboxWorkflowModal: React.FC<SharboxWorkflowModalProps> = ({ initialItem
                    <SmartSearchBox 
                     value={search} 
                     onChange={setSearch} 
-                    onSearch={() => setCurrentPage(1)} 
+                    onSearch={() => {
+                        setAppliedSearch(search);
+                        setCurrentPage(1);
+                    }} 
                     className="flex-1"
                     phrases={step === 'PICK_COLLEAGUE' ? ["Search colleague name...", "Search affiliaton...", "Search unique ID..."] : ["Search title...", "Search author(s)...", "Search topic..."]}
                    />
@@ -245,6 +249,7 @@ const SharboxWorkflowModal: React.FC<SharboxWorkflowModalProps> = ({ initialItem
                                 setStep('CONFIRM');
                               }
                               setSearch('');
+                              setAppliedSearch('');
                               setCurrentPage(1);
                             }}
                             className="shrink-0 px-5 py-2.5 bg-gray-50 text-[#004A74] rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-[#FED400] transition-all border border-gray-100 flex items-center gap-2"
