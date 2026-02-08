@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 // @ts-ignore
 import { useLocation } from 'react-router-dom';
@@ -264,10 +263,10 @@ const SharboxMain: React.FC = () => {
               <div 
                 key={item.id}
                 onClick={() => handleItemClick(item)}
-                className={`group relative bg-white border border-gray-100 rounded-[2.5rem] p-6 shadow-sm hover:shadow-2xl hover:-translate-y-2 transition-all duration-500 cursor-pointer flex flex-col h-full ${activeTab === 'Inbox' && !item.isRead ? 'ring-2 ring-blue-500/20' : ''}`}
+                className={`group relative bg-white border border-gray-100 rounded-[2.5rem] p-6 shadow-sm hover:shadow-2xl hover:-translate-y-2 transition-all duration-500 cursor-pointer flex flex-col h-full`}
               >
                 {activeTab === 'Inbox' && !item.isRead && (
-                   <span className="absolute top-6 right-6 w-3 h-3 bg-red-500 rounded-full border-2 border-white shadow-sm" />
+                   <span className="absolute top-6 right-6 px-3 py-1 bg-red-500 text-white text-[8px] font-black uppercase tracking-widest rounded-full shadow-md z-10">UNREAD</span>
                 )}
 
                 <div className="mb-6 flex items-center gap-3">
@@ -307,13 +306,6 @@ const SharboxMain: React.FC = () => {
                       <ChevronRightIcon className="w-4 h-4 text-gray-300 group-hover:text-[#FED400] transition-colors" />
                    </div>
                 </div>
-
-                <button 
-                  onClick={(e) => handleDelete(e, item.id)}
-                  className="absolute bottom-4 left-6 p-2 text-red-200 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all"
-                >
-                   <TrashIcon className="w-4 h-4" />
-                </button>
               </div>
             ))}
           </div>
