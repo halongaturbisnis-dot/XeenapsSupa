@@ -14,6 +14,10 @@ import {
   BuildingLibraryIcon, 
   ChevronRightIcon
 } from '@heroicons/react/24/outline';
+import { 
+  LibraryBig,
+  SendHorizontal, 
+} from 'lucide-react';
 import { SmartSearchBox } from '../Common/SearchComponents';
 import { 
   StandardTableFooter
@@ -111,9 +115,9 @@ const SharboxWorkflowModal: React.FC<SharboxWorkflowModalProps> = ({ initialItem
                  <ShareIcon className="w-6 h-6" />
               </div>
               <div>
-                 <h2 className="text-xl font-black text-[#004A74] uppercase tracking-tight">Sharbox Workflow</h2>
+                 <h2 className="text-xl font-black text-[#004A74] uppercase tracking-tight">Sharing Collection</h2>
                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-                   {step === 'PICK_COLLEAGUE' ? 'Step 1: Identify Partner' : step === 'PICK_LIBRARY' ? 'Step 2: Select Knowledge' : 'Step 3: Final Authorization'}
+                   {step === 'PICK_COLLEAGUE' ? 'Select Colleague' : step === 'PICK_LIBRARY' ? 'Select Collection' : 'Message'}
                  </p>
               </div>
            </div>
@@ -132,7 +136,7 @@ const SharboxWorkflowModal: React.FC<SharboxWorkflowModalProps> = ({ initialItem
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                    {/* Summary Partner */}
                    <div className="space-y-4">
-                      <label className="text-[10px] font-black uppercase text-gray-400 tracking-[0.2em] ml-2">Receiving Partner</label>
+                      <label className="text-[10px] font-black uppercase text-gray-400 tracking-[0.2em] ml-2">Receiving Colleague</label>
                       <div className="p-6 bg-white border border-gray-100 rounded-[2.5rem] shadow-sm flex items-center gap-5">
                          <img src={selectedColleague?.photoUrl || BRAND_ASSETS.USER_DEFAULT} className="w-16 h-16 rounded-full border-2 border-[#FED400] object-cover shadow-md" alt="" />
                          <div className="min-w-0">
@@ -143,9 +147,9 @@ const SharboxWorkflowModal: React.FC<SharboxWorkflowModalProps> = ({ initialItem
                    </div>
                    {/* Summary Item */}
                    <div className="space-y-4">
-                      <label className="text-[10px] font-black uppercase text-gray-400 tracking-[0.2em] ml-2">Shared Asset</label>
+                      <label className="text-[10px] font-black uppercase text-gray-400 tracking-[0.2em] ml-2">Shared Collection</label>
                       <div className="p-6 bg-[#004A74] rounded-[2.5rem] shadow-xl flex items-center gap-5 text-white">
-                         <div className="w-16 h-16 bg-white/10 rounded-2xl flex items-center justify-center shrink-0"><BuildingLibraryIcon className="w-8 h-8 text-[#FED400]" /></div>
+                         <div className="w-16 h-16 bg-white/10 rounded-2xl flex items-center justify-center shrink-0"><LibraryBig className="w-8 h-8 text-[#FED400]" /></div>
                          <div className="min-w-0">
                             <h4 className="text-xs font-black uppercase truncate">{selectedItem?.title}</h4>
                             <p className="text-[9px] font-bold text-white/60 uppercase">{selectedItem?.topic} • {selectedItem?.year}</p>
@@ -155,7 +159,7 @@ const SharboxWorkflowModal: React.FC<SharboxWorkflowModalProps> = ({ initialItem
                 </div>
 
                 <div className="space-y-4">
-                   <label className="text-[10px] font-black uppercase text-gray-400 tracking-[0.2em] ml-2">Accompanying Message (Optional)</label>
+                   <label className="text-[10px] font-black uppercase text-gray-400 tracking-[0.2em] ml-2">Message (Optional)</label>
                    <div className="relative group">
                       <ChatBubbleBottomCenterTextIcon className="absolute left-6 top-8 w-6 h-6 text-gray-200 group-focus-within:text-[#004A74] transition-colors" />
                       <textarea 
@@ -174,8 +178,8 @@ const SharboxWorkflowModal: React.FC<SharboxWorkflowModalProps> = ({ initialItem
                      disabled={isSharing}
                      className="flex-1 py-5 bg-[#004A74] text-[#FED400] rounded-[2rem] font-black uppercase tracking-[0.3em] text-xs shadow-2xl flex items-center justify-center gap-4 hover:scale-105 active:scale-95 transition-all disabled:opacity-50"
                    >
-                     {isSharing ? <ArrowPathIcon className="w-5 h-5 animate-spin" /> : <PaperAirplaneIcon className="w-5 h-5 -rotate-45" />}
-                     {isSharing ? 'TRANSMITTING...' : 'AUTHORIZE & SEND'}
+                     {isSharing ? <ArrowPathIcon className="w-5 h-5 animate-spin" /> : <SendHorizontal className="w-5 h-5 -rotate-45" />}
+                     {isSharing ? 'TRANSMITTING...' : 'SEND'}
                    </button>
                 </div>
              </div>
