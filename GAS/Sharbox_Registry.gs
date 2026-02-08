@@ -65,6 +65,7 @@ function handleSendToSharbox(targetUniqueAppId, receiverName, receiverPhotoUrl, 
 
     // Map data for SHARBOX_INBOX schema
     const inboxRow = CONFIG.SCHEMAS.SHARBOX_INBOX.map(h => {
+      // Identity & Status
       if (h === 'id') return transactionId;
       if (h === 'senderName') return profile.fullName;
       if (h === 'senderPhotoUrl') return profile.photoUrl;
@@ -78,6 +79,9 @@ function handleSendToSharbox(targetUniqueAppId, receiverName, receiverPhotoUrl, 
       if (h === 'status') return 'UNCLAIMED';
       if (h === 'isRead') return false;
       
+      // RESET FLAGS: Force favorite & bookmark to FALSE for receiver
+      if (h === 'isFavorite' || h === 'isBookmarked') return false;
+
       // Collection Metadata mapping (prefix id_item)
       const colKey = h === 'id_item' ? 'id' : h;
       const val = item[colKey];
