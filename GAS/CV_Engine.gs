@@ -1,16 +1,22 @@
+
 /**
- * XEENAPS CV ARCHITECT - HTML-TO-PDF ENGINE V6.3
+ * XEENAPS CV ARCHITECT - HTML-TO-PDF ENGINE V6.4 (WORKER MODE)
  * Optimized for speed, reliability, and refined Aesthetics.
- * Fix: Page break prevention and consistent year alignment.
+ * Receives data payload directly from request. Does NOT write to Registry (Supabase does that).
  */
 
-function handleGenerateCV_PDF(config) {
+function handleGenerateCV_PDF(body) {
   try {
-    const profile = getProfileFromRegistry();
-    if (!profile || !profile.fullName) {
-      return { status: 'error', message: 'Profile incomplete. Please fill your name in the Profile module first.' };
+    const config = body.config;
+    const payload = body.payload;
+
+    if (!payload || !payload.profile || !payload.profile.fullName) {
+      return { status: 'error', message: 'Profile incomplete or missing payload.' };
     }
 
+    const profile = payload.profile;
+    
+    // Storage determination
     const threshold = 100 * 1024 * 1024;
     const storageTarget = getViableStorageTarget(threshold);
     if (!storageTarget) {
@@ -18,22 +24,11 @@ function handleGenerateCV_PDF(config) {
     }
 
     // 1. IMAGE HARVESTING
-    const photoBase64 = profile.photoFileId ? getAsBase64(profile.photoFileId) : null;
+    // Note: GAS worker needs permission/access to the file ID to convert to Base64
+    const photoBase64 = (profile.photoFileId && config.includePhoto) ? getAsBase64(profile.photoFileId) : null;
     const logoBase64 = getAsBase64("1ZpVAXWGLDP2C42Fct0bisloaQLf2095_"); // Xeenaps Logo Icon ID
 
-    // 2. DATA HARVESTING
-    const allEdu = getEducationFromRegistry();
-    const allCareer = getCareerFromRegistry();
-    const allPubsResult = getPublicationFromRegistry(1, 1000); 
-    const allPubs = allPubsResult.items || [];
-    const allActsResult = getActivitiesFromRegistry(1, 1000);
-    const allActs = allActsResult.items || [];
-
-    const filteredEdu = allEdu.filter(e => config.selectedEducationIds.includes(e.id));
-    const filteredCareer = allCareer.filter(c => config.selectedCareerIds.includes(c.id));
-    const filteredPubs = allPubs.filter(p => config.selectedPublicationIds.includes(p.id));
-    const filteredActs = allActs.filter(a => config.selectedActivityIds.includes(a.id));
-
+    // 2. DATA PROCESSING (Already filtered by Frontend, just sorting needed)
     const sortTimeline = (list, startKey, endKey) => {
       return list.sort((a, b) => {
         const getVal = (v) => (v === 'Present' || !v) ? '9999' : String(v);
@@ -41,17 +36,17 @@ function handleGenerateCV_PDF(config) {
       });
     };
 
-    const sortedEdu = sortTimeline(filteredEdu, 'startYear', 'endYear');
-    const sortedCareer = sortTimeline(filteredCareer, 'startDate', 'endDate');
-    const sortedPubs = filteredPubs.sort((a,b) => String(b.year).localeCompare(String(a.year)));
-    const sortedActs = filteredActs.sort((a,b) => {
+    const sortedEdu = sortTimeline(payload.education || [], 'startYear', 'endYear');
+    const sortedCareer = sortTimeline(payload.career || [], 'startDate', 'endDate');
+    const sortedPubs = (payload.publications || []).sort((a,b) => String(b.year).localeCompare(String(a.year)));
+    const sortedActs = (payload.activities || []).sort((a,b) => {
       const dateA = a.startDate ? new Date(a.startDate).getTime() : 0;
       const dateB = b.startDate ? new Date(b.startDate).getTime() : 0;
       return dateB - dateA;
     });
 
     // 3. BUILD HTML CONTENT
-    const htmlContent = createCVHTML(profile, sortedEdu, sortedCareer, sortedPubs, sortedActs, config.aiSummary, photoBase64, logoBase64);
+    const htmlContent = createCVHTML(profile, sortedEdu, sortedCareer, sortedPubs, sortedActs, payload.summary, photoBase64, logoBase64);
 
     // 4. GENERATE PDF BLOB
     const pdfBlob = Utilities.newBlob(htmlContent, 'text/html', 'CV.html').getAs('application/pdf').setName(`${profile.fullName} - CV.pdf`);
@@ -78,24 +73,16 @@ function handleGenerateCV_PDF(config) {
       fileId = JSON.parse(res.getContentText()).fileId;
     }
 
-    const cvDoc = {
-      id: Utilities.getUuid(),
-      title: config.title,
-      template: "Premium Standard",
-      fileId: fileId,
-      storageNodeUrl: storageTarget.url,
-      selectedEducationIds: config.selectedEducationIds,
-      selectedCareerIds: config.selectedCareerIds,
-      selectedPublicationIds: config.selectedPublicationIds,
-      selectedActivityIds: config.selectedActivityIds,
-      includePhoto: true,
-      aiSummary: config.aiSummary,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
+    // 6. RETURN WORKER RESULT (Do not save to Sheet)
+    return { 
+      status: 'success', 
+      data: {
+        id: Utilities.getUuid(),
+        fileId: fileId,
+        storageNodeUrl: storageTarget.url
+      }
     };
 
-    saveCVToRegistry(cvDoc);
-    return { status: 'success', data: cvDoc };
   } catch (e) {
     console.error("CV Architect Engine Crash: " + e.toString());
     return { status: 'error', message: 'Document Engine Failed: ' + e.toString() };
@@ -129,7 +116,7 @@ function formatDateSafe(dateStr) {
       return dateStr;
     }
     const day = d.getDate().toString().padStart(2, '0');
-    const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+    const months = ["January", "February", "March", "April", "May", "June", "July", "Aug", "Sep", "Oct", "Nov", "Dec"];
     const month = months[d.getMonth()];
     const year = d.getFullYear();
     return `${day} ${month} ${year}`;

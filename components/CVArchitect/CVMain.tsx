@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 // @ts-ignore
 import { useNavigate, Routes, Route } from 'react-router-dom';
@@ -31,7 +32,7 @@ const CVGallery: React.FC = () => {
   const loadData = useCallback(async () => {
     setIsLoading(true);
     const data = await fetchCVList();
-    // Ensure descendant order (Newest first)
+    // Ensure descendant order (Newest first) - Date parse safety included
     const sortedData = [...data].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     setCvs(sortedData);
     setIsLoading(false);
@@ -41,20 +42,31 @@ const CVGallery: React.FC = () => {
     loadData();
   }, [loadData]);
 
-  const handleDelete = async (e: React.MouseEvent, id: string) => {
+  // Updated handleDelete to pass fileId and nodeUrl for cleaner removal
+  const handleDelete = async (e: React.MouseEvent, cv: CVDocument) => {
     e.stopPropagation();
     const confirmed = await showXeenapsDeleteConfirm(1);
     if (confirmed) {
-      const success = await deleteCVDocument(id);
+      // Optimistic UI update
+      const originalCvs = [...cvs];
+      setCvs(prev => prev.filter(item => item.id !== cv.id));
+      
+      const success = await deleteCVDocument(cv.id, cv.fileId, cv.storageNodeUrl);
       if (success) {
         showXeenapsToast('success', 'CV removed from cloud');
-        loadData();
+      } else {
+        showXeenapsToast('error', 'Delete failed');
+        setCvs(originalCvs); // Rollback
       }
     }
   };
 
   const handleView = (e: React.MouseEvent, fileId: string) => {
     e.stopPropagation();
+    if (!fileId) {
+       showXeenapsToast('warning', 'File not available');
+       return;
+    }
     window.open(`https://drive.google.com/file/d/${fileId}/view`, '_blank');
   };
 
@@ -130,7 +142,7 @@ const CVGallery: React.FC = () => {
                     </div>
                   </div>
                   <button 
-                    onClick={(e) => handleDelete(e, cv.id)} 
+                    onClick={(e) => handleDelete(e, cv)} 
                     className="p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all ml-2"
                   >
                     <Trash2 size={16} />

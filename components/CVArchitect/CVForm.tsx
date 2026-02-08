@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useMemo } from 'react';
 // @ts-ignore
 import { useNavigate } from 'react-router-dom';
@@ -21,20 +22,14 @@ import {
   Sparkles, 
   Loader2, 
   Check,
-  Eye,
   GraduationCap,
   Briefcase,
   Share2,
   ClipboardCheck,
-  CheckSquare,
-  Square,
   FileUser,
-  X,
-  FileText,
   ExternalLink,
   Save,
-  CheckCircle2,
-  Calendar
+  CheckCircle2
 } from 'lucide-react';
 import { showXeenapsToast } from '../../utils/toastUtils';
 import Swal from 'sweetalert2';
@@ -153,7 +148,8 @@ const CVForm: React.FC = () => {
     setIsGenerating(true);
     Swal.fire({ title: 'Synthesizing PDF...', allowOutsideClick: false, didOpen: () => Swal.showLoading(), ...XEENAPS_SWAL_CONFIG });
     try {
-      const result = await generateCVPdf(config);
+      // Pass sourceData to generator to avoid refetching
+      const result = await generateCVPdf(config, sourceData);
       Swal.close();
       if (result) {
         showXeenapsToast('success', 'PDF Synchronized');
