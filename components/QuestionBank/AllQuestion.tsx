@@ -593,14 +593,11 @@ const AllQuestion: React.FC<AllQuestionProps> = ({ items }) => {
                     <div className="flex-1 min-w-0">
                       <h4 className="text-sm font-black text-[#004A74] truncate leading-tight line-clamp-1">{q.questionText}</h4>
                       <p className="text-[10px] font-bold text-gray-400 truncate mt-0.5">{getSourceTitle(q.collectionId)}</p>
-                      <div className="flex items-center gap-1.5 text-[9px] font-black text-gray-300 mt-1 uppercase tracking-widest">
-                         <CheckBadgeIcon className="w-3 h-3" /> Correct: {q.correctAnswer}
-                      </div>
                     </div>
                     <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
                       <button onClick={() => setSelectedQuestionDetail(q)} className="p-2.5 text-cyan-600 bg-cyan-50 rounded-xl active:scale-90 transition-all"><EyeIcon className="w-5 h-5" /></button>
                       <button onClick={(e) => handleGripSingle(e, q)} className="p-2.5 text-[#004A74] bg-gray-50 rounded-xl active:scale-90 transition-all"><Grip className="w-5 h-5" /></button>
-                      <button onClick={() => handleDelete(q.id)} className="p-2 text-red-500 bg-red-50 rounded-xl active:scale-90 transition-all"><TrashIcon className="w-5 h-5" /></button>
+                      <button onClick={() => handleDelete(q.id)} className="p-2.5 text-red-500 bg-red-50 rounded-xl active:scale-90 transition-all"><TrashIcon className="w-5 h-5" /></button>
                     </div>
                   </div>
                 );

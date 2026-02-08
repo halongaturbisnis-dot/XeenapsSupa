@@ -365,9 +365,6 @@ const RelatedQuestion: React.FC<RelatedQuestionProps> = ({ collection, onBack })
                   <div className="flex-1 min-w-0">
                     <h4 className="text-sm font-black text-[#004A74] truncate leading-tight line-clamp-1">{q.questionText}</h4>
                     <p className="text-[10px] font-bold text-gray-500 truncate mt-0.5">{q.customLabel}</p>
-                    <div className="flex items-center gap-1.5 text-[9px] font-black text-gray-300 mt-1 uppercase tracking-widest">
-                       <CheckBadgeIcon className="w-3 h-3" /> Correct: {q.correctAnswer}
-                    </div>
                   </div>
                   <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
                     <button onClick={() => setSelectedQuestionDetail(q)} className="p-2.5 text-cyan-600 bg-cyan-50 rounded-xl active:scale-90 transition-all"><EyeIcon className="w-5 h-5" /></button>
@@ -397,7 +394,6 @@ const RelatedQuestion: React.FC<RelatedQuestionProps> = ({ collection, onBack })
                     <StandardTh width="120px">Bloom</StandardTh>
                     <StandardTh width="150px">Label</StandardTh>
                     <StandardTh width="450px">Question Text</StandardTh>
-                    <StandardTh width="100px">Answer</StandardTh>
                     <StandardTh width="180px">Date</StandardTh>
                     <StandardTh width="120px">Action</StandardTh>
                  </tr>
@@ -417,7 +413,6 @@ const RelatedQuestion: React.FC<RelatedQuestionProps> = ({ collection, onBack })
                        <StandardTd className="max-w-[400px]">
                           <ElegantTooltip text={q.questionText}><p className="text-xs font-bold text-[#004A74] leading-relaxed line-clamp-1">{q.questionText}</p></ElegantTooltip>
                        </StandardTd>
-                       <StandardTd className="text-center"><span className="w-6 h-6 rounded-lg bg-gray-50 flex items-center justify-center font-black text-[#004A74] text-[10px]">{q.correctAnswer}</span></StandardTd>
                        <StandardTd className="text-[9px] font-bold text-gray-400 text-center whitespace-nowrap">{formatShortDate(q.createdAt)}</StandardTd>
                        <StandardTd>
                           <div className="flex items-center justify-center gap-1" onClick={e => e.stopPropagation()}>

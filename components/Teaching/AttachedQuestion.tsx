@@ -215,7 +215,6 @@ const AttachedQuestion: React.FC = () => {
 
                 <div className="pt-4 border-t border-gray-50 flex items-center justify-between text-[8px] font-black text-gray-400 uppercase tracking-[0.2em]">
                   <div className="flex items-center gap-1.5"><ClockIcon className="w-3 h-3" /> {formatShortDate(q.createdAt)}</div>
-                  <div className="flex items-center gap-1.5 text-[#004A74]"><CheckBadgeIcon className="w-3 h-3" /> Correct: {q.correctAnswer}</div>
                 </div>
               </div>
             ))}
