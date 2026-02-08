@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { LibraryItem } from '../../types';
-import { fetchFileContent, saveExtractedContentToDrive } from '../../services/gasService';
+import { fetchFileContent, saveExtractedContentToDrive, createEmptyInsightFile } from '../../services/gasService';
 import { upsertLibraryItemToSupabase } from '../../services/LibrarySupabaseService';
 import { deleteRemoteFile } from '../../services/ActivityService'; // Reusing generic remote file deletion
 import { 
@@ -60,10 +60,19 @@ const ContentManagerModal: React.FC<ContentManagerModalProps> = ({ item, onClose
       const result = await saveExtractedContentToDrive(item, content);
       
       if (result && result.status === 'success') {
+         
+         // NEW: Check & Create Insight File if missing (Sharding Affinity)
+         let finalInsightId = item.insightJsonId;
+         if (!finalInsightId) {
+            const createdId = await createEmptyInsightFile(item, result.nodeUrl);
+            if (createdId) finalInsightId = createdId;
+         }
+
          // 2. Update Metadata in Supabase
          const updatedItem = {
            ...item,
            extractedJsonId: result.fileId,
+           insightJsonId: finalInsightId,
            storageNodeUrl: result.nodeUrl,
            updatedAt: new Date().toISOString()
          };

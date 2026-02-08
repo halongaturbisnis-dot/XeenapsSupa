@@ -120,7 +120,7 @@ export const fetchLibraryPaginated = async (
   page: number = 1, 
   limit: number = 25, 
   search: string = "", 
-  type: string = "All",
+  type: string = "All", 
   path: string = "",
   sortKey: string = "createdAt",
   sortDir: string = "desc",
@@ -273,7 +273,7 @@ export const uploadAndStoreFile = async (file: File, signal?: AbortSignal): Prom
 
   const response = await fetch(GAS_WEB_APP_URL, { 
     method: 'POST', 
-    mode: 'cors',
+    mode: 'cors', 
     redirect: 'follow',
     body: JSON.stringify({ 
       action: 'extractOnly', 
@@ -432,6 +432,40 @@ export const saveExtractedContentToDrive = async (item: LibraryItem, content: st
     return null;
   } catch (e) {
     console.error("Save Extracted Content Failed:", e);
+    return null;
+  }
+};
+
+/**
+ * NEW: Create Empty Insight File (Sharding Affinity)
+ * Ensures insight file sits next to extracted file on the same node.
+ */
+export const createEmptyInsightFile = async (item: LibraryItem, nodeUrl: string): Promise<string | null> => {
+  try {
+    const jsonFileName = `insight_${item.id}.json`;
+    const jsonBody = JSON.stringify({});
+
+    const res = await fetch(nodeUrl, {
+      method: 'POST',
+      mode: 'cors',
+      redirect: 'follow',
+      body: JSON.stringify({ 
+        action: 'saveJsonFile', 
+        fileId: null, // Always create new if we are here
+        fileName: jsonFileName, 
+        content: jsonBody,
+        folderId: null // Let backend use default logic
+      })
+    });
+    
+    const result = await res.json();
+    
+    if (result.status === 'success') {
+      return result.fileId;
+    }
+    return null;
+  } catch (e) {
+    console.error("Create Insight Failed:", e);
     return null;
   }
 };
