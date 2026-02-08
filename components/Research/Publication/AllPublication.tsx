@@ -94,57 +94,41 @@ const AllPublication: React.FC = () => {
   }, [loadData]);
 
   const handleNewPublication = async () => {
-    const { value: title } = await Swal.fire({
-      title: 'NEW PUBLICATION',
-      input: 'text',
-      inputLabel: 'Full Publication Title',
-      inputPlaceholder: 'e.g., Deep Learning in Architectural Form...',
-      showCancelButton: true,
-      confirmButtonText: 'INITIALIZE',
-      ...XEENAPS_SWAL_CONFIG,
-      inputValidator: (value) => {
-        if (!value) return 'Title is mandatory!';
-        return null;
-      }
-    });
+    // Fetch Cleaned Profile Name for dynamic initialization
+    const cleanedAuthorName = await getCleanedProfileName();
+    
+    const id = crypto.randomUUID();
+    const newItem: PublicationItem = {
+      id,
+      title: '', // Empty title for draft
+      authors: [cleanedAuthorName],
+      type: 'Journal',
+      status: PublicationStatus.DRAFT,
+      publisherName: '',
+      researchDomain: '',
+      affiliation: '',
+      indexing: '',
+      quartile: '',
+      doi: '',
+      issn_isbn: '',
+      volume: '',
+      issue: '',
+      pages: '',
+      year: new Date().getFullYear().toString(),
+      submissionDate: '',
+      acceptanceDate: '',
+      publicationDate: '',
+      manuscriptLink: '',
+      abstract: '',
+      keywords: [],
+      remarks: '',
+      isFavorite: false,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
 
-    if (title) {
-      // Fetch Cleaned Profile Name for dynamic initialization
-      const cleanedAuthorName = await getCleanedProfileName();
-      
-      const id = crypto.randomUUID();
-      const newItem: PublicationItem = {
-        id,
-        title,
-        authors: [cleanedAuthorName],
-        type: 'Journal',
-        status: PublicationStatus.DRAFT,
-        publisherName: '',
-        researchDomain: '',
-        affiliation: '',
-        indexing: '',
-        quartile: '',
-        doi: '',
-        issn_isbn: '',
-        volume: '',
-        issue: '',
-        pages: '',
-        year: new Date().getFullYear().toString(),
-        submissionDate: '',
-        acceptanceDate: '',
-        publicationDate: '',
-        manuscriptLink: '',
-        abstract: '',
-        keywords: [],
-        remarks: '',
-        isFavorite: false,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      };
-
-      // OPTIMISTIC CREATION: Navigate directly with Draft State (In-Memory)
-      navigate(`/research/publication/${id}`, { state: { item: newItem, isNew: true } });
-    }
+    // OPTIMISTIC CREATION: Navigate directly with Draft State (In-Memory)
+    navigate(`/research/publication/${id}`, { state: { item: newItem, isNew: true } });
   };
 
   const handleToggleFavorite = async (e: React.MouseEvent, item: PublicationItem) => {
