@@ -1,27 +1,27 @@
 
 import React, { useState, useEffect } from 'react';
-import { LibraryItem, LibraryType } from '../../../types';
-import { fetchLibraryPaginatedFromSupabase } from '../../../services/LibrarySupabaseService';
+import { LibraryItem, LibraryType } from '../../types';
+import { fetchLibraryPaginatedFromSupabase } from '../../services/LibrarySupabaseService';
 import { 
   XMarkIcon, 
   CheckIcon, 
-  PlusIcon,
+  PlusIcon, 
   BookOpenIcon, 
   SparklesIcon, 
   ChevronLeftIcon, 
-  ChevronRightIcon,
+  ChevronRightIcon, 
   InboxIcon
 } from '@heroicons/react/24/outline';
-import { SmartSearchBox } from '../../Common/SearchComponents';
-import { CardGridSkeleton } from '../../Common/LoadingComponents';
+import { SmartSearchBox } from '../Common/SearchComponents';
+import { CardGridSkeleton } from '../Common/LoadingComponents';
 
-interface ReviewSourceSelectorModalProps {
+interface ResearchSourceSelectorModalProps {
   onClose: () => void;
-  onConfirm: (selected: LibraryItem[]) => void;
+  onAudit: (selected: LibraryItem[]) => void;
   currentMatrixCount: number;
 }
 
-const ReviewSourceSelectorModal: React.FC<ReviewSourceSelectorModalProps> = ({ onClose, onConfirm, currentMatrixCount }) => {
+const ResearchSourceSelectorModal: React.FC<ResearchSourceSelectorModalProps> = ({ onClose, onAudit, currentMatrixCount }) => {
   const [items, setItems] = useState<LibraryItem[]>([]);
   const [totalCount, setTotalCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
@@ -44,7 +44,7 @@ const ReviewSourceSelectorModal: React.FC<ReviewSourceSelectorModalProps> = ({ o
         currentPage, 
         itemsPerPage, 
         appliedSearch, 
-        'Literature', // Type: Literature only
+        'Literature', // Type filter
         'research_ai', // Strict filter: Must have extractedJsonId
         'createdAt', 
         'desc'
@@ -66,7 +66,6 @@ const ReviewSourceSelectorModal: React.FC<ReviewSourceSelectorModalProps> = ({ o
     if (isAlreadySelected) {
       setSelected(selected.filter(s => s.id !== item.id));
     } else {
-      // Logic: Max per session (3) OR remaining total slots in matrix (10 - current)
       if (selected.length >= effectiveSessionMax) return;
       setSelected([...selected, item]);
     }
@@ -74,7 +73,7 @@ const ReviewSourceSelectorModal: React.FC<ReviewSourceSelectorModalProps> = ({ o
 
   const handleExecute = () => {
     if (selected.length === 0) return;
-    onConfirm(selected);
+    onAudit(selected);
     setSelected([]); 
     onClose(); 
   };
@@ -87,7 +86,7 @@ const ReviewSourceSelectorModal: React.FC<ReviewSourceSelectorModalProps> = ({ o
     <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 md:p-8 bg-black/40 backdrop-blur-md animate-in fade-in">
       <div className="bg-white rounded-[3rem] w-full max-w-5xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh] border border-white/20">
         
-        {/* Ramped Down Header */}
+        {/* Header */}
         <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between shrink-0 bg-gray-50/50">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-[#004A74] text-[#FED400] rounded-xl flex items-center justify-center shadow-md">
@@ -103,7 +102,7 @@ const ReviewSourceSelectorModal: React.FC<ReviewSourceSelectorModalProps> = ({ o
           </button>
         </div>
 
-        {/* Compact Search & Meta Bar */}
+        {/* Search Bar */}
         <div className="px-6 py-3 bg-white border-b border-gray-100 shrink-0">
           <SmartSearchBox 
             value={localSearch} 
@@ -114,7 +113,7 @@ const ReviewSourceSelectorModal: React.FC<ReviewSourceSelectorModalProps> = ({ o
           />
         </div>
 
-        {/* Maximize Area for List */}
+        {/* Content Area */}
         <div className="flex-1 overflow-hidden px-4 py-2 flex flex-col bg-[#fcfcfc] min-h-0">
            <div className="flex-1 overflow-y-auto custom-scrollbar space-y-1.5 pr-1 pb-2 overscroll-contain">
               {isLoading ? (
@@ -154,7 +153,7 @@ const ReviewSourceSelectorModal: React.FC<ReviewSourceSelectorModalProps> = ({ o
            </div>
         </div>
 
-        {/* Consolidated Footer (Integrated) */}
+        {/* Footer */}
         <div className="px-6 py-4 border-t border-gray-100 bg-gray-50/50 flex flex-wrap items-center justify-between gap-4 shrink-0">
           <div className="flex items-center gap-6">
             <div className="flex items-center gap-2">
@@ -213,4 +212,4 @@ const ReviewSourceSelectorModal: React.FC<ReviewSourceSelectorModalProps> = ({ o
   );
 };
 
-export default ReviewSourceSelectorModal;
+export default ResearchSourceSelectorModal;

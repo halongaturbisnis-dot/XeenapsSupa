@@ -1,3 +1,4 @@
+
 import { getSupabase } from './supabaseClient';
 import { LibraryItem, LibraryType } from '../types';
 
@@ -43,12 +44,16 @@ export const fetchLibraryPaginatedFromSupabase = async (
     query = query.eq('type', type);
   }
 
-  // 2. Filtering by Path (Favorite/Bookmark)
+  // 2. Filtering by Path
   if (path === "favorite") {
     query = query.eq('isFavorite', true);
   } else if (path === "bookmark") {
     query = query.eq('isBookmarked', true);
+  } else if (path === "research_ai") {
+    // STRICT AI MODE (Tracer & Review): Must have extracted content
+    query = query.not('extractedJsonId', 'is', null).neq('extractedJsonId', '');
   }
+  // Note: path === "research" lets all items pass (for Presentation/Question manual mode)
 
   // 3. Smart Search Logic (Using the generated search_all column for maximum stability and full metadata support)
   if (search) {
