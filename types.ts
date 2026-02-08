@@ -810,6 +810,14 @@ export interface ConsultationAnswerContent {
   reasoning?: string;
 }
 
+// --- TUTORIAL MODULE TYPES ---
+export interface TutorialItem {
+  id: string;
+  category: string;
+  title: string;
+  link: string;
+}
+
 export interface GASResponse<T> {
   status: 'success' | 'error';
   data?: T;

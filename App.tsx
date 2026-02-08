@@ -34,6 +34,8 @@ const ColleagueMain = React.lazy(() => import('./components/Colleague/ColleagueM
 const TracerMain = React.lazy(() => import('./components/Research/Tracer/TracerMain'));
 const TracerDetail = React.lazy(() => import('./components/Research/Tracer/TracerDetail'));
 const SharboxMain = React.lazy(() => import('./components/Sharbox/SharboxMain'));
+const TutorialMain = React.lazy(() => import('./components/Tutorial/TutorialMain'));
+
 import { BRAND_ASSETS } from './assets';
 import { GlobalAppLoader } from './components/Common/LoadingComponents';
 
@@ -311,6 +313,8 @@ const App: React.FC = () => {
                 <Route path="/cv-architect/*" element={<CVMain />} />
 
                 <Route path="/colleagues/*" element={<ColleagueMain />} />
+
+                <Route path="/tutorial" element={<TutorialMain />} />
                 
                 <Route path="/add" element={isLoading ? <GlobalAppLoader /> : <LibraryForm onComplete={loadData} items={items} />} />
                 <Route path="/edit/:id" element={isLoading ? <GlobalAppLoader /> : <LibraryEditForm onComplete={loadData} items={items} />} />

@@ -66,7 +66,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onMobileClose }) => {
     { name: 'Colleague', path: '/colleagues', icon: Users },
     { name: 'CV Generator', path: '/cv-architect', icon: FileUser },
     { name: 'Profile', path: '/profile', icon: CircleUserRound },
-    { name: 'Tutorial', path: '#', icon: Youtube, inactive: false, isExternal: true },
+    { name: 'Tutorial', path: '/tutorial', icon: Youtube },
   ];
 
   // Combined state: expanded if hovered on desktop, or if it's open on mobile
