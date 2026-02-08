@@ -283,9 +283,9 @@ export interface ActivityItem {
 // --- TEACHING MODULE TYPES ---
 
 export enum TeachingRole {
-  MANDIRI = 'Mandiri',
+  MANDIRI = 'Independent',
   TEAM_TEACHING = 'Team Teaching',
-  COORDINATOR = 'Koordinator'
+  COORDINATOR = 'Coordinator'
 }
 
 export enum SessionMode {
@@ -296,15 +296,17 @@ export enum SessionMode {
 
 export enum EducationLevel {
   DIPLOMA = 'Diploma',
-  S1 = 'S1',
-  S2 = 'S2',
-  S3 = 'S3'
+  S1 = 'Bachelor',
+  S2 = 'Master',
+  S3 = 'Doctoral',
+  PROFESI = 'Professional'
 }
 
 export enum CourseType {
-  WAJIB_PRODI = 'Wajib Prodi',
-  WAJIB_NASIONAL = 'Wajib Nasional',
-  PILIHAN = 'Mata Kuliah Pilihan'
+  WAJIB_PRODI = 'Major Courses',
+  WAJIB_NASIONAL = 'National Courses',
+  WAJIB_INSTUTIUSI = 'Institutional Courses'
+  PILIHAN = 'Elective Courses',
 }
 
 export enum AssignmentType {

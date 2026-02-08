@@ -355,7 +355,7 @@ const TeachingDetail: React.FC = () => {
           </button>
           <div className="min-w-0">
             <h2 className="text-xs md:text-sm lg:text-base font-black text-[#004A74] uppercase truncate leading-tight">{item.label}</h2>
-            <p className="hidden sm:block text-[8px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">Teaching Ledger</p>
+            <p className="hidden sm:block text-[8px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">Teaching Session</p>
           </div>
         </div>
 
@@ -419,7 +419,7 @@ const TeachingDetail: React.FC = () => {
             <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-500">
                <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-end">
                   <div className="lg:col-span-3">
-                    <FormField label="Ledger Identity / Session Label" required>
+                    <FormField label="Session Label" required>
                       <input className="w-full px-5 py-4 bg-gray-50 border border-gray-200 rounded-2xl text-base font-black text-[#004A74] uppercase transition-all focus:bg-white focus:ring-4 focus:ring-[#004A74]/5" 
                         value={item.label} onChange={e => handleFieldChange('label', e.target.value)} />
                     </FormField>
@@ -464,7 +464,7 @@ const TeachingDetail: React.FC = () => {
                   <FormField label="Academic Year">
                     <FormDropdown value={item.academicYear} options={[`${new Date().getFullYear()-1}/${new Date().getFullYear()}`, `${new Date().getFullYear()}/${new Date().getFullYear()+1}`]} onChange={v => handleFieldChange('academicYear', v)} placeholder="Year" />
                   </FormField>
-                  <FormField label="Semester (Numeric)">
+                  <FormField label="Semester">
                     <FormDropdown value={item.semester} options={['1','2','3','4','5','6','7','8','Short Session']} onChange={v => handleFieldChange('semester', v)} placeholder="Semester" />
                   </FormField>
                   <FormField label="Class / Group"><input className="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-xl font-bold" value={item.classGroup} onChange={e => handleFieldChange('classGroup', e.target.value)} placeholder="e.g. AR-A" /></FormField>
@@ -493,8 +493,8 @@ const TeachingDetail: React.FC = () => {
                </div>
 
                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                  <FormField label="Theory SKS"><input type="number" className="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-xl font-bold text-center" value={item.theoryCredits} onChange={e => handleFieldChange('theoryCredits', parseFloat(e.target.value) || 0)} /></FormField>
-                  <FormField label="Practical SKS"><input type="number" className="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-xl font-bold text-center" value={item.practicalCredits} onChange={e => handleFieldChange('practicalCredits', parseFloat(e.target.value) || 0)} /></FormField>
+                  <FormField label="Theory Credits"><input type="number" className="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-xl font-bold text-center" value={item.theoryCredits} onChange={e => handleFieldChange('theoryCredits', parseFloat(e.target.value) || 0)} /></FormField>
+                  <FormField label="Practical Credits"><input type="number" className="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-xl font-bold text-center" value={item.practicalCredits} onChange={e => handleFieldChange('practicalCredits', parseFloat(e.target.value) || 0)} /></FormField>
                   <FormField label="Course Type"><FormDropdown value={item.courseType} options={Object.values(CourseType)} onChange={v => handleFieldChange('courseType', v as CourseType)} placeholder="Type" /></FormField>
                   <FormField label="Education Level"><FormDropdown value={item.educationLevel} options={Object.values(EducationLevel)} onChange={v => handleFieldChange('educationLevel', v as EducationLevel)} placeholder="Level" /></FormField>
                </div>

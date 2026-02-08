@@ -120,9 +120,9 @@ const TeachingDashboard: React.FC = () => {
       title: 'NEW TEACHING LOG',
       input: 'text',
       inputLabel: 'Session Label / Period',
-      inputPlaceholder: 'e.g., Pertemuan 1 - Arsitektur Dasar...',
+      inputPlaceholder: 'e.g., Medical Lecture...',
       showCancelButton: true,
-      confirmButtonText: 'INITIALIZE',
+      confirmButtonText: 'CREATE',
       ...XEENAPS_SWAL_CONFIG,
       inputValidator: (value) => {
         if (!value) return 'Label is mandatory!';
@@ -307,7 +307,7 @@ const TeachingDashboard: React.FC = () => {
                icon={<Plus size={18} />} 
                className="w-full md:w-auto !px-4 !py-3 !text-[10px] md:!text-sm shadow-xl"
              >
-               Record Session
+               ADD SESSION
              </StandardPrimaryButton>
           </div>
         </div>
