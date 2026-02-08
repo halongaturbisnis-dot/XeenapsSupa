@@ -82,7 +82,7 @@ const SummaryEditor: React.FC<{
         onKeyUp={updateActiveStates}
         onMouseUp={updateActiveStates}
         className="p-5 text-sm min-h-[250px] outline-none leading-relaxed custom-scrollbar font-medium text-gray-700"
-        {...({ "data-placeholder": "Describe your activity summary and synthesis here..." } as any)}
+        {...({ "data-placeholder": "Describe your activity summary here..." } as any)}
       />
       <style>{`
         [contenteditable]:empty:before { content: attr(data-placeholder); color: #9CA3AF; pointer-events: none; display: block; }
@@ -270,7 +270,7 @@ const ActivityDetail: React.FC = () => {
       const result = await Swal.fire({
         ...XEENAPS_SWAL_CONFIG,
         title: 'Unsaved Changes',
-        text: 'Anda memiliki perubahan yang belum disimpan. Yakin ingin keluar?',
+        text: 'You have unsaved changes. Are you sure you want to leave?',
         showCancelButton: true,
         confirmButtonText: 'Discard & Leave',
         cancelButtonText: 'Cancel',
@@ -374,8 +374,8 @@ const ActivityDetail: React.FC = () => {
       <GlobalSavingOverlay isVisible={isSaving} />
 
       <FormStickyHeader 
-        title="Activity Detail" 
-        subtitle="Manage your academic portfolio" 
+        title="ACTIVITY" 
+        subtitle="Manage your activity portfolio" 
         onBack={handleSafeBack} 
         rightElement={
           <div className="flex items-center gap-2">
@@ -491,7 +491,7 @@ const ActivityDetail: React.FC = () => {
                 <FormField label="Activity Type">
                   <FormDropdown value={item.type} options={Object.values(ActivityType)} onChange={(v) => handleFieldChange('type', v)} placeholder="Select type" allowCustom={false} disabled={isLocked} />
                 </FormField>
-                <FormField label="Recognition Magnitude">
+                <FormField label="Level">
                   <FormDropdown value={item.level} options={Object.values(ActivityLevel)} onChange={(v) => handleFieldChange('level', v)} placeholder="Select level" allowCustom={false} disabled={isLocked} />
                 </FormField>
                 <FormField label="Assigned Role">
@@ -505,7 +505,7 @@ const ActivityDetail: React.FC = () => {
           <section className="grid grid-cols-1 md:grid-cols-2 gap-10 border-t border-gray-50 pt-10">
             {/* Left: Certificate Upload (Rasio 1.414 : 1) */}
             <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Primary Certificate File (A4 Landscape)</label>
+              <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Certificate</label>
               <div 
                 onClick={() => !isLocked && fileInputRef.current?.click()}
                 className={`relative group w-full aspect-[1.414/1] bg-gray-50 border-2 border-dashed rounded-[2.5rem] flex flex-col items-center justify-center cursor-pointer transition-all overflow-hidden hover:bg-white hover:border-[#004A74]/30 ${hasCertificate ? 'border-[#004A74]/20' : 'border-gray-200'}`}
@@ -579,15 +579,13 @@ const ActivityDetail: React.FC = () => {
             <div className="space-y-6">
                <FormField label="Certificate Number">
                   <div className="relative">
-                    <FileCheck className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300" />
                     <input className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-xs font-mono font-bold text-[#004A74]" 
                       placeholder="e.g. CERT-2024-XXXX"
                       value={item.certificateNumber} onChange={(e) => handleFieldChange('certificateNumber', e.target.value)} disabled={isLocked} />
                   </div>
                </FormField>
-               <FormField label="Academic Credit Points">
+               <FormField label="Credit Points">
                   <div className="relative">
-                    <Zap className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300" />
                     <input className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-[#004A74]" 
                       placeholder="e.g. 2.0 SKP"
                       value={item.credit} onChange={(e) => handleFieldChange('credit', e.target.value)} disabled={isLocked} />
@@ -598,7 +596,7 @@ const ActivityDetail: React.FC = () => {
 
           {/* 3. SUMMARY BLOCK */}
           <section className="border-t border-gray-50 pt-10">
-             <FormField label="Activity Synthesis & Summary">
+             <FormField label="Activity Summary">
                 <SummaryEditor 
                   value={item.description}
                   onChange={(val) => handleFieldChange('description', val)}

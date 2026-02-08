@@ -156,7 +156,7 @@ const PublicationDetail: React.FC = () => {
       const result = await Swal.fire({
         ...XEENAPS_SWAL_CONFIG,
         title: 'Unsaved Changes',
-        text: 'Anda memiliki perubahan yang belum disimpan. Yakin ingin keluar?',
+        text: 'You have unsaved changes. Are you sure you want to leave?',
         showCancelButton: true,
         confirmButtonText: 'Discard & Leave',
         cancelButtonText: 'Cancel',

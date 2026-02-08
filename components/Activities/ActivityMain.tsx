@@ -190,7 +190,7 @@ const ActivityDashboard: React.FC = () => {
               <input type="date" className="bg-transparent text-[10px] font-bold uppercase tracking-widest text-[#004A74] outline-none cursor-pointer flex-1" value={tempEndDate} onChange={(e) => setTempEndDate(e.target.value)} />
             </div>
             {(tempStartDate || tempEndDate) && (
-              <button onClick={handleApplyDateFilter} className="w-full md:w-auto px-4 py-2 bg-[#004A74] text-white text-[9px] font-black uppercase tracking-widest rounded-xl hover:bg-[#003859] transition-all shadow-md md:ml-1">Apply Range</button>
+              <button onClick={handleApplyDateFilter} className="w-full md:w-auto px-4 py-2 bg-[#004A74] text-white text-[9px] font-black uppercase tracking-widest rounded-xl hover:bg-[#003859] transition-all shadow-md md:ml-1">Apply</button>
             )}
             {(startDate || endDate) && (
               <button onClick={() => { setTempStartDate(''); setTempEndDate(''); setStartDate(''); setEndDate(''); setCurrentPage(1); }} className="p-2 hover:bg-gray-200 rounded-lg transition-all flex justify-center text-red-400"><XIcon size={16} /></button>
@@ -198,7 +198,7 @@ const ActivityDashboard: React.FC = () => {
           </div>
         </div>
         <StandardPrimaryButton onClick={handleNewActivity} icon={<Plus size={20} />}>
-          Register Activity
+          REGISTER
         </StandardPrimaryButton>
       </div>
 

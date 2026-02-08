@@ -236,7 +236,7 @@ const DocumentationVault: React.FC = () => {
             </button>
             <div className="min-w-0">
                <h2 className="text-xl font-black text-[#004A74] uppercase tracking-tight truncate max-w-xs md:max-w-md">{metadata?.eventName || 'Vault'}</h2>
-               <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mt-1">Documentation Multi-Node Storage</p>
+               <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mt-1">Documentation Gallery</p>
             </div>
          </div>
 
@@ -253,7 +253,7 @@ const DocumentationVault: React.FC = () => {
               disabled={isLocked}
               className={`flex items-center gap-2 px-6 py-2.5 bg-[#004A74] text-white rounded-2xl text-[9px] font-black uppercase tracking-widest transition-all hover:shadow-lg active:scale-95 ${isLocked ? 'opacity-70 cursor-not-allowed' : ''}`}
             >
-              {isLocked ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />} Upload Files
+              {isLocked ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />} Add Files
             </button>
          </div>
       </header>
@@ -356,7 +356,7 @@ const DocumentationVault: React.FC = () => {
               <div className="p-8 border-b border-gray-100 flex items-center justify-between shrink-0">
                  <div className="flex items-center gap-4">
                     <div className="w-12 h-12 bg-[#004A74] text-[#FED400] rounded-2xl flex items-center justify-center shadow-lg"><CloudUpload size={24} /></div>
-                    <h2 className="text-xl font-black text-[#004A74] uppercase tracking-tight">Batch File Upload</h2>
+                    <h2 className="text-xl font-black text-[#004A74] uppercase tracking-tight">File Upload</h2>
                  </div>
                  <button onClick={() => { setFileQueue([]); setIsFileModalOpen(false); }} className="p-2 hover:bg-red-50 text-gray-400 hover:text-red-500 rounded-full transition-all"><X size={24} /></button>
               </div>
@@ -388,7 +388,7 @@ const DocumentationVault: React.FC = () => {
               </div>
               <div className="p-8 bg-gray-50 border-t border-gray-100 flex justify-end gap-3">
                  <button onClick={() => { setFileQueue([]); setIsFileModalOpen(false); }} className="px-8 py-3 bg-white text-gray-400 rounded-xl text-[10px] font-black uppercase tracking-widest">Cancel</button>
-                 <button onClick={handleBatchFileUpload} disabled={fileQueue.length === 0} className="px-10 py-3 bg-[#004A74] text-[#FED400] rounded-xl text-[10px] font-black uppercase tracking-widest shadow-xl disabled:opacity-50">Confirm & Upload</button>
+                 <button onClick={handleBatchFileUpload} disabled={fileQueue.length === 0} className="px-10 py-3 bg-[#004A74] text-[#FED400] rounded-xl text-[10px] font-black uppercase tracking-widest shadow-xl disabled:opacity-50">Confirm</button>
               </div>
            </div>
         </div>
@@ -401,7 +401,7 @@ const DocumentationVault: React.FC = () => {
               <div className="p-8 border-b border-gray-100 flex items-center justify-between shrink-0">
                  <div className="flex items-center gap-4">
                     <div className="w-12 h-12 bg-[#004A74] text-[#FED400] rounded-2xl flex items-center justify-center shadow-lg"><LinkIcon size={24} /></div>
-                    <h2 className="text-xl font-black text-[#004A74] uppercase tracking-tight">External Links Matrix</h2>
+                    <h2 className="text-xl font-black text-[#004A74] uppercase tracking-tight">Links Insert</h2>
                  </div>
                  <button onClick={() => setIsLinkModalOpen(false)} className="p-2 hover:bg-red-50 text-gray-400 hover:text-red-500 rounded-full transition-all"><X size={24} /></button>
               </div>
@@ -409,12 +409,12 @@ const DocumentationVault: React.FC = () => {
                  {linkQueue.map((l, i) => (
                     <div key={i} className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-gray-50 rounded-2xl border border-gray-100 relative group animate-in zoom-in-95">
                        <div className="space-y-1.5">
-                          <label className="text-[8px] font-black uppercase text-gray-400">Destination URL</label>
+                          <label className="text-[8px] font-black uppercase text-gray-400">Link</label>
                           <input type="url" className="w-full bg-white border border-gray-100 px-3 py-2 rounded-lg text-[11px] font-bold text-blue-500" value={l.url} placeholder="https://..." onChange={e => setLinkQueue(prev => prev.map((item, idx) => idx === i ? {...item, url: e.target.value} : item))} />
                        </div>
                        <div className="space-y-1.5">
-                          <label className="text-[8px] font-black uppercase text-gray-400">Custom Label</label>
-                          <input className="w-full bg-white border border-gray-100 px-3 py-2 rounded-lg text-[11px] font-bold text-[#004A74]" value={l.label} placeholder="Reference Name" onChange={e => setLinkQueue(prev => prev.map((item, idx) => idx === i ? {...item, label: e.target.value} : item))} />
+                          <label className="text-[8px] font-black uppercase text-gray-400">Link Label</label>
+                          <input className="w-full bg-white border border-gray-100 px-3 py-2 rounded-lg text-[11px] font-bold text-[#004A74]" value={l.label} placeholder="Custom label" onChange={e => setLinkQueue(prev => prev.map((item, idx) => idx === i ? {...item, label: e.target.value} : item))} />
                        </div>
                        {linkQueue.length > 1 && (
                           <button onClick={() => setLinkQueue(prev => prev.filter((_, idx) => idx !== i))} className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-md opacity-0 group-hover:opacity-100 transition-all"><X size={12} /></button>
@@ -425,7 +425,7 @@ const DocumentationVault: React.FC = () => {
               </div>
               <div className="p-8 bg-gray-50 border-t border-gray-100 flex justify-end gap-3">
                  <button onClick={() => { setLinkQueue([{ url: '', label: '' }]); setIsLinkModalOpen(false); }} className="px-8 py-3 bg-white text-gray-400 rounded-xl text-[10px] font-black uppercase tracking-widest">Cancel</button>
-                 <button onClick={handleBatchLinkSave} className="px-10 py-3 bg-[#004A74] text-[#FED400] rounded-xl text-[10px] font-black uppercase tracking-widest shadow-xl">Confirm & Save</button>
+                 <button onClick={handleBatchLinkSave} className="px-10 py-3 bg-[#004A74] text-[#FED400] rounded-xl text-[10px] font-black uppercase tracking-widest shadow-xl">Confirm</button>
               </div>
            </div>
         </div>
