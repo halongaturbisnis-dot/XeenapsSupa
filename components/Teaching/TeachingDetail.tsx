@@ -504,17 +504,17 @@ const TeachingDetail: React.FC = () => {
                </FormField>
 
                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <FormField label="Teaching Method (IKU-7 Compliance)"><FormDropdown value={item.method} options={['Lecture', 'Case Method', 'Team-Based Project', 'Discussion', 'Laboratory Work', 'Field Study']} onChange={v => handleFieldChange('method', v)} placeholder="Method" /></FormField>
+                  <FormField label="Teaching Method"><FormDropdown value={item.method} options={['Lecture', 'Case Method', 'Team-Based Project', 'Discussion', 'Laboratory Work', 'Field Study']} onChange={v => handleFieldChange('method', v)} placeholder="Method" /></FormField>
                   <FormField label="Lecturer Assigned Role"><FormDropdown value={item.role} options={Object.values(TeachingRole)} onChange={v => handleFieldChange('role', v as TeachingRole)} placeholder="Role" /></FormField>
                </div>
 
-               <FormField label="Learning Outcomes (Sub-CPMK)">
+               <FormField label="Learning Outcomes">
                   <textarea className="w-full px-6 py-4 bg-gray-50 border border-gray-200 rounded-[2rem] text-xs font-medium min-h-[120px] leading-relaxed" value={item.learningOutcomes} onChange={e => handleFieldChange('learningOutcomes', e.target.value)} placeholder="What should students achieve after this session?" />
                </FormField>
 
                <div className="space-y-4 pt-4">
                   <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-[#004A74] flex items-center gap-2">
-                     <Zap size={14} className="text-[#FED400] fill-[#FED400]" /> Integrated Resource Attachments
+                     Resource Attachments
                   </h4>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                      <div className="bg-white border border-gray-100 rounded-[2rem] p-5 shadow-sm flex flex-col min-h-[320px]">
@@ -630,7 +630,7 @@ const TeachingDetail: React.FC = () => {
                   <FormField label="Actual End Time">
                     <input type="time" className="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-xl font-bold" value={item.actualEndTime} onChange={e => handleFieldChange('actualEndTime', e.target.value)} />
                   </FormField>
-                  <FormField label="Duration (Calculated)">
+                  <FormField label="Duration">
                     <div className="w-full px-5 py-3 bg-white border border-gray-100 rounded-xl font-black text-[#004A74] flex items-center gap-2">
                        <Clock size={14} className="text-gray-400" /> {calculateDuration(item.actualStartTime, item.actualEndTime)}
                     </div>
@@ -662,7 +662,7 @@ const TeachingDetail: React.FC = () => {
                   <FormField label="Assessment Criteria"><input className="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold" value={item.assessmentCriteria} onChange={e => handleFieldChange('assessmentCriteria', e.target.value)} placeholder="e.g. rubrics, accuracy..." /></FormField>
                </div>
 
-               <FormField label="Obstacles & Problems (BKD Requirement)">
+               <FormField label="Obstacles & Problems">
                  <textarea className="w-full px-6 py-4 bg-red-50/30 border border-red-100 rounded-[2rem] text-xs font-medium min-h-[100px] leading-relaxed" value={item.problems} onChange={e => handleFieldChange('problems', e.target.value)} placeholder="Describe constraints (Projector fail, Connection, etc.)..." />
                </FormField>
 

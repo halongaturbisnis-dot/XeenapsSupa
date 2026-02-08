@@ -303,10 +303,10 @@ export enum EducationLevel {
 }
 
 export enum CourseType {
-  WAJIB_PRODI = 'Major Courses',
-  WAJIB_NASIONAL = 'National Courses',
-  WAJIB_INSTUTIUSI = 'Institutional Courses'
-  PILIHAN = 'Elective Courses',
+  WAJIB_PRODI = 'Major Course',
+  WAJIB_NASIONAL = 'National Course',
+  WAJIB_INSTUTIUSI = 'Institutional Course',
+  PILIHAN = 'Elective Course'
 }
 
 export enum AssignmentType {
