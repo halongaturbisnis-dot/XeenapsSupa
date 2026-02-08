@@ -59,12 +59,13 @@ const CURRENCIES = [
 ];
 
 const FinanceTab: React.FC<FinanceTabProps> = ({ projectId }) => {
-  const [items, setItems] = useState<TracerFinanceItem[]>([]);
+  // allItems stores the complete dataset for accurate totals and export
+  const [allItems, setAllItems] = useState<TracerFinanceItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isExporting, setIsExporting] = useState(false);
   const [currency, setCurrency] = useState(CURRENCIES[0]);
 
-  // Filters (Cumulative Logic)
+  // Filters (Cumulative Logic for Table View)
   const [localSearch, setLocalSearch] = useState('');
   const [appliedSearch, setAppliedSearch] = useState('');
   const [tempStartDate, setTempStartDate] = useState('');
@@ -75,15 +76,16 @@ const FinanceTab: React.FC<FinanceTabProps> = ({ projectId }) => {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [viewingItem, setViewingItem] = useState<TracerFinanceItem | undefined>();
 
+  // Fetches ALL data (empty filters) to ensure complete dataset is available for summary/export
   const loadData = useCallback(async (isSilent = false) => {
     if (!isSilent) setIsLoading(true);
     try {
-      const data = await fetchTracerFinance(projectId, startDate, endDate, appliedSearch);
-      setItems(data);
+      const data = await fetchTracerFinance(projectId, "", "", "");
+      setAllItems(data);
     } finally {
       if (!isSilent) setIsLoading(false);
     }
-  }, [projectId, startDate, endDate, appliedSearch]);
+  }, [projectId]);
 
   useEffect(() => { loadData(); }, [loadData]);
 
@@ -104,31 +106,56 @@ const FinanceTab: React.FC<FinanceTabProps> = ({ projectId }) => {
     } catch { return "-"; }
   };
 
+  // Totals derived from ALL items (unfiltered)
   const totals = useMemo(() => {
-    // Calculate totals directly from all available items for accurate summary
-    const credit = items.reduce((sum, item) => sum + (item.credit || 0), 0);
-    const debit = items.reduce((sum, item) => sum + (item.debit || 0), 0);
+    const credit = allItems.reduce((sum, item) => sum + (item.credit || 0), 0);
+    const debit = allItems.reduce((sum, item) => sum + (item.debit || 0), 0);
     const balance = credit - debit;
-    
     return { credit, debit, balance };
-  }, [items]);
+  }, [allItems]);
+
+  // Visible items filtered client-side for the table view
+  const visibleItems = useMemo(() => {
+    return allItems.filter(item => {
+      // Search Filter
+      if (appliedSearch) {
+        const s = appliedSearch.toLowerCase();
+        if (!item.description.toLowerCase().includes(s)) return false;
+      }
+      
+      // Date Range Filter
+      if (startDate) {
+        if (new Date(item.date) < new Date(startDate)) return false;
+      }
+      if (endDate) {
+        const e = new Date(endDate);
+        e.setHours(23, 59, 59, 999);
+        if (new Date(item.date) > e) return false;
+      }
+      
+      return true;
+    });
+  }, [allItems, appliedSearch, startDate, endDate]);
 
   const latestDate = useMemo(() => {
-    if (items.length === 0) return null;
-    const sorted = [...items].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    if (allItems.length === 0) return null;
+    const sorted = [...allItems].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     return sorted[0].date;
-  }, [items]);
+  }, [allItems]);
 
   const handleOptimisticSave = (newItem: TracerFinanceItem) => {
-    setItems(prev => {
+    setAllItems(prev => {
       const exists = prev.find(i => i.id === newItem.id);
       if (exists) return prev.map(i => i.id === newItem.id ? newItem : i);
       
-      const lastItem = prev[prev.length - 1];
-      const prevBalance = lastItem ? lastItem.balance : 0;
-      const optimisticBalance = prevBalance + (newItem.credit || 0) - (newItem.debit || 0);
+      // Since it's chronological usually, just append or insert at correct position?
+      // For simple ledger, append. Backend handles balance integrity on reload.
+      // But we recalculate balance optimistically for UI consistency?
+      // Actually balance is in item itself from form modal logic (usually). 
+      // The modal doesn't calc balance, backend/service does.
+      // We will rely on loadData(true) after save for strict balance.
       
-      return [...prev, { ...newItem, balance: optimisticBalance }];
+      return [...prev, newItem];
     });
   };
 
@@ -136,20 +163,20 @@ const FinanceTab: React.FC<FinanceTabProps> = ({ projectId }) => {
     e.stopPropagation();
     const confirmed = await showXeenapsDeleteConfirm(1);
     if (confirmed) {
-      const originalItems = [...items];
+      const originalItems = [...allItems];
       // 1. OPTIMISTIC REMOVE
-      setItems(prev => prev.filter(i => i.id !== id));
+      setAllItems(prev => prev.filter(i => i.id !== id));
       
       // 2. SILENT BACKGROUND SYNC
       try {
         const result = await deleteTracerFinance(id);
         if (result.status !== 'success') {
-          setItems(originalItems);
+          setAllItems(originalItems);
         } else {
           loadData(true); // Silent refresh to ensure balance integrity
         }
       } catch {
-        setItems(originalItems);
+        setAllItems(originalItems);
       }
     }
   };
@@ -159,6 +186,8 @@ const FinanceTab: React.FC<FinanceTabProps> = ({ projectId }) => {
     showXeenapsToast('info', `Synthesizing Premium Report...`);
     
     try {
+      // Export call uses projectId, so backend logic (which fetches all items for project) is preserved.
+      // The active filters (date/search) on UI do NOT affect this export.
       const result = await exportFinanceLedger(projectId, currency.code);
       if (result && result.base64) {
         // Direct Blob Download Implementation (No Gmail login required)
@@ -276,7 +305,7 @@ const FinanceTab: React.FC<FinanceTabProps> = ({ projectId }) => {
          <div className="flex items-center gap-3 w-full lg:w-auto relative">
             <button 
                 onClick={handleExport}
-                disabled={isExporting || items.length === 0}
+                disabled={isExporting || allItems.length === 0}
                 className="w-full flex items-center justify-center gap-2 px-6 py-4 bg-white border border-gray-200 text-[#004A74] rounded-2xl font-black uppercase tracking-widest text-[11px] shadow-sm hover:bg-gray-50 active:scale-95 transition-all disabled:opacity-50"
             >
                 {isExporting ? <Loader2 size={18} className="animate-spin" /> : <Download size={18} />} Export PDF
@@ -308,11 +337,13 @@ const FinanceTab: React.FC<FinanceTabProps> = ({ projectId }) => {
                <tbody className="divide-y divide-gray-50">
                   {isLoading ? (
                     <TableSkeletonRows count={5} />
-                  ) : items.length === 0 ? (
+                  ) : visibleItems.length === 0 ? (
                     <tr><td colSpan={6} className="py-32 text-center opacity-30"><Banknote size={64} className="mx-auto mb-4 text-[#004A74]" /><p className="text-[10px] font-black uppercase tracking-widest">Financial Ledger Null</p></td></tr>
                   ) : (
-                    [...items].reverse().map((item, idx) => {
-                       const isLastEntry = idx === 0; 
+                    [...visibleItems].reverse().map((item, idx) => {
+                       const isLastEntry = idx === 0; // Relative to visible list, but only strict latest can delete. 
+                       // Note: Deletion integrity check is done backend/service side based on logic.
+                       // For visual simplicity, showing delete button on row, action validates.
                        return (
                         <StandardTr key={item.id} onClick={() => { setViewingItem(item); setIsFormOpen(true); }} className="cursor-pointer">
                            <StandardTd className="px-2 md:px-4 py-2 md:py-4 text-[9px] md:text-[10px] font-mono font-bold text-gray-400">
@@ -339,9 +370,7 @@ const FinanceTab: React.FC<FinanceTabProps> = ({ projectId }) => {
                            <StandardTd className="sticky right-0 bg-white group-hover:bg-[#f0f7fa] px-2 md:px-4 py-2 md:py-4">
                               <div className="flex items-center justify-center gap-1" onClick={e => e.stopPropagation()}>
                                  <button onClick={() => { setViewingItem(item); setIsFormOpen(true); }} className="p-1 md:p-2 text-blue-500 hover:bg-white rounded-lg transition-all"><Eye size={16} /></button>
-                                 {isLastEntry && (
-                                   <button onClick={(e) => handleDelete(e, item.id)} className="p-1 md:p-2 text-red-200 hover:text-red-500 hover:bg-white rounded-lg transition-all"><Trash2 size={16} /></button>
-                                 )}
+                                 <button onClick={(e) => handleDelete(e, item.id)} className="p-1 md:p-2 text-red-200 hover:text-red-500 hover:bg-white rounded-lg transition-all"><Trash2 size={16} /></button>
                               </div>
                            </StandardTd>
                         </StandardTr>

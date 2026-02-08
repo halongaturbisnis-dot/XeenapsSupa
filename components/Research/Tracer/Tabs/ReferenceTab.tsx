@@ -24,9 +24,10 @@ interface ReferenceTabProps {
   onRefresh: () => Promise<void>;
   reopenedRef?: (LibraryItem & { refRow: TracerReference }) | null;
   onOpenLibrary?: (item: LibraryItem, referenceContext: any) => void;
+  onClearReopenRef?: () => void;
 }
 
-const ReferenceTab: React.FC<ReferenceTabProps> = ({ projectId, libraryItems, references, setReferences, onRefresh, reopenedRef, onOpenLibrary }) => {
+const ReferenceTab: React.FC<ReferenceTabProps> = ({ projectId, libraryItems, references, setReferences, onRefresh, reopenedRef, onOpenLibrary, onClearReopenRef }) => {
   const [localSearch, setLocalSearch] = useState('');
   const [searchResults, setSearchResults] = useState<LibraryItem[]>([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -113,7 +114,10 @@ const ReferenceTab: React.FC<ReferenceTabProps> = ({ projectId, libraryItems, re
         <ReferenceDetailView 
           item={selectedRef} 
           refRow={selectedRef.refRow!} 
-          onClose={() => setSelectedRef(null)}
+          onClose={() => {
+            setSelectedRef(null);
+            if (onClearReopenRef) onClearReopenRef();
+          }}
           onOpenLibrary={(lib) => {
             if (onOpenLibrary) {
               onOpenLibrary(lib, selectedRef);

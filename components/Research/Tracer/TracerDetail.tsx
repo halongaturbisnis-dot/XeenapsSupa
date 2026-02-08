@@ -429,6 +429,12 @@ const TracerDetail: React.FC<{ libraryItems: LibraryItem[] }> = ({ libraryItems 
     }
   };
 
+  // NEW: Handler to clear reopen state. Passed down to ReferenceTab.
+  // This ensures that when ReferenceDetailView is closed by the user, it doesn't reopen on tab switch.
+  const handleClearReopenRef = () => {
+    setInitialReopenRef(null);
+  };
+
   const formatLogTime = (dateStr: string) => {
     try {
       const d = new Date(dateStr);
@@ -564,6 +570,7 @@ const TracerDetail: React.FC<{ libraryItems: LibraryItem[] }> = ({ libraryItems 
                onRefresh={loadAllData} 
                reopenedRef={initialReopenRef}
                onOpenLibrary={handleOpenLibraryFromRef}
+               onClearReopenRef={handleClearReopenRef}
              />
           )}
           {activeTab === 'finance' && <FinanceTab projectId={project.id} />}
