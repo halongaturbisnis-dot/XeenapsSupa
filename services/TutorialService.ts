@@ -12,8 +12,9 @@ export const fetchTutorials = async (): Promise<Record<string, TutorialItem[]>> 
     }
     const csvText = await response.text();
     
-    // Split by new line, remove empty rows
-    const rows = csvText.split('\n').map(row => row.trim()).filter(row => row.length > 0);
+    // Split by new line
+    // Handle potential carriage returns from Excel/Sheets
+    const rows = csvText.split(/\r?\n/).filter(row => row.trim().length > 0);
     
     // Skip header (Row 1)
     const dataRows = rows.slice(1);
@@ -21,36 +22,67 @@ export const fetchTutorials = async (): Promise<Record<string, TutorialItem[]>> 
     const tutorials: Record<string, TutorialItem[]> = {};
 
     dataRows.forEach(row => {
-      // Simple CSV parsing handling comma-separated values.
-      // Note: This simple split handles basic CSV. If fields contain commas, it might need regex adjustment.
-      // Based on typical Google Sheets CSV export:
-      // "ID","Category","Name","Link"
+      // Manual CSV Parsing to handle quotes, commas, and spaces correctly.
+      // This ensures multi-word titles like "Getting Started" are preserved 
+      // and not split into "Getting".
       
-      // Regex to split by comma but ignore commas inside quotes
-      const cols = row.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g) || [];
+      const cols: string[] = [];
+      let currentVal = '';
+      let inQuote = false;
       
-      // Fallback if regex fails (simple split), cleaning up quotes
-      const finalCols = cols.length >= 4 
-        ? cols.map(c => c.replace(/^"|"$/g, '').trim()) 
-        : row.split(',').map(c => c.replace(/^"|"$/g, '').trim());
+      for (let i = 0; i < row.length; i++) {
+        const char = row[i];
+        
+        if (char === '"') {
+          // Handle quotes: toggle state, or handle escaped quotes ("")
+          if (inQuote && row[i+1] === '"') {
+             currentVal += '"';
+             i++; // Skip next quote
+          } else {
+             inQuote = !inQuote;
+          }
+        } else if (char === ',' && !inQuote) {
+          // Comma acts as separator only if NOT inside quotes
+          cols.push(currentVal);
+          currentVal = '';
+        } else {
+          // Normal character (including spaces)
+          currentVal += char;
+        }
+      }
+      cols.push(currentVal); // Push the last column
 
-      // Mapping: 
+      // Clean up
+      const finalCols = cols.map(c => c.trim());
+
+      // Mapping based on Sheet Columns: 
       // Col 0: ID
       // Col 1: Category
       // Col 2: Nama (Title)
       // Col 3: Link
       
-      const id = finalCols[0];
-      const category = finalCols[1];
-      const title = finalCols[2];
-      const link = finalCols[3];
+      if (finalCols.length >= 4) {
+        const id = finalCols[0];
+        const category = finalCols[1];
+        const title = finalCols[2];
+        const link = finalCols[3];
 
-      // Validate required fields
-      if (id && category && title && link) {
-        if (!tutorials[category]) {
-          tutorials[category] = [];
+        // Ensure we have valid data before adding
+        if (id && category && title && link) {
+          // Additional cleanup just in case parser left wrapping quotes
+          const cleanCategory = category.replace(/^"|"$/g, '');
+          const cleanTitle = title.replace(/^"|"$/g, '');
+          
+          if (!tutorials[cleanCategory]) {
+            tutorials[cleanCategory] = [];
+          }
+          tutorials[cleanCategory].push({ 
+             id, 
+             category: cleanCategory, 
+             title: cleanTitle, 
+             link: link.replace(/^"|"$/g, '') 
+          });
         }
-        tutorials[category].push({ id, category, title, link });
       }
     });
 
