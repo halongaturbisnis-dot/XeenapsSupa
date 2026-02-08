@@ -1,10 +1,16 @@
 
 import { TeachingItem, TeachingVaultItem, GASResponse } from '../types';
 import { GAS_WEB_APP_URL } from '../constants';
+import { 
+  fetchTeachingPaginatedFromSupabase, 
+  upsertTeachingToSupabase, 
+  deleteTeachingFromSupabase 
+} from './TeachingSupabaseService';
 
 /**
- * XEENAPS TEACHING SERVICE
- * Pure data management for Lecturer BKD compliance and Documentation Vault.
+ * XEENAPS TEACHING SERVICE (HYBRID ARCHITECTURE)
+ * Metadata: Supabase
+ * Storage: GAS
  */
 
 export const fetchTeachingPaginated = async (
@@ -15,58 +21,35 @@ export const fetchTeachingPaginated = async (
   endDate: string = "",
   signal?: AbortSignal
 ): Promise<{ items: TeachingItem[], totalCount: number }> => {
-  if (!GAS_WEB_APP_URL) return { items: [], totalCount: 0 };
-  try {
-    const url = `${GAS_WEB_APP_URL}?action=getTeaching&page=${page}&limit=${limit}&search=${encodeURIComponent(search)}&startDate=${encodeURIComponent(startDate)}&endDate=${encodeURIComponent(endDate)}`;
-    const res = await fetch(url, { signal });
-    const result = await res.json();
-    return { 
-      items: result.data || [], 
-      totalCount: result.totalCount || 0 
-    };
-  } catch (error) {
-    return { items: [], totalCount: 0 };
-  }
+  // Direct call to Supabase Registry
+  return await fetchTeachingPaginatedFromSupabase(
+    page, 
+    limit, 
+    search, 
+    startDate, 
+    endDate
+  );
 };
 
 export const saveTeachingItem = async (item: TeachingItem): Promise<boolean> => {
-  if (!GAS_WEB_APP_URL) return false;
-  
   // SILENT BROADCAST FOR DASHBOARD
   window.dispatchEvent(new CustomEvent('xeenaps-teaching-updated', { detail: item }));
 
-  try {
-    const res = await fetch(GAS_WEB_APP_URL, {
-      method: 'POST',
-      body: JSON.stringify({ action: 'saveTeaching', item })
-    });
-    const result = await res.json();
-    return result.status === 'success';
-  } catch (e) {
-    return false;
-  }
+  // Direct call to Supabase Registry
+  return await upsertTeachingToSupabase(item);
 };
 
 export const deleteTeachingItem = async (id: string): Promise<boolean> => {
-  if (!GAS_WEB_APP_URL) return false;
-
   // SILENT BROADCAST FOR DASHBOARD
   window.dispatchEvent(new CustomEvent('xeenaps-teaching-deleted', { detail: id }));
 
-  try {
-    const res = await fetch(GAS_WEB_APP_URL, {
-      method: 'POST',
-      body: JSON.stringify({ action: 'deleteTeaching', id })
-    });
-    const result = await res.json();
-    return result.status === 'success';
-  } catch (e) {
-    return false;
-  }
+  // Metadata Cleanup (Supabase)
+  // Note: Physical file cleanup can be added here if needed using fetchTeachingById and deleteRemoteFile pattern
+  return await deleteTeachingFromSupabase(id);
 };
 
 /**
- * VAULT: Fetch Teaching Documentation Vault
+ * VAULT: Fetch Teaching Documentation Vault (Kept on GAS for Physical Files)
  */
 export const fetchTeachingVaultContent = async (vaultJsonId: string, nodeUrl?: string): Promise<TeachingVaultItem[]> => {
   if (!vaultJsonId) return [];
@@ -83,7 +66,7 @@ export const fetchTeachingVaultContent = async (vaultJsonId: string, nodeUrl?: s
 };
 
 /**
- * VAULT: Update Teaching Vault JSON
+ * VAULT: Update Teaching Vault JSON (Kept on GAS)
  */
 export const updateTeachingVaultContent = async (
   teachingId: string, 

@@ -18,6 +18,7 @@ import { GAS_WEB_APP_URL } from '../../constants';
 import { initializeDatabase, initializeBrainstormingDatabase, initializePublicationDatabase, initializeConsultationDatabase } from '../../services/gasService';
 import { initializeSharboxDatabase } from '../../services/SharboxService';
 import { showXeenapsAlert } from '../../utils/swalUtils';
+import { showXeenapsToast } from '../../utils/toastUtils';
 
 const SettingsView: React.FC = () => {
   const isConfigured = !!GAS_WEB_APP_URL;
@@ -69,78 +70,18 @@ const SettingsView: React.FC = () => {
   };
 
   const handleInitNoteDatabase = async () => {
-    setIsInitializingNote(true);
-    try {
-      const response = await fetch(GAS_WEB_APP_URL!, {
-        method: 'POST',
-        body: JSON.stringify({ action: 'setupNotebookDatabase' })
-      });
-      const result = await response.json();
-      if (result.status === 'success') {
-        showXeenapsAlert({
-          icon: 'success',
-          title: 'NOTEBOOK READY',
-          text: 'The Notebook registry sheet has been successfully initialized.',
-          confirmButtonText: 'EXCELLENT'
-        });
-      } else {
-        throw new Error(result.message);
-      }
-    } catch (err: any) {
-      showXeenapsAlert({ icon: 'error', title: 'SETUP FAILED', text: err.message || 'Check GAS connection.' });
-    } finally {
-      setIsInitializingNote(false);
-    }
+    // Notebook migrated to Supabase
+    showXeenapsToast('success', 'Notebook Registry Managed by Supabase');
   };
 
   const handleInitCVDatabase = async () => {
-    setIsInitializingCV(true);
-    try {
-      const response = await fetch(GAS_WEB_APP_URL!, {
-        method: 'POST',
-        body: JSON.stringify({ action: 'setupCVDatabase' })
-      });
-      const result = await response.json();
-      if (result.status === 'success') {
-        showXeenapsAlert({
-          icon: 'success',
-          title: 'CV ARCHITECT READY',
-          text: 'The CV Registry sheet has been successfully initialized.',
-          confirmButtonText: 'EXCELLENT'
-        });
-      } else {
-        throw new Error(result.message);
-      }
-    } catch (err: any) {
-      showXeenapsAlert({ icon: 'error', title: 'SETUP FAILED', text: err.message || 'Check GAS connection.' });
-    } finally {
-      setIsInitializingCV(false);
-    }
+    // CV migrated to Supabase
+    showXeenapsToast('success', 'CV Registry Managed by Supabase');
   };
 
   const handleInitTeachingDatabase = async () => {
-    setIsInitializingTeaching(true);
-    try {
-      const response = await fetch(GAS_WEB_APP_URL!, {
-        method: 'POST',
-        body: JSON.stringify({ action: 'setupTeachingDatabase' })
-      });
-      const result = await response.json();
-      if (result.status === 'success') {
-        showXeenapsAlert({
-          icon: 'success',
-          title: 'TEACHING READY',
-          text: 'The Teaching registry sheet has been successfully initialized.',
-          confirmButtonText: 'EXCELLENT'
-        });
-      } else {
-        throw new Error(result.message);
-      }
-    } catch (err: any) {
-      showXeenapsAlert({ icon: 'error', title: 'SETUP FAILED', text: err.message || 'Check GAS connection.' });
-    } finally {
-      setIsInitializingTeaching(false);
-    }
+    // Teaching migrated to Supabase
+    showXeenapsToast('success', 'Teaching Registry Managed by Supabase');
   };
 
   const handleInitBrainDatabase = async () => {
@@ -207,28 +148,8 @@ const SettingsView: React.FC = () => {
   };
 
   const handleInitReviewDatabase = async () => {
-    setIsInitializingReview(true);
-    try {
-      const response = await fetch(GAS_WEB_APP_URL!, {
-        method: 'POST',
-        body: JSON.stringify({ action: 'setupReviewDatabase' })
-      });
-      const result = await response.json();
-      if (result.status === 'success') {
-        showXeenapsAlert({
-          icon: 'success',
-          title: 'REVIEW READY',
-          text: 'The Literature Review registry sheet has been successfully initialized.',
-          confirmButtonText: 'GREAT'
-        });
-      } else {
-        throw new Error(result.message);
-      }
-    } catch (err: any) {
-      showXeenapsAlert({ icon: 'error', title: 'SETUP FAILED', text: err.message || 'Check GAS connection.' });
-    } finally {
-      setIsInitializingReview(false);
-    }
+    // Review migrated to Supabase
+    showXeenapsToast('success', 'Review Registry Managed by Supabase');
   };
 
   const handleInitSharboxDatabase = async () => {
@@ -287,14 +208,10 @@ const SettingsView: React.FC = () => {
               <BookOpenIcon className="w-4 h-4 text-[#FED400]" />
               Teaching
             </h3>
-            <button 
-              onClick={handleInitTeachingDatabase}
-              disabled={isInitializingTeaching || !isConfigured}
-              className="w-full py-2.5 bg-white text-[#004A74] rounded-xl font-black uppercase tracking-widest text-[8px] flex items-center justify-center gap-2 hover:scale-105 transition-all disabled:opacity-50"
-            >
-              {isInitializingTeaching ? <ArrowPathIcon className="w-3 h-3 animate-spin" /> : <SparklesIcon className="w-3 h-3" />}
-              Initialize
-            </button>
+            <div className="w-full py-2.5 bg-white/10 text-white rounded-xl font-black uppercase tracking-widest text-[8px] flex items-center justify-center gap-2 opacity-60">
+              <ShieldCheckIcon className="w-3 h-3" />
+              Supabase Powered
+            </div>
           </div>
 
           <div className="p-4 bg-gradient-to-br from-[#004A74] to-[#003859] rounded-[2rem] text-white shadow-xl relative overflow-hidden group">
@@ -313,14 +230,10 @@ const SettingsView: React.FC = () => {
               <IdentificationIcon className="w-4 h-4 text-[#FED400]" />
               CV Architect
             </h3>
-            <button 
-              onClick={handleInitCVDatabase}
-              disabled={isInitializingCV || !isConfigured}
-              className="w-full py-2.5 bg-[#FED400] text-[#004A74] rounded-xl font-black uppercase tracking-widest text-[8px] flex items-center justify-center gap-2 hover:scale-105 transition-all disabled:opacity-50"
-            >
-              {isInitializingCV ? <ArrowPathIcon className="w-3 h-3 animate-spin" /> : <SparklesIcon className="w-3 h-3" />}
-              Initialize
-            </button>
+            <div className="w-full py-2.5 bg-white/10 text-white rounded-xl font-black uppercase tracking-widest text-[8px] flex items-center justify-center gap-2 opacity-60">
+              <ShieldCheckIcon className="w-3 h-3" />
+              Supabase Powered
+            </div>
           </div>
 
           <div className="p-4 bg-gradient-to-br from-[#004A74] to-[#003859] rounded-[2rem] text-white shadow-xl relative overflow-hidden group">
@@ -373,14 +286,10 @@ const SettingsView: React.FC = () => {
               <TableCellsIcon className="w-4 h-4 text-[#FED400]" />
               Notebook
             </h3>
-            <button 
-              onClick={handleInitNoteDatabase}
-              disabled={isInitializingNote || !isConfigured}
-              className="w-full py-2.5 bg-[#FED400] text-[#004A74] rounded-xl font-black uppercase tracking-widest text-[8px] flex items-center justify-center gap-2 hover:scale-105 transition-all disabled:opacity-50"
-            >
-              {isInitializingNote ? <ArrowPathIcon className="w-3 h-3 animate-spin" /> : <SparklesIcon className="w-3 h-3" />}
-              Initialize
-            </button>
+            <div className="w-full py-2.5 bg-white/10 text-white rounded-xl font-black uppercase tracking-widest text-[8px] flex items-center justify-center gap-2 opacity-60">
+              <ShieldCheckIcon className="w-3 h-3" />
+              Supabase Powered
+            </div>
           </div>
 
           <div className="p-4 bg-gradient-to-br from-[#004A74] to-[#003859] rounded-[2rem] text-white shadow-xl relative overflow-hidden group">
@@ -388,14 +297,10 @@ const SettingsView: React.FC = () => {
               <BookOpen size={16} className="text-[#FED400]" />
               Lit. Review
             </h3>
-            <button 
-              onClick={handleInitReviewDatabase}
-              disabled={isInitializingReview || !isConfigured}
-              className="w-full py-2.5 bg-white text-[#004A74] rounded-xl font-black uppercase tracking-widest text-[8px] flex items-center justify-center gap-2 hover:scale-105 transition-all disabled:opacity-50"
-            >
-              {isInitializingReview ? <ArrowPathIcon className="w-3 h-3 animate-spin" /> : <SparklesIcon className="w-3 h-3" />}
-              Initialize
-            </button>
+            <div className="w-full py-2.5 bg-white/10 text-white rounded-xl font-black uppercase tracking-widest text-[8px] flex items-center justify-center gap-2 opacity-60">
+              <ShieldCheckIcon className="w-3 h-3" />
+              Supabase Powered
+            </div>
           </div>
         </div>
 

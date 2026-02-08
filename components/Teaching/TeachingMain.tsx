@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 // @ts-ignore - Resolving TS error for missing exported members in some environments
 import { Routes, Route, useNavigate } from 'react-router-dom';
@@ -43,11 +42,9 @@ const TeachingDashboard: React.FC = () => {
   const [localSearch, setLocalSearch] = useState('');
   const [appliedSearch, setAppliedSearch] = useState('');
   
-  // Date Filter States
   const [tempDateRange, setTempDateRange] = useState({ start: '', end: '' });
   const [appliedDateRange, setAppliedDateRange] = useState({ start: '', end: '' });
 
-  // View States - Default to Calendar
   const [viewMode, setViewMode] = useState<'card' | 'calendar'>('calendar');
   const [selectedMonth, setSelectedMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
@@ -60,7 +57,6 @@ const TeachingDashboard: React.FC = () => {
     "Search Institution..."
   ];
 
-  // Helper to convert "8:00" or "10:00" to total minutes for correct numeric sorting
   const timeToMinutes = (time: string): number => {
     if (!time) return 0;
     const parts = time.split(':');
@@ -69,15 +65,13 @@ const TeachingDashboard: React.FC = () => {
     return (hours * 60) + minutes;
   };
 
-  // Helper for safe local ISO date (YYYY-MM-DD)
   const getLocalDateStr = (d: Date = new Date()) => d.toLocaleDateString('sv');
 
-  // Unified loadData: triggered by both appliedSearch and appliedDateRange changes (Server-Side)
   const loadData = useCallback(() => {
     workflow.execute(
       async (signal) => {
         setIsLoading(true);
-        // Sync with backend: pass search + dates for accurate pagination
+        // Supabase Fetch
         const result = await fetchTeachingPaginated(
           1, 
           1000, 
@@ -98,6 +92,29 @@ const TeachingDashboard: React.FC = () => {
     loadData();
   }, [loadData]);
 
+  // Listener for instant UI updates from other components
+  useEffect(() => {
+    const handleUpdate = (e: any) => {
+      const updated = e.detail as TeachingItem;
+      setItems(prev => {
+        const idx = prev.findIndex(i => i.id === updated.id);
+        if (idx > -1) return prev.map(i => i.id === updated.id ? updated : i);
+        return [updated, ...prev];
+      });
+    };
+    const handleDeleteEvent = (e: any) => {
+      const id = e.detail;
+      setItems(prev => prev.filter(i => i.id !== id));
+    };
+    
+    window.addEventListener('xeenaps-teaching-updated', handleUpdate);
+    window.addEventListener('xeenaps-teaching-deleted', handleDeleteEvent);
+    return () => {
+      window.removeEventListener('xeenaps-teaching-updated', handleUpdate);
+      window.removeEventListener('xeenaps-teaching-deleted', handleDeleteEvent);
+    };
+  }, []);
+
   const handleCreateNew = async (prefilledDate?: string) => {
     const { value: label } = await Swal.fire({
       title: 'NEW TEACHING LOG',
@@ -114,7 +131,6 @@ const TeachingDashboard: React.FC = () => {
     });
 
     if (label) {
-      // Freeze UI and show loading
       Swal.fire({
         title: 'INITIALIZING SESSION...',
         allowOutsideClick: false,
@@ -180,10 +196,14 @@ const TeachingDashboard: React.FC = () => {
     e.stopPropagation();
     const confirmed = await showXeenapsDeleteConfirm(1);
     if (confirmed) {
+      // Optimistic delete
+      setItems(prev => prev.filter(i => i.id !== id));
       const success = await deleteTeachingItem(id);
       if (success) {
         showXeenapsToast('success', 'Record removed');
-        loadData();
+      } else {
+        loadData(); // Revert
+        showXeenapsToast('error', 'Delete failed');
       }
     }
   };
@@ -193,20 +213,14 @@ const TeachingDashboard: React.FC = () => {
     showXeenapsToast('success', 'Filter synchronized');
   };
 
-  // filteredItems is now used only for client-side multi-layer sorting since data is clean from server
   const filteredItems = useMemo(() => {
-    // Sorting for Card Mode: Date (DESC) -> StartTime (DESC) -> EndTime (DESC)
     return [...items].sort((a, b) => {
       const dateCmp = b.teachingDate.localeCompare(a.teachingDate);
       if (dateCmp !== 0) return dateCmp;
-      
       const startA = timeToMinutes(a.startTime);
       const startB = timeToMinutes(b.startTime);
       if (startB !== startA) return startB - startA;
-      
-      const endA = timeToMinutes(a.endTime);
-      const endB = timeToMinutes(b.endTime);
-      return endB - endA;
+      return timeToMinutes(b.endTime) - timeToMinutes(a.endTime);
     });
   }, [items]);
 
@@ -220,10 +234,9 @@ const TeachingDashboard: React.FC = () => {
     }
   };
 
-  // --- CALENDAR ENGINE ---
   const daysInMonth = (year: number, month: number) => new Date(year, month + 1, 0).getDate();
   const firstDayOfMonth = (year: number, month: number) => new Date(year, month, 1).getDay();
-  const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+  const monthNames = ["January", "February", "March", "April", "May", "Jun", "July", "August", "September", "October", "November", "December"];
   
   const calendarDays = useMemo(() => {
     const year = selectedMonth.getFullYear();
@@ -249,16 +262,7 @@ const TeachingDashboard: React.FC = () => {
   const dailySessions = useMemo(() => {
     if (!selectedDate) return [];
     const rawSessions = sessionsByDate[selectedDate] || [];
-    // Multi-layer Sorting for Calendar Mode Daily List: StartTime (ASC) -> EndTime (ASC)
-    return [...rawSessions].sort((a, b) => {
-      const startA = timeToMinutes(a.startTime);
-      const startB = timeToMinutes(b.startTime);
-      if (startA !== startB) return startA - startB;
-      
-      const endA = timeToMinutes(a.endTime);
-      const endB = timeToMinutes(b.endTime);
-      return endA - endB;
-    });
+    return [...rawSessions].sort((a, b) => timeToMinutes(a.startTime) - timeToMinutes(b.startTime));
   }, [selectedDate, sessionsByDate]);
 
   return (
@@ -298,7 +302,6 @@ const TeachingDashboard: React.FC = () => {
                 <button onClick={() => setViewMode('card')} className={`p-2 rounded-xl transition-all bg-[#004A74] text-white shadow-md`}><LayoutGrid size={18} /></button>
                 <button onClick={() => setViewMode('calendar')} className={`p-2 rounded-xl transition-all text-gray-400`}><CalendarDays size={18} /></button>
              </div>
-             {/* RESPONSIVE OPTIMIZATION: Full width on mobile/tablet, auto on desktop */}
              <StandardPrimaryButton 
                onClick={() => handleCreateNew()} 
                icon={<Plus size={18} />} 

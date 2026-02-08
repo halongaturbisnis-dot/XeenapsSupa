@@ -30,8 +30,8 @@ import {
   Presentation,
   GraduationCap,
   Link as LinkIcon,
-  Activity,
-  Palette
+  Save,
+  Loader2
 } from 'lucide-react';
 import { 
   FormPageContainer, 
@@ -45,6 +45,7 @@ import { showXeenapsDeleteConfirm } from '../../utils/confirmUtils';
 import ResourcePicker, { PickerType } from './ResourcePicker';
 import Swal from 'sweetalert2';
 import { XEENAPS_SWAL_CONFIG } from '../../utils/swalUtils';
+import { GlobalSavingOverlay } from '../Common/LoadingComponents';
 
 const TeachingDetail: React.FC = () => {
   const { sessionId } = useParams<{ sessionId: string }>();
@@ -59,7 +60,10 @@ const TeachingDetail: React.FC = () => {
   const [isPickerOpen, setIsPickerOpen] = useState(false);
   const [pickerType, setPickerType] = useState<PickerType>('LIBRARY');
 
-  const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // --- MANUAL SAVE STATE ---
+  const [isDirty, setIsDirty] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+
   const topRef = useRef<HTMLDivElement>(null);
 
   const sanitizeTime = (val: any) => {
@@ -150,6 +154,24 @@ const TeachingDetail: React.FC = () => {
     load();
   }, [sessionId, location.state, navigate]);
 
+  // NAVIGATION GUARD
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (isDirty) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [isDirty]);
+
+  // Global Sidebar Guard
+  useEffect(() => {
+    (window as any).xeenapsIsDirty = isDirty;
+    return () => { (window as any).xeenapsIsDirty = false; };
+  }, [isDirty]);
+
   const handleFieldChange = (field: keyof TeachingItem, val: any) => {
     if (!item) return;
     
@@ -176,12 +198,46 @@ const TeachingDetail: React.FC = () => {
       }
     }
 
+    // UPDATE LOCAL STATE & MARK DIRTY
     setItem(updated);
+    setIsDirty(true);
+  };
 
-    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
-    saveTimeoutRef.current = setTimeout(async () => {
-      await saveTeachingItem(updated);
-    }, 1500);
+  const handleSaveChanges = async () => {
+    if (!item) return;
+    setIsSaving(true);
+    try {
+      const success = await saveTeachingItem(item);
+      if (success) {
+        setIsDirty(false);
+        showXeenapsToast('success', 'Changes saved successfully');
+      } else {
+        showXeenapsToast('error', 'Failed to save changes');
+      }
+    } catch (e) {
+      showXeenapsToast('error', 'Connection error');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleSafeBack = async () => {
+    if (isDirty) {
+      const result = await Swal.fire({
+        ...XEENAPS_SWAL_CONFIG,
+        title: 'Unsaved Changes',
+        text: 'You have unsaved changes. Are you sure you want to leave?',
+        showCancelButton: true,
+        confirmButtonText: 'Discard & Leave',
+        cancelButtonText: 'Cancel',
+        confirmButtonColor: '#ef4444'
+      });
+      if (result.isConfirmed) {
+        navigate('/teaching');
+      }
+    } else {
+      navigate('/teaching');
+    }
   };
 
   const handleDelete = async () => {
@@ -263,22 +319,16 @@ const TeachingDetail: React.FC = () => {
     { id: 'report', label: 'Report', icon: ClipboardCheck }
   ] as const;
 
-  const getStatusColorClass = (status: SessionStatus) => {
-    switch (status) {
-      case SessionStatus.COMPLETED: return 'bg-green-100 text-green-700 border-green-200';
-      case SessionStatus.CANCELLED: return 'bg-red-100 text-red-700 border-red-200';
-      case SessionStatus.RESCHEDULED: return 'bg-orange-100 text-orange-700 border-orange-200';
-      case SessionStatus.PLANNED: return 'bg-blue-100 text-blue-700 border-blue-200';
-      default: return 'bg-gray-100 text-gray-500 border-gray-200';
-    }
-  };
-
   return (
     <FormPageContainer>
+      
+      {/* GLOBAL SAVING OVERLAY */}
+      <GlobalSavingOverlay isVisible={isSaving} />
+
       <div className="sticky top-0 z-50 bg-white/95 backdrop-blur-md px-3 md:px-8 py-3 md:py-4 border-b border-gray-100 flex items-center justify-between gap-2 md:gap-4 shrink-0">
         <div className="flex items-center gap-2 md:gap-4 min-w-0">
           <button 
-            onClick={() => navigate('/teaching')}
+            onClick={handleSafeBack}
             className="p-2 bg-gray-50 text-gray-400 hover:text-[#004A74] hover:bg-[#FED400]/20 rounded-xl transition-all shadow-sm active:scale-90"
           >
             <ArrowLeft size={18} />
@@ -303,20 +353,40 @@ const TeachingDetail: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-1.5 md:gap-3 shrink-0">
-           <button 
-              onClick={() => navigate(`/teaching/${item.id}/vault`, { state: { item } })}
-              className="p-2 md:p-2.5 bg-white border border-gray-100 text-[#004A74] hover:bg-blue-50 rounded-xl transition-all shadow-sm active:scale-90"
-              title="Documentation Vault"
-            >
-              <FolderOpen size={18} />
-            </button>
-            <button 
-              onClick={handleDelete}
-              className="p-2 md:p-2.5 bg-white border border-gray-100 text-red-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all shadow-sm active:scale-90"
-              title="Purge Record"
-            >
-              <Trash2 size={18} />
-            </button>
+           {isDirty ? (
+             <button 
+               onClick={handleSaveChanges}
+               disabled={isSaving}
+               className={`flex items-center gap-2 px-6 py-3 bg-[#004A74] text-[#FED400] rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg transition-all animate-in zoom-in-95 ${isSaving ? 'opacity-70 cursor-not-allowed' : 'hover:scale-105 active:scale-95'}`}
+             >
+               {isSaving ? (
+                 <>
+                   <Loader2 className="w-4 h-4 animate-spin" /> Saving...
+                 </>
+               ) : (
+                 <>
+                   <Save size={16} /> Save Changes
+                 </>
+               )}
+             </button>
+           ) : (
+             <>
+               <button 
+                  onClick={() => navigate(`/teaching/${item.id}/vault`, { state: { item } })}
+                  className="p-2 md:p-2.5 bg-white border border-gray-100 text-[#004A74] hover:bg-blue-50 rounded-xl transition-all shadow-sm active:scale-90"
+                  title="Documentation Vault"
+                >
+                  <FolderOpen size={18} />
+                </button>
+                <button 
+                  onClick={handleDelete}
+                  className="p-2 md:p-2.5 bg-white border border-gray-100 text-red-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all shadow-sm active:scale-90"
+                  title="Purge Record"
+                >
+                  <Trash2 size={18} />
+                </button>
+             </>
+           )}
         </div>
       </div>
 
@@ -414,7 +484,7 @@ const TeachingDetail: React.FC = () => {
                </FormField>
 
                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <FormField label="Teaching Method (IKU-7 Compliance)"><FormDropdown value={item.method} options={['Lecture', 'Case Method', 'Team-Based Project', 'Discussion', 'Laboratory Work']} onChange={v => handleFieldChange('method', v)} placeholder="Method" /></FormField>
+                  <FormField label="Teaching Method (IKU-7 Compliance)"><FormDropdown value={item.method} options={['Lecture', 'Case Method', 'Team-Based Project', 'Discussion', 'Laboratory Work', 'Field Study']} onChange={v => handleFieldChange('method', v)} placeholder="Method" /></FormField>
                   <FormField label="Lecturer Assigned Role"><FormDropdown value={item.role} options={Object.values(TeachingRole)} onChange={v => handleFieldChange('role', v as TeachingRole)} placeholder="Role" /></FormField>
                </div>
 

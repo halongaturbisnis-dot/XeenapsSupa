@@ -20,26 +20,22 @@ import {
 } from '../Common/FormComponents';
 import { 
   Calendar, 
-  Clock, 
-  MapPin, 
   BookOpen, 
-  Users, 
-  CheckCircle2, 
   ClipboardCheck, 
-  FileText,
+  MapPin, 
   Save,
   ChevronRight,
   ChevronLeft,
-  Layout,
   Layers,
-  Sparkles,
   Plus,
-  Trash2
+  Trash2,
+  Loader2
 } from 'lucide-react';
 import { showXeenapsToast } from '../../utils/toastUtils';
 import Swal from 'sweetalert2';
 import { XEENAPS_SWAL_CONFIG } from '../../utils/swalUtils';
 import ResourcePicker from './ResourcePicker';
+import { GlobalSavingOverlay } from '../Common/LoadingComponents';
 
 const TeachingForm: React.FC = () => {
   const { sessionId } = useParams<{ sessionId: string }>();
@@ -48,7 +44,6 @@ const TeachingForm: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isResourcePickerOpen, setIsResourcePickerOpen] = useState(false);
 
-  // Fix: Renamed properties to correctly match TeachingItem interface definition (presentationId, questionBankId, attachmentLink)
   const [formData, setFormData] = useState<TeachingItem>({
     id: crypto.randomUUID(),
     label: '', 
@@ -78,11 +73,8 @@ const TeachingForm: React.FC = () => {
     topic: '',
     method: 'Lecture',
     referenceLinks: [],
-    // Fix: Corrected property name from presentationIds to presentationId
     presentationId: [],
-    // Fix: Corrected property name from questionBankIds to questionBankId
     questionBankId: [],
-    // Fix: Corrected property name from externalLinks to attachmentLink
     attachmentLink: [],
     syllabusLink: '',
     lectureNotesLink: '',
@@ -108,11 +100,9 @@ const TeachingForm: React.FC = () => {
 
   const handleSave = async () => {
     setIsSubmitting(true);
-    Swal.fire({ title: 'Synchronizing Cloud Data...', allowOutsideClick: false, didOpen: () => Swal.showLoading(), ...XEENAPS_SWAL_CONFIG });
     
     try {
       const success = await saveTeachingItem({ ...formData, updatedAt: new Date().toISOString() });
-      Swal.close();
       if (success) {
         showXeenapsToast('success', 'Teaching record synchronized');
         navigate('/teaching');
@@ -120,7 +110,6 @@ const TeachingForm: React.FC = () => {
         showXeenapsToast('error', 'Cloud sync failed');
       }
     } catch (e) {
-      Swal.close();
       showXeenapsToast('error', 'Network failure');
     } finally {
       setIsSubmitting(false);
@@ -135,6 +124,10 @@ const TeachingForm: React.FC = () => {
 
   return (
     <FormPageContainer>
+      
+      {/* SAVING OVERLAY */}
+      <GlobalSavingOverlay isVisible={isSubmitting} />
+
       <FormStickyHeader 
         title={sessionId ? "Edit Session" : "New Teaching Record"} 
         subtitle="Lecturer Performance & BKD Compliance" 
@@ -285,13 +278,6 @@ const TeachingForm: React.FC = () => {
                   <FormField label="Actual End"><input type="time" className="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-xl font-bold" value={formData.actualEndTime} onChange={e => setFormData({...formData, actualEndTime: e.target.value})} /></FormField>
                </div>
 
-               <FormField label="Attendance List (Link/ID)">
-                  <div className="relative">
-                    <Users className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300" />
-                    <input className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-blue-500 underline" value={formData.attendanceListLink} onChange={e => setFormData({...formData, attendanceListLink: e.target.value})} placeholder="Google Sheet or Drive Folder Link..." />
-                  </div>
-               </FormField>
-
                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-gray-100">
                   <FormField label="Assignment Plan">
                     <FormDropdown value={formData.assignmentType} options={Object.values(AssignmentType)} onChange={v => setFormData({...formData, assignmentType: v as AssignmentType})} placeholder="Assignment" />
@@ -314,7 +300,7 @@ const TeachingForm: React.FC = () => {
                     <ChevronLeft size={16} /> Back
                   </button>
                   <button type="button" onClick={handleSave} disabled={isSubmitting} className="flex items-center gap-3 px-12 py-5 bg-[#004A74] text-[#FED400] rounded-[1.5rem] font-black uppercase tracking-[0.2em] text-xs shadow-2xl shadow-[#004A74]/20 hover:scale-105 active:scale-95 transition-all">
-                    <Save size={18} /> {isSubmitting ? 'Syncing...' : 'Finalize Record'}
+                    {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save size={18} />} {isSubmitting ? 'Syncing...' : 'Finalize Record'}
                   </button>
                </div>
             </div>

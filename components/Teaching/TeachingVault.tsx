@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 // @ts-ignore
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { TeachingVaultItem, TeachingItem } from '../../types';
-import { fetchTeachingVaultContent, updateTeachingVaultContent, saveTeachingItem } from '../../services/TeachingService';
+import { fetchTeachingVaultContent, updateTeachingVaultContent, saveTeachingItem, fetchTeachingPaginated } from '../../services/TeachingService';
 import { uploadVaultFile, deleteRemoteFile } from '../../services/ActivityService';
 import { 
   Plus, 
@@ -47,6 +47,20 @@ const TeachingVault: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
+    const loadMetadata = async () => {
+      if (!metadata && sessionId) {
+        setIsLoading(true);
+        // Supabase Fetch (via updated service)
+        const res = await fetchTeachingPaginated(1, 1000);
+        const found = res.items.find(i => i.id === sessionId);
+        if (found) setMetadata(found);
+        setIsLoading(false);
+      }
+    };
+    loadMetadata();
+  }, [sessionId, metadata]);
+
+  useEffect(() => {
     const loadVault = async () => {
       if (!metadata?.vaultJsonId) return;
       setIsLoading(true);
@@ -59,8 +73,12 @@ const TeachingVault: React.FC = () => {
 
   const handleSyncVault = async (newItems: TeachingVaultItem[]) => {
     if (!metadata || !sessionId) return;
+    
+    // 1. Sync JSON content to GAS Storage
     const result = await updateTeachingVaultContent(sessionId, metadata.vaultJsonId, newItems, metadata.storageNodeUrl);
+    
     if (result.success) {
+      // 2. Update Registry Metadata (Supabase)
       const updatedMetadata: TeachingItem = { 
         ...metadata, 
         vaultJsonId: result.newVaultId || metadata.vaultJsonId,
@@ -68,7 +86,7 @@ const TeachingVault: React.FC = () => {
         updatedAt: new Date().toISOString()
       };
       setMetadata(updatedMetadata);
-      await saveTeachingItem(updatedMetadata);
+      await saveTeachingItem(updatedMetadata); // This now calls Supabase upsert
     }
   };
 
@@ -96,12 +114,11 @@ const TeachingVault: React.FC = () => {
   const handleUploadFiles = async () => {
     if (fileQueue.length === 0) return;
     
-    // Copy queue for background processing and clear UI immediately
     const currentQueue = [...fileQueue];
     const optimisticBatchId = crypto.randomUUID();
     closeFileModal();
 
-    // 1. OPTIMISTIC UI: Add items with unique processing markers
+    // Optimistic UI
     const optimisticItems: TeachingVaultItem[] = currentQueue.map((q, idx) => ({
       type: 'FILE',
       label: q.label,
@@ -127,7 +144,6 @@ const TeachingVault: React.FC = () => {
         }
       }
       
-      // 2. Finalize: Replace optimistic items in the list and sync
       setItems(prev => {
         const filtered = prev.filter(item => !item.fileId?.startsWith(`optimistic_${optimisticBatchId}`));
         const final = [...filtered, ...uploaded];
@@ -217,7 +233,6 @@ const TeachingVault: React.FC = () => {
               if (item.type === 'LINK') {
                 displayUrl = item.url || '';
               } else if (isOptimistic) {
-                // Extract preview URL from optimistic ID if available
                 const parts = item.fileId?.split('_') || [];
                 displayUrl = parts.length > 3 ? parts.slice(3).join('_') : '';
               } else if (item.fileId) {
@@ -245,7 +260,6 @@ const TeachingVault: React.FC = () => {
                       </div>
                     )}
                     
-                    {/* PER-ITEM LOADER OVERLAY (ONLY FOR FILES/IMAGES) */}
                     {isOptimistic && item.type === 'FILE' && (
                       <div className="absolute inset-0 bg-white/70 backdrop-blur-[3px] flex flex-col items-center justify-center z-20">
                         <Loader2 size={32} className="text-[#004A74] animate-spin" />
@@ -253,7 +267,6 @@ const TeachingVault: React.FC = () => {
                       </div>
                     )}
 
-                    {/* ACTIONS: ONLY SHOW IF READY */}
                     {!isOptimistic && (
                       <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-3 z-30">
                         <button onClick={() => displayUrl && window.open(displayUrl, '_blank')} className="p-3 bg-[#FED400] text-[#004A74] rounded-full hover:scale-110 transition-all shadow-lg"><Eye size={18} /></button>
@@ -271,14 +284,13 @@ const TeachingVault: React.FC = () => {
         )}
       </div>
 
-      {/* FILE MODAL */}
       {isFileModalOpen && (
         <div className="fixed inset-0 z-[200] bg-black/60 backdrop-blur-xl flex items-center justify-center p-4 md:p-6 animate-in fade-in">
            <div className="bg-white rounded-[3rem] w-full max-w-2xl shadow-2xl flex flex-col max-h-[85vh] overflow-hidden">
               <div className="p-8 border-b border-gray-100 flex items-center justify-between shrink-0">
                  <div className="flex items-center gap-4">
                     <div className="w-12 h-12 bg-[#004A74] text-[#FED400] rounded-2xl flex items-center justify-center shadow-lg"><CloudUpload size={24} /></div>
-                    <h2 className="text-xl font-black text-[#004A74] uppercase tracking-tight">Batch File Ingestion</h2>
+                    <h2 className="text-xl font-black text-[#004A74] uppercase tracking-tight">File Upload</h2>
                  </div>
                  <button onClick={closeFileModal} className="p-2 hover:bg-red-50 text-gray-400 hover:text-red-500 rounded-full transition-all"><X size={24} /></button>
               </div>
