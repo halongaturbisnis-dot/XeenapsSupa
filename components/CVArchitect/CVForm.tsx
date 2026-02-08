@@ -8,7 +8,6 @@ import {
   EducationEntry, 
   CareerEntry, 
   PublicationItem, 
-  BookUp, 
   ActivityItem 
 } from '../../types';
 import { fetchSourceDataForCV, generateCVPdf } from '../../services/CVService';
@@ -27,6 +26,7 @@ import {
   Briefcase,
   Share2,
   ClipboardCheck,
+  BookUp, 
   FileUser,
   ExternalLink,
   Save,
