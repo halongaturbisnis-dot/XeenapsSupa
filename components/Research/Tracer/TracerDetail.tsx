@@ -511,10 +511,10 @@ const TracerDetail: React.FC<{ libraryItems: LibraryItem[] }> = ({ libraryItems 
           {activeTab === 'identity' && (
             <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-700">
                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <FormField label="Audit Project Label" required>
+                  <FormField label="Research Label" required>
                      <input className="w-full px-5 py-4 bg-gray-50 border border-gray-200 rounded-2xl text-sm font-bold text-[#004A74] outline-none focus:ring-4 focus:ring-[#004A74]/5 transition-all" value={project.label || ''} onChange={e => handleUpdateField('label', e.target.value)} />
                   </FormField>
-                  <FormField label="Progress Index">
+                  <FormField label="Progress">
                      <div className="flex items-center gap-4 bg-gray-50 px-5 py-2 rounded-2xl border border-gray-200 h-[52px]">
                         <input type="range" className="flex-1 accent-[#004A74]" min="0" max="100" value={project.progress} onChange={e => handleUpdateField('progress', parseInt(e.target.value))} />
                         <span className="font-black text-sm text-[#004A74] w-10 text-right">{project.progress}%</span>
@@ -522,7 +522,7 @@ const TracerDetail: React.FC<{ libraryItems: LibraryItem[] }> = ({ libraryItems 
                   </FormField>
                </div>
                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <FormField label="Project Start Date"><input type="date" className="w-full px-5 py-4 bg-gray-50 border border-gray-200 rounded-2xl text-sm font-mono font-bold text-[#004A74]" value={project.startDate} onChange={e => handleUpdateField('startDate', e.target.value)} /></FormField>
+                  <FormField label="Research Start Date"><input type="date" className="w-full px-5 py-4 bg-gray-50 border border-gray-200 rounded-2xl text-sm font-mono font-bold text-[#004A74]" value={project.startDate} onChange={e => handleUpdateField('startDate', e.target.value)} /></FormField>
                   <FormField label="Target End Date"><input type="date" className="w-full px-5 py-4 bg-gray-50 border border-gray-200 rounded-2xl text-sm font-mono font-bold text-[#004A74]" value={project.estEndDate} onChange={e => handleUpdateField('estEndDate', e.target.value)} /></FormField>
                </div>
                <FormField label="Full Research Title"><textarea className="w-full px-6 py-5 bg-gray-50 border border-gray-200 rounded-[1.5rem] text-sm font-bold text-[#004A74] outline-none focus:bg-white focus:ring-4 focus:ring-[#004A74]/5 transition-all min-h-[100px] resize-none" value={project.title} onChange={e => handleUpdateField('title', e.target.value)} /></FormField>
@@ -535,7 +535,7 @@ const TracerDetail: React.FC<{ libraryItems: LibraryItem[] }> = ({ libraryItems 
                <FormField label="Strategic Keywords"><FormDropdown isMulti multiValues={project.keywords || []} options={[]} onAddMulti={v => handleUpdateField('keywords', [...(project.keywords || []), v])} onRemoveMulti={v => handleUpdateField('keywords', (project.keywords || []).filter(k => k !== v))} placeholder="Keywords..." value="" onChange={()=>{}} /></FormField>
                <div className="pt-6 border-t border-gray-100 grid grid-cols-1 md:grid-cols-2 gap-6">
                   <FormField label="Author Team"><FormDropdown isMulti multiValues={project.authors || []} options={[cleanedProfileName]} onAddMulti={v => handleUpdateField('authors', [...(project.authors || []), v])} onRemoveMulti={v => handleUpdateField('authors', (project.authors || []).filter(a => a !== v))} placeholder="Add members..." value="" onChange={()=>{}} /></FormField>
-                  <FormField label="Workflow Status"><FormDropdown value={project.status} options={Object.values(TracerStatus)} onChange={v => handleUpdateField('status', v)} placeholder="Status" allowCustom={false} showSearch={false} /></FormField>
+                  <FormField label="Status"><FormDropdown value={project.status} options={Object.values(TracerStatus)} onChange={v => handleUpdateField('status', v)} placeholder="Status" allowCustom={false} showSearch={false} /></FormField>
                </div>
             </div>
           )}

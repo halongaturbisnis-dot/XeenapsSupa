@@ -200,7 +200,7 @@ const FinanceFormModal: React.FC<FinanceFormModalProps> = ({ projectId, item, cu
            <div className="flex items-center gap-4">
               <div className="w-12 h-12 bg-[#004A74] text-[#FED400] rounded-2xl flex items-center justify-center shadow-lg"><Banknote size={24} /></div>
               <div>
-                 <h3 className="text-xl font-black text-[#004A74] uppercase tracking-tight">{isViewOnly ? 'Transaction Detail' : 'Add Ledger Entry'}</h3>
+                 <h3 className="text-xl font-black text-[#004A74] uppercase tracking-tight">{isViewOnly ? 'Transaction Detail' : 'Add Transaction'}</h3>
                  <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Financial Audit Protocol</p>
               </div>
            </div>
@@ -241,7 +241,7 @@ const FinanceFormModal: React.FC<FinanceFormModalProps> = ({ projectId, item, cu
               </FormField>
            </div>
 
-           <FormField label="Narrative Description" required>
+           <FormField label="Description" required>
               <textarea 
                 className={`w-full px-6 py-5 bg-gray-50 border border-gray-200 rounded-[2rem] text-sm font-bold text-[#004A74] outline-none focus:bg-white transition-all min-h-[100px] resize-none ${isViewOnly ? 'pointer-events-none opacity-80' : ''}`}
                 value={formData.description}
@@ -303,7 +303,7 @@ const FinanceFormModal: React.FC<FinanceFormModalProps> = ({ projectId, item, cu
              <div className="pt-8">
                 <button type="submit" disabled={isSubmitting || !formData.description.trim() || activeUploads > 0} className={`w-full py-5 bg-[#004A74] text-[#FED400] rounded-[2rem] font-black uppercase tracking-[0.2em] text-xs shadow-2xl shadow-[#004A74]/30 hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-3 ${isSubmitting || activeUploads > 0 ? 'opacity-50 grayscale cursor-not-allowed' : ''}`}>
                    {isSubmitting || activeUploads > 0 ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
-                   {activeUploads > 0 ? 'Uploading Files...' : 'Commit Ledger Entry'}
+                   {activeUploads > 0 ? 'Uploading Files...' : 'Save Entry'}
                 </button>
              </div>
            )}

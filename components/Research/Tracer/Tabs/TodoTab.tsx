@@ -143,9 +143,9 @@ const TodoTab: React.FC<TodoTabProps> = ({ projectId, todos, setTodos, onRefresh
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 px-1 md:px-2">
          <div className="space-y-1">
             <h3 className="text-[9px] md:text-[11px] font-black text-[#004A74] uppercase tracking-[0.3em] flex items-center gap-2">
-              <Zap size={isMobile ? 12 : 16} className="text-[#FED400] fill-[#FED400]" /> {numDays}-Day Strategic Pulse
+              <Zap size={isMobile ? 12 : 16} className="text-[#FED400] fill-[#FED400]" /> {numDays}-Day Research Agenda
             </h3>
-            <p className="text-[7px] md:text-[8px] font-bold text-gray-400 uppercase tracking-widest">Chronological Matrix View</p>
+            <p className="text-[7px] md:text-[8px] font-bold text-gray-400 uppercase tracking-widest">Heatmap</p>
          </div>
 
          <div className="flex items-center gap-2 bg-gray-100 p-1 md:p-1.5 rounded-xl border border-gray-200">
@@ -168,7 +168,7 @@ const TodoTab: React.FC<TodoTabProps> = ({ projectId, todos, setTodos, onRefresh
             {/* GRID HEADER: Execution column widened to 220px, dates narrowed */}
             <div className={`grid ${isMobile ? 'grid-cols-[140px_repeat(7,1fr)]' : 'grid-cols-[220px_repeat(14,1fr)]'} border-b border-gray-100 bg-gray-50/50`}>
                <div className="sticky left-0 z-30 bg-white border-r border-gray-200 px-5 py-3 flex items-center shadow-[2px_0_10px_rgba(0,0,0,0.02)]">
-                  <span className="text-[7px] md:text-[8px] font-black uppercase tracking-widest text-[#004A74]">Project Execution Logs</span>
+                  <span className="text-[7px] md:text-[8px] font-black uppercase tracking-widest text-[#004A74]">Task List</span>
                </div>
                
                {timelineDays.map((day, idx) => {

@@ -239,17 +239,17 @@ const TracerLogModal: React.FC<TracerLogModalProps> = ({ projectId, log, initial
              </div>
            ) : (
              <>
-               <FormField label="Log Title" required>
+               <FormField label="Title" required>
                   <input autoFocus className="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-xl text-base font-bold text-[#004A74] outline-none focus:bg-white focus:ring-4 focus:ring-[#004A74]/5 transition-all" value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} placeholder="E.G., Phase 1 Data Collection" required />
                </FormField>
 
-               <FormField label="Narrative Synthesis">
+               <FormField label="Details">
                   <RichEditor value={content.description} onChange={v => setContent({...content, description: v})} />
                </FormField>
 
                <div className="space-y-6 pt-6 border-t border-gray-100">
                   <div className="flex items-center justify-between px-2">
-                    <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-400 flex items-center gap-2"><Paperclip size={14} /> Documentation Matrix</h3>
+                    <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-400 flex items-center gap-2"><Paperclip size={14} /> Attachment</h3>
                     <div className="flex gap-2">
                         <button type="button" onClick={handleAddLink} className="flex items-center gap-1.5 px-4 py-2 bg-white border border-gray-200 rounded-xl text-[9px] font-black uppercase tracking-widest text-[#004A74] hover:bg-gray-50 shadow-sm transition-all"><LinkIcon size={12} /> Add Link</button>
                         <label className="flex items-center gap-1.5 px-4 py-2 bg-[#004A74] text-white rounded-xl text-[9px] font-black uppercase tracking-widest cursor-pointer hover:bg-[#003859] shadow-md transition-all">
@@ -337,7 +337,7 @@ const TracerLogModal: React.FC<TracerLogModalProps> = ({ projectId, log, initial
                     className={`w-full py-5 bg-[#004A74] text-[#FED400] rounded-2xl font-black uppercase tracking-[0.2em] text-xs shadow-xl hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-3 ${activeUploads > 0 ? 'opacity-50 grayscale cursor-not-allowed' : ''}`}
                   >
                     {activeUploads > 0 ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />} 
-                    {activeUploads > 0 ? 'Uploading Files...' : (log ? 'Synchronize Updates' : 'Authorize & Sync Entry')}
+                    {activeUploads > 0 ? 'Uploading Files...' : (log ? 'Update Entry' : 'Save Entry')}
                   </button>
                </div>
              </>

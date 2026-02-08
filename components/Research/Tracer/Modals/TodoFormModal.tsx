@@ -63,8 +63,7 @@ const TodoFormModal: React.FC<TodoFormModalProps> = ({ projectId, todo, mode: in
                  <Target size={24} />
               </div>
               <div>
-                 <h3 className="text-xl font-black text-[#004A74] uppercase tracking-tight">Task Architecture</h3>
-                 <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">{mode === 'view' ? 'View Intel' : 'Modify Parameters'}</p>
+                 <h3 className="text-xl font-black text-[#004A74] uppercase tracking-tight">New Task</h3>
               </div>
            </div>
            <div className="flex items-center gap-2">
@@ -85,13 +84,13 @@ const TodoFormModal: React.FC<TodoFormModalProps> = ({ projectId, todo, mode: in
              /* VIEW MODE UI */
              <div className="space-y-10 animate-in fade-in slide-in-from-bottom-2">
                 <div className="space-y-2">
-                   <span className="text-[9px] font-black text-gray-300 uppercase tracking-[0.4em]">Inquiry Title</span>
+                   <span className="text-[9px] font-black text-gray-300 uppercase tracking-[0.4em]">Title</span>
                    <h1 className="text-2xl md:text-3xl font-black text-[#004A74] leading-tight">{formData.title}</h1>
                 </div>
 
                 <div className="grid grid-cols-2 gap-6 pt-4 border-t border-gray-50">
                    <div className="space-y-1">
-                      <span className="text-[8px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2"><Calendar size={12} /> Execution Start</span>
+                      <span className="text-[8px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2"><Calendar size={12} /> Start</span>
                       <p className="text-sm font-bold text-[#004A74]">{formData.startDate}</p>
                    </div>
                    <div className="space-y-1">
@@ -101,7 +100,7 @@ const TodoFormModal: React.FC<TodoFormModalProps> = ({ projectId, todo, mode: in
                 </div>
 
                 <div className="space-y-3">
-                   <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2"><FileText size={14} /> Description</h4>
+                   <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2"><FileText size={14} /> Details</h4>
                    <div className="p-6 bg-gray-50 rounded-[2rem] border border-gray-100 text-sm text-[#004A74] leading-relaxed italic">
                       {formData.description || 'No additional parameters provided.'}
                    </div>
@@ -109,7 +108,7 @@ const TodoFormModal: React.FC<TodoFormModalProps> = ({ projectId, todo, mode: in
 
                 {formData.linkUrl && (
                   <div className="space-y-3">
-                    <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Resource Link</h4>
+                    <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Reference Link</h4>
                     <button 
                       onClick={() => window.open(formData.linkUrl, '_blank')}
                       className="w-full p-5 bg-white border border-gray-100 rounded-2xl flex items-center justify-between hover:border-[#004A74] transition-all group"
@@ -139,7 +138,7 @@ const TodoFormModal: React.FC<TodoFormModalProps> = ({ projectId, todo, mode: in
            ) : (
              /* EDIT MODE FORM */
              <form onSubmit={handleSubmit} className="space-y-8 animate-in fade-in slide-in-from-top-2">
-                <FormField label="To Do Title" required>
+                <FormField label="Task Title" required>
                    <input 
                      autoFocus
                      className="w-full px-6 py-4 bg-gray-50 border border-gray-200 rounded-[1.5rem] text-lg font-black text-[#004A74] outline-none focus:bg-white focus:ring-4 focus:ring-[#004A74]/5 transition-all"
@@ -159,7 +158,7 @@ const TodoFormModal: React.FC<TodoFormModalProps> = ({ projectId, todo, mode: in
                    </FormField>
                 </div>
 
-                <FormField label="Strategic Details">
+                <FormField label="Details">
                    <textarea 
                      className="w-full px-6 py-4 bg-gray-50 border border-gray-200 rounded-2xl text-sm font-medium text-[#004A74] outline-none focus:bg-white min-h-[120px]"
                      value={formData.description}
@@ -184,7 +183,7 @@ const TodoFormModal: React.FC<TodoFormModalProps> = ({ projectId, todo, mode: in
                     className="w-full py-5 bg-[#004A74] text-[#FED400] rounded-2xl font-black uppercase tracking-[0.2em] text-xs shadow-xl hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-3 disabled:opacity-50"
                    >
                       {isSubmitting ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
-                      {isSubmitting ? 'SYCHRONIZING...' : 'Synchronize Task'}
+                      {isSubmitting ? 'SAVING...' : 'Save Task'}
                    </button>
                 </div>
              </form>

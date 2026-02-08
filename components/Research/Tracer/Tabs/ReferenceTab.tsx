@@ -6,7 +6,7 @@ import {
   Plus, 
   Trash2, 
   ChevronRight, 
-  Library,
+  LibraryBig,
   BookOpen,
   Calendar
 } from 'lucide-react';
@@ -135,7 +135,7 @@ const ReferenceTab: React.FC<ReferenceTabProps> = ({ projectId, libraryItems, re
       {/* SEARCH SECTION REPLACED WITH ACTION BUTTON */}
       <section className="space-y-4">
          <div className="flex items-center justify-between">
-           <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-400">Anchor New Knowledge Source</h3>
+           <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-400">Research References</h3>
            <button 
              onClick={() => setIsPickerOpen(true)}
              className="flex items-center gap-2 px-6 py-3 bg-[#004A74] text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-lg hover:scale-105 active:scale-95 transition-all"
@@ -149,7 +149,7 @@ const ReferenceTab: React.FC<ReferenceTabProps> = ({ projectId, libraryItems, re
       <section className="space-y-6">
          <div className="flex items-center justify-between px-2">
             <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-[#004A74] flex items-center gap-2">
-               <Library size={16} className="text-[#FED400]" /> Integrated Literature Hub
+               <LibraryBig size={16} className="text-[#FED400]" /> Selected References
             </h3>
             <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest">{associatedItems.length} Sources Linked</span>
          </div>

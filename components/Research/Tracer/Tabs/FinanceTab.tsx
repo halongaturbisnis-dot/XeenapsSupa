@@ -294,7 +294,7 @@ const FinanceTab: React.FC<FinanceTabProps> = ({ projectId }) => {
                   <input type="date" className="bg-transparent text-[10px] font-bold text-[#004A74] outline-none" value={tempEndDate} onChange={e => setTempEndDate(e.target.value)} />
                </div>
                {(tempStartDate || tempEndDate) && (
-                 <button onClick={handleApplyFilters} className="px-4 py-2 bg-[#004A74] text-[#FED400] rounded-xl text-[9px] font-black uppercase tracking-widest shadow-md hover:scale-105 transition-all">Apply Range</button>
+                 <button onClick={handleApplyFilters} className="px-4 py-2 bg-[#004A74] text-[#FFFFFF] rounded-xl text-[9px] font-black uppercase tracking-widest shadow-md hover:scale-105 transition-all">Apply</button>
                )}
                {(startDate || endDate) && (
                  <button onClick={() => { setTempStartDate(''); setTempEndDate(''); setStartDate(''); setEndDate(''); }} className="p-2 text-red-500 hover:bg-white rounded-lg transition-all"><X size={14} /></button>
@@ -329,8 +329,8 @@ const FinanceTab: React.FC<FinanceTabProps> = ({ projectId }) => {
                      <StandardTh width="160px" className="px-2 md:px-4 py-3 md:py-4 text-[8px] md:text-[10px]">Timestamp</StandardTh>
                      <StandardTh width="180px" className="px-2 md:px-4 py-3 md:py-4 text-[8px] md:text-[10px]">Credit (+)</StandardTh>
                      <StandardTh width="180px" className="px-2 md:px-4 py-3 md:py-4 text-[8px] md:text-[10px]">Debit (-)</StandardTh>
-                     <StandardTh width="200px" className="px-2 md:px-4 py-3 md:py-4 text-[8px] md:text-[10px]">Ledger Balance</StandardTh>
-                     <StandardTh width="400px" className="text-left px-2 md:px-4 py-3 md:py-4 text-[8px] md:text-[10px]">Narrative / Description</StandardTh>
+                     <StandardTh width="200px" className="px-2 md:px-4 py-3 md:py-4 text-[8px] md:text-[10px]">Balance</StandardTh>
+                     <StandardTh width="400px" className="text-left px-2 md:px-4 py-3 md:py-4 text-[8px] md:text-[10px]">Description</StandardTh>
                      <StandardTh width="100px" className="sticky right-0 bg-gray-50 px-2 md:px-4 py-3 md:py-4 text-[8px] md:text-[10px]">Action</StandardTh>
                   </tr>
                </thead>

@@ -240,7 +240,7 @@ const ReferenceDetailView: React.FC<ReferenceDetailViewProps> = ({ item, refRow,
             <button onClick={onClose} className="p-2.5 bg-gray-50 text-gray-400 hover:text-[#004A74] rounded-xl transition-all shadow-sm active:scale-90"><ArrowLeft size={20} strokeWidth={3} /></button>
             <div className="min-w-0">
                <h2 className="text-sm font-black text-[#004A74] uppercase tracking-widest truncate">Reference Detail</h2>
-               <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Knowledge Anchor Perspective</p>
+               
             </div>
          </div>
          <div className="flex items-center gap-2">
