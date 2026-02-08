@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
-import { LibraryItem, LibraryType } from '../../types';
-import { fetchLibraryPaginatedFromSupabase } from '../../services/LibrarySupabaseService';
+import { LibraryItem, LibraryType } from '../../../types';
+import { fetchLibraryPaginatedFromSupabase } from '../../../services/LibrarySupabaseService';
 import { 
   XMarkIcon, 
   CheckIcon, 
@@ -12,8 +12,8 @@ import {
   ChevronRightIcon, 
   InboxIcon
 } from '@heroicons/react/24/outline';
-import { SmartSearchBox } from '../Common/SearchComponents';
-import { CardGridSkeleton } from '../Common/LoadingComponents';
+import { SmartSearchBox } from '../../Common/SearchComponents';
+import { CardGridSkeleton } from '../../Common/LoadingComponents';
 
 interface ResearchSourceSelectorModalProps {
   onClose: () => void;
