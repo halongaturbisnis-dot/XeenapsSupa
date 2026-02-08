@@ -31,7 +31,9 @@ const AttachedQuestion: React.FC = () => {
   const { sessionId } = useParams<{ sessionId: string }>();
   const navigate = useNavigate();
   const location = useLocation();
-  const workflow = useAsyncWorkflow(30000);
+  
+  // FIX 1: Destructure 'execute' to ensure stable reference and prevent infinite loop
+  const { execute } = useAsyncWorkflow(30000);
 
   // Initialize with state if available to prevent layout shift
   const [teaching, setTeaching] = useState<TeachingItem | null>((location.state as any)?.item || null);
@@ -50,7 +52,7 @@ const AttachedQuestion: React.FC = () => {
   }, []);
 
   const loadData = useCallback(() => {
-    workflow.execute(
+    execute(
       async (signal) => {
         setIsLoading(true);
         
@@ -63,16 +65,24 @@ const AttachedQuestion: React.FC = () => {
         }
 
         if (!session) {
-          // Session not found
+          // Session not found, stop loading
           setIsLoading(false);
           return;
         }
 
         // 2. Fetch Attached Questions Directly by IDs
         if (Array.isArray(session.questionBankId) && session.questionBankId.length > 0) {
-          const attachedIds = session.questionBankId.map(q => q.id);
-          const fetchedQuestions = await fetchQuestionsByIds(attachedIds);
-          setQuestions(fetchedQuestions);
+          // FIX 2: Defensive mapping to filter out invalid objects/nulls
+          const attachedIds = session.questionBankId
+            .filter(q => q && q.id)
+            .map(q => q.id);
+            
+          if (attachedIds.length > 0) {
+            const fetchedQuestions = await fetchQuestionsByIds(attachedIds);
+            setQuestions(fetchedQuestions);
+          } else {
+            setQuestions([]);
+          }
         } else {
           setQuestions([]);
         }
@@ -83,7 +93,8 @@ const AttachedQuestion: React.FC = () => {
         setIsLoading(false);
       }
     );
-  }, [sessionId, workflow]); // Removed 'teaching' from dependency to prevent loop
+  // FIX 3: Dependency array now only relies on sessionId and the stable 'execute' function
+  }, [sessionId, execute]); 
 
   useEffect(() => {
     loadData();
