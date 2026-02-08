@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { LibraryItem, PresentationItem, QuestionItem, LibraryType, BloomsLevel } from '../../types';
-import { fetchLibrary, fetchLibraryPaginated } from '../../services/gasService';
+import { fetchLibraryFromSupabase, fetchLibraryPaginatedFromSupabase } from '../../services/LibrarySupabaseService';
 import { fetchPresentationsPaginated } from '../../services/PresentationService';
 import { fetchAllQuestionsPaginated } from '../../services/QuestionService';
 import { 
@@ -46,14 +46,14 @@ const ResourcePicker: React.FC<ResourcePickerProps> = ({ type, onClose, onSelect
     setIsLoading(true);
     try {
       if (type === 'QUESTION' && Object.keys(libraryLookup).length === 0) {
-        const libs = await fetchLibrary();
+        const libs = await fetchLibraryFromSupabase();
         const lookup: Record<string, string> = {};
         libs.forEach(l => lookup[l.id] = l.title);
         setLibraryLookup(lookup);
       }
 
       if (type === 'LIBRARY') {
-        const res = await fetchLibraryPaginated(currentPage, itemsPerPage, appliedSearch, 'All', '', 'createdAt', 'desc');
+        const res = await fetchLibraryPaginatedFromSupabase(currentPage, itemsPerPage, appliedSearch, 'All', '', 'createdAt', 'desc');
         setItems(res.items);
         setTotalCount(res.totalCount);
       } else if (type === 'PRESENTATION') {
