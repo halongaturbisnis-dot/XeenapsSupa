@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { LibraryItem, PresentationTemplate, PresentationItem } from '../../types';
 import { createPresentationWorkflow } from '../../services/PresentationService';
@@ -96,8 +97,8 @@ const PresentationSetupModal: React.FC<PresentationSetupModalProps> = ({ item, i
     setIsSearchingSources(true);
     setShowResults(true);
     try {
-      // Murni menggunakan Supabase untuk pencarian literature
-      const result = await fetchLibraryPaginatedFromSupabase(1, 20, sourceSearch, 'All', 'research');
+      // STRICT FILTER: Only items with extracted content ('research_ai')
+      const result = await fetchLibraryPaginatedFromSupabase(1, 20, sourceSearch, 'All', 'research_ai');
       setSearchResults(result.items);
     } catch (err) {
       showXeenapsToast('error', 'Knowledge fetch failed.');
@@ -319,7 +320,7 @@ const PresentationSetupModal: React.FC<PresentationSetupModalProps> = ({ item, i
                       </div>
                     ))}
                   </div>
-                  <p className="text-[9px] font-bold text-gray-400 uppercase px-1">Selected Sources: {selectedSources.length} (Max 5)</p>
+                  <p className="text-[9px] font-bold text-gray-400 uppercase px-1">Selected: {selectedSources.length} (Max 5)</p>
                 </div>
               </FormField>
             )}

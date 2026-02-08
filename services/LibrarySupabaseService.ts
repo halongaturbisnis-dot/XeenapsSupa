@@ -50,10 +50,10 @@ export const fetchLibraryPaginatedFromSupabase = async (
   } else if (path === "bookmark") {
     query = query.eq('isBookmarked', true);
   } else if (path === "research_ai") {
-    // STRICT AI MODE (Tracer & Review): Must have extracted content
+    // STRICT AI MODE: Must have extracted content (Tracer, Review, Presentation)
     query = query.not('extractedJsonId', 'is', null).neq('extractedJsonId', '');
   }
-  // Note: path === "research" lets all items pass (for Presentation/Question manual mode)
+  // Note: path === "research" allows ALL items (hybrid mode for Question Bank)
 
   // 3. Smart Search Logic (Using the generated search_all column for maximum stability and full metadata support)
   if (search) {
