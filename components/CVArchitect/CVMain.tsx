@@ -96,8 +96,8 @@ const CVGallery: React.FC = () => {
             <FileUser size={24} />
           </div>
           <div>
-            <h2 className="text-2xl font-black text-[#004A74] uppercase tracking-tight">The Architect</h2>
-            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">CV Generation Engine</p>
+            <h2 className="text-2xl font-black text-[#004A74] uppercase tracking-tight">CV Gallery</h2>
+            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">Personal Curriculum Vitae</p>
           </div>
         </div>
         
@@ -111,7 +111,7 @@ const CVGallery: React.FC = () => {
             />
           </div>
           <StandardPrimaryButton onClick={() => navigate('/cv-architect/new')} icon={<Plus size={20} />}>
-            Create CV
+            CREATE
           </StandardPrimaryButton>
         </div>
       </div>
@@ -123,7 +123,7 @@ const CVGallery: React.FC = () => {
           <div className="py-40 text-center flex flex-col items-center justify-center space-y-4 opacity-30 grayscale">
             <FileUser size={80} strokeWidth={1} className="text-[#004A74]" />
             <p className="text-sm font-black uppercase tracking-[0.4em]">No CV Documents Found</p>
-            <p className="text-xs font-bold text-gray-400 italic">Click "Create CV" to initialize synthesis.</p>
+            <p className="text-xs font-bold text-gray-400 italic">Click "Create" to initialize synthesis.</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 px-1">

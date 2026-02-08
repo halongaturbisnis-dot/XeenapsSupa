@@ -8,6 +8,7 @@ import {
   EducationEntry, 
   CareerEntry, 
   PublicationItem, 
+  BookUp, 
   ActivityItem 
 } from '../../types';
 import { fetchSourceDataForCV, generateCVPdf } from '../../services/CVService';
@@ -178,8 +179,8 @@ const CVForm: React.FC = () => {
   return (
     <FormPageContainer>
       <FormStickyHeader 
-        title="Create CV" 
-        subtitle="Professional Synthesis Workspace" 
+        title="CV MAKER" 
+        subtitle="CV Synthesis Workspace" 
         onBack={() => navigate('/cv-architect')}
       />
 
@@ -271,7 +272,7 @@ const CVForm: React.FC = () => {
             {/* Publication Selection */}
             <section className="space-y-4">
               <div className="flex items-center justify-between px-2">
-                <h3 className="text-[11px] font-black text-[#004A74] uppercase tracking-widest flex items-center gap-2"><Share2 size={16} /> Publications</h3>
+                <h3 className="text-[11px] font-black text-[#004A74] uppercase tracking-widest flex items-center gap-2"><BookUp size={16} /> Publications</h3>
                 {!isLoading && (
                   <div className="flex items-center gap-2">
                     <div className="flex items-center gap-1.5 bg-gray-50 px-2 py-1 rounded-xl border border-gray-100 mr-2">
@@ -352,7 +353,7 @@ const CVForm: React.FC = () => {
           {/* PROFESSIONAL STATEMENT */}
           <div className="space-y-6 pt-10 border-t border-gray-100">
             <div className="flex items-center justify-between px-4">
-              <h3 className="text-sm font-black text-[#004A74] uppercase tracking-widest flex items-center gap-2"><Sparkles size={18} className="text-[#FED400]" /> Professional Statement</h3>
+              <h3 className="text-sm font-black text-[#004A74] uppercase tracking-widest flex items-center gap-2"> Professional Statement</h3>
               {!isLoading && (
                 <button 
                   onClick={handleGenerateSummary} 
@@ -383,7 +384,7 @@ const CVForm: React.FC = () => {
               className={`w-full max-w-2xl py-6 bg-[#004A74] text-[#FED400] rounded-[2.5rem] font-black uppercase tracking-[0.4em] text-sm shadow-2xl transition-all flex items-center justify-center gap-4 ${isGenerating || isLoading ? 'opacity-50 grayscale' : 'hover:scale-105 active:scale-95'}`}
             >
               {isGenerating ? <Loader2 size={24} className="animate-spin" /> : <Save size={24} />}
-              {isGenerating ? 'Architecting PDF...' : isLoading ? 'Synchronizing Intelligence...' : 'Synchronize & Generate CV'}
+              {isGenerating ? 'Architecting PDF...' : isLoading ? 'Synchronizing...' : 'Generate CV'}
             </button>
           </div>
         </div>
@@ -398,7 +399,7 @@ const CVForm: React.FC = () => {
             </div>
             <div>
               <h2 className="text-2xl font-black text-[#004A74] uppercase tracking-tighter mb-2">CV Generated!</h2>
-              <p className="text-xs font-medium text-gray-400">Your synthesis is ready and archived in the cloud.</p>
+              <p className="text-xs font-medium text-gray-400">Your CV is ready and archived</p>
             </div>
             <div className="flex flex-col gap-3">
               <button 
