@@ -104,9 +104,9 @@ const ResourcePicker: React.FC<ResourcePickerProps> = ({ type, onClose, onSelect
   };
 
   const getTitle = () => {
-    if (type === 'PRESENTATION') return "Presentation Repository";
-    if (type === 'QUESTION') return "AI Question Bank";
-    return "Xeenaps Librarian";
+    if (type === 'PRESENTATION') return "Presentation Collection";
+    if (type === 'QUESTION') return "Question Bank";
+    return "Library Collection";
   };
 
   const getBloomColor = (level: string) => {

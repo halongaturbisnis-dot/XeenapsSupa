@@ -4,7 +4,7 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { QuestionItem, TeachingItem, BloomsLevel, LibraryItem } from '../../types';
 import { fetchAllQuestionsPaginated } from '../../services/QuestionService';
 import { fetchTeachingPaginated } from '../../services/TeachingService';
-import { fetchLibrary } from '../../services/gasService';
+import { fetchLibraryFromSupabase } from '../../services/LibrarySupabaseService';
 import { 
   ArrowLeftIcon, 
   AcademicCapIcon, 
@@ -58,7 +58,7 @@ const AttachedQuestion: React.FC = () => {
         }
 
         // 2. Fetch Library Items to resolve root sources
-        const libs = await fetchLibrary();
+        const libs = await fetchLibraryFromSupabase();
         setLibraryItems(libs);
 
         if (!session || !Array.isArray(session.questionBankId) || session.questionBankId.length === 0) {
