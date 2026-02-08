@@ -29,6 +29,14 @@ const ReviewSourceSelectorModal: React.FC<ReviewSourceSelectorModalProps> = ({ o
   const [appliedSearch, setAppliedSearch] = useState('');
   const [selected, setSelected] = useState<LibraryItem[]>([]);
 
+  // BODY SCROLL LOCK: Mencegah scroll tembus ke belakang
+  useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, []);
+
   const itemsPerPage = 10;
   const GLOBAL_MAX = 10;
   const SESSION_MAX = 3;

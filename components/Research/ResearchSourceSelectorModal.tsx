@@ -3,12 +3,12 @@ import { LibraryItem, LibraryType } from '../../types';
 import { fetchLibraryPaginatedFromSupabase } from '../../services/LibrarySupabaseService';
 import { 
   XMarkIcon, 
-  CheckIcon,
-  PlusIcon,
-  BookOpenIcon,
-  SparklesIcon,
-  ChevronLeftIcon,
-  ChevronRightIcon,
+  CheckIcon, 
+  PlusIcon, 
+  BookOpenIcon, 
+  SparklesIcon, 
+  ChevronLeftIcon, 
+  ChevronRightIcon, 
   InboxIcon
 } from '@heroicons/react/24/outline';
 import { SmartSearchBox } from '../Common/SearchComponents';
@@ -28,6 +28,14 @@ const ResearchSourceSelectorModal: React.FC<ResearchSourceSelectorModalProps> = 
   const [localSearch, setLocalSearch] = useState('');
   const [appliedSearch, setAppliedSearch] = useState('');
   const [selected, setSelected] = useState<LibraryItem[]>([]);
+
+  // BODY SCROLL LOCK: Mencegah scroll tembus ke belakang
+  useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, []);
 
   const itemsPerPage = 10;
   const GLOBAL_MAX = 10;
