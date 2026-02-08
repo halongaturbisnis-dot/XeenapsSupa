@@ -7,7 +7,6 @@ import { SharboxItem } from '../types';
  */
 
 // Helper to clean object for Transport Tables (Inbox/Sent)
-// Removes Library-specific local states that don't exist in Sharbox schema
 const sanitizeSharboxPayload = (item: SharboxItem, target: 'INBOX' | 'SENT') => {
   const { 
     search_all, 
@@ -16,12 +15,9 @@ const sanitizeSharboxPayload = (item: SharboxItem, target: 'INBOX' | 'SENT') => 
     ...cleanItem 
   } = item as any;
 
-  // FIX 400 ERROR: 'isRead' column only exists in Inbox, not Sent.
-  // We must remove it when saving to Sent box.
+  // FIX 42703: Remove 'isRead' and ALL sender fields for Sent Box
   if (target === 'SENT') {
     delete cleanItem.isRead;
-    
-    // Remove Sender fields from Sent items (Sent box tracks Receivers)
     delete cleanItem.senderName;
     delete cleanItem.senderPhotoUrl;
     delete cleanItem.senderAffiliation;
@@ -99,7 +95,8 @@ export const upsertSentItemToSupabase = async (item: SharboxItem): Promise<boole
   const { error } = await client.from('sharbox_sent').upsert(payload);
 
   if (error) {
-    console.error("Supabase Sent Upsert Error:", error);
+    // Log payload keys for debugging (visible in console)
+    console.error("Supabase Sent Upsert Error:", error, "Payload Keys:", Object.keys(payload));
     return false;
   }
   return true;

@@ -5,7 +5,7 @@ import {
   fetchSentFromSupabase, 
   upsertInboxItemToSupabase, 
   upsertSentItemToSupabase, 
-  deleteInboxItemFromSupabase,
+  deleteInboxItemFromSupabase, 
   deleteSentItemFromSupabase 
 } from './SharboxSupabaseService';
 import { upsertLibraryItemToSupabase } from './LibrarySupabaseService';
@@ -96,14 +96,6 @@ export const shareToColleague = async (
 
   try {
     // 1. Transport via GAS (To Receiver's Sheet)
-    // Note: GAS uses its own UUID generation internally for the row ID, 
-    // but to keep consistency, we might rely on GAS return or just fire-and-forget.
-    // However, for correct local history, we should probably construct the object here.
-    // The current GAS 'handleSendToSharbox' generates an ID. 
-    // To properly track it, we should let GAS do it, or we rely on the fact that 'Sent' 
-    // is local history.
-    
-    // We will call GAS. GAS will return success.
     const res = await fetch(GAS_WEB_APP_URL, {
       method: 'POST',
       body: JSON.stringify({ 
@@ -112,17 +104,27 @@ export const shareToColleague = async (
         receiverName, 
         receiverPhotoUrl,
         message,
-        item,
+        item, // GAS Script needs full item to write to Receiver's Inbox
         receiverContacts
       })
     });
     const result = await res.json();
 
     if (result.status === 'success') {
+      
+      // DEEP CLEANING: Remove any previous Sharbox metadata (Sender Info) from the item
+      // This prevents "senderName" column error when saving to Sent box
+      const { 
+        senderName, senderPhotoUrl, senderAffiliation, senderUniqueAppId, 
+        senderEmail, senderPhone, senderSocialMedia, 
+        isRead, status, id: oldId, timestamp: oldTs,
+        ...cleanLibraryData 
+      } = item as any;
+
       // 2. Save to Local Supabase History (Sent Box)
       const sentItem: SharboxItem = {
-        ...item,
-        id: transactionId, // Generate ID locally for our record
+        ...cleanLibraryData, // Spread strictly cleaned data
+        id: transactionId,
         receiverName,
         receiverPhotoUrl,
         receiverUniqueAppId: targetUniqueAppId,
@@ -145,16 +147,6 @@ export const shareToColleague = async (
 };
 
 export const claimSharboxItem = async (transactionId: string): Promise<boolean> => {
-  // 1. Get item from Supabase Inbox (Since we sync first)
-  // Actually, we usually have the item object in the UI.
-  // But to be safe, we query Supabase list or rely on passed item.
-  // This function signature only takes ID.
-  
-  // We need to fetch the item details to save it to Library.
-  // Supabase 'fetchInboxFromSupabase' returns all. We can't filter by ID easily without extra call.
-  // Let's assume the UI passes the ID, we find it in the list (if we cached it).
-  // But here we need to fetch it.
-  
   try {
     const inbox = await fetchInboxFromSupabase();
     const itemToClaim = inbox.find(i => i.id === transactionId);
@@ -163,30 +155,30 @@ export const claimSharboxItem = async (transactionId: string): Promise<boolean> 
     if (itemToClaim.status === SharboxStatus.CLAIMED) return false;
 
     // 2. Construct Library Item
+    // DEEP CLEANING: Remove ALL Sharbox-specific fields before saving to Library
+    const { 
+      id, // Transaction ID (remove)
+      senderName, senderPhotoUrl, senderAffiliation, senderUniqueAppId, 
+      senderEmail, senderPhone, senderSocialMedia, receiverName, message, 
+      timestamp, status, isRead, id_item, 
+      ...cleanLibraryItem 
+    } = itemToClaim as any;
+
     const libraryItem: LibraryItem = {
-      ...itemToClaim,
-      id: itemToClaim.id_item || crypto.randomUUID(), // Use original ID if available or new
+      ...cleanLibraryItem,
+      id: itemToClaim.id_item || crypto.randomUUID(),
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
-    
-    // Clean up Sharbox specific fields
-    const { 
-      senderName, senderPhotoUrl, senderAffiliation, senderUniqueAppId, 
-      senderEmail, senderPhone, senderSocialMedia, receiverName, message, 
-      timestamp, status, isRead, id_item, ...cleanLibraryItem 
-    } = libraryItem as any;
 
     // 3. Save to Local Library (Supabase)
-    const success = await upsertLibraryItemToSupabase(cleanLibraryItem);
+    const success = await upsertLibraryItemToSupabase(libraryItem);
 
     if (success) {
       // 4. Update Status in Sharbox Inbox (Supabase)
       const updatedSharboxItem = { ...itemToClaim, status: SharboxStatus.CLAIMED };
       await upsertInboxItemToSupabase(updatedSharboxItem);
       
-      // Note: We don't need to update GAS Inbox status because we eventually delete/clear buffer.
-      // Or if we keep it, it's fine. The source of truth for display is now Supabase.
       return true;
     }
     return false;
