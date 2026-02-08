@@ -50,6 +50,8 @@ import TodoTab from './Tabs/TodoTab';
 import FinanceTab from './Tabs/FinanceTab';
 import TracerLogModal from './Modals/TracerLogModal';
 import { GlobalSavingOverlay } from '../../Common/LoadingComponents';
+import Swal from 'sweetalert2';
+import { XEENAPS_SWAL_CONFIG } from '../../../utils/swalUtils';
 
 // --- SAVE MEMORY CACHE ---
 const logContentCache: Record<string, TracerLogContent> = {};
@@ -206,20 +208,22 @@ const TracerDetail: React.FC<{ libraryItems: LibraryItem[] }> = ({ libraryItems 
   // NAVIGATION GUARD FOR DIRTY STATE
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      if (isDirty) {
+      // Only protect if active tab is Identity AND isDirty
+      if (activeTab === 'identity' && isDirty) {
         e.preventDefault();
         e.returnValue = '';
       }
     };
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-  }, [isDirty]);
+  }, [isDirty, activeTab]);
 
   // Global Sidebar Guard
   useEffect(() => {
-    (window as any).xeenapsIsDirty = isDirty;
+    // Only lock sidebar if active tab is Identity AND isDirty
+    (window as any).xeenapsIsDirty = (activeTab === 'identity' && isDirty);
     return () => { (window as any).xeenapsIsDirty = false; };
-  }, [isDirty]);
+  }, [isDirty, activeTab]);
 
   const handleUpdateField = (f: keyof TracerProject, v: any) => {
     if (!project || isLoading) return;
@@ -235,6 +239,7 @@ const TracerDetail: React.FC<{ libraryItems: LibraryItem[] }> = ({ libraryItems 
       const success = await saveTracerProject(project);
       if (success) {
         setIsDirty(false);
+        projectRef.current = project; // Sync reference on save
         showXeenapsToast('success', 'Changes saved successfully');
       } else {
         showXeenapsToast('error', 'Failed to save changes');
@@ -243,6 +248,60 @@ const TracerDetail: React.FC<{ libraryItems: LibraryItem[] }> = ({ libraryItems 
       showXeenapsToast('error', 'Connection error');
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  // REVERT CHANGES HELPER
+  const handleDiscard = () => {
+    if (projectRef.current) {
+      setProject(projectRef.current);
+    }
+    setIsDirty(false);
+  };
+
+  // SAFE BACK NAVIGATION
+  const handleSafeBack = async () => {
+    if (activeTab === 'identity' && isDirty) {
+      const result = await Swal.fire({
+        ...XEENAPS_SWAL_CONFIG,
+        title: 'Unsaved Changes',
+        text: 'You have unsaved changes in Identity tab. Leaving will discard them.',
+        showCancelButton: true,
+        confirmButtonText: 'Discard & Leave',
+        cancelButtonText: 'Cancel',
+        confirmButtonColor: '#ef4444'
+      });
+
+      if (result.isConfirmed) {
+        handleDiscard();
+        navigate('/research/tracer');
+      }
+    } else {
+      navigate('/research/tracer');
+    }
+  };
+
+  // SAFE TAB SWITCHING
+  const handleTabChange = async (newTab: typeof activeTab) => {
+    if (activeTab === newTab) return;
+    
+    if (activeTab === 'identity' && isDirty) {
+      const result = await Swal.fire({
+        ...XEENAPS_SWAL_CONFIG,
+        title: 'Unsaved Changes',
+        text: 'You have unsaved changes in Identity tab. Switching tabs will discard them.',
+        showCancelButton: true,
+        confirmButtonText: 'Discard & Switch',
+        cancelButtonText: 'Cancel',
+        confirmButtonColor: '#ef4444'
+      });
+
+      if (result.isConfirmed) {
+        handleDiscard();
+        setActiveTab(newTab);
+      }
+    } else {
+      setActiveTab(newTab);
     }
   };
 
@@ -380,7 +439,7 @@ const TracerDetail: React.FC<{ libraryItems: LibraryItem[] }> = ({ libraryItems 
 
       <div className="sticky top-0 z-50 bg-white/95 backdrop-blur-md px-4 md:px-10 py-4 border-b border-gray-100 flex items-center justify-between shrink-0 overflow-x-auto no-scrollbar">
         <div className="flex items-center gap-2 md:gap-4 shrink-0">
-          <button onClick={() => navigate('/research/tracer')} className="p-2.5 bg-gray-50 text-gray-400 hover:text-[#004A74] rounded-xl transition-all shadow-sm active:scale-90"><ArrowLeft size={18} /></button>
+          <button onClick={handleSafeBack} className="p-2.5 bg-gray-50 text-gray-400 hover:text-[#004A74] rounded-xl transition-all shadow-sm active:scale-90"><ArrowLeft size={18} /></button>
           <div className="min-w-0 hidden lg:block">
             <h2 className="text-sm font-black text-[#004A74] truncate">{project.title || project.label}</h2>
             <p className="text-[8px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">Project ID: {project.id.substring(0,8)}</p>
@@ -396,7 +455,7 @@ const TracerDetail: React.FC<{ libraryItems: LibraryItem[] }> = ({ libraryItems 
         </div>
         <div className="flex bg-gray-100 p-1 rounded-2xl gap-0.5 md:gap-1">
           {tabs.map(t => (
-            <button key={t.id} onClick={() => setActiveTab(t.id)} className={`flex items-center gap-2 px-3 md:px-5 py-2 rounded-xl transition-all whitespace-nowrap ${activeTab === t.id ? 'bg-[#004A74] text-white shadow-lg' : 'text-gray-400 hover:text-[#004A74]'}`}>
+            <button key={t.id} onClick={() => handleTabChange(t.id)} className={`flex items-center gap-2 px-3 md:px-5 py-2 rounded-xl transition-all whitespace-nowrap ${activeTab === t.id ? 'bg-[#004A74] text-white shadow-lg' : 'text-gray-400 hover:text-[#004A74]'}`}>
               <t.icon size={14} /><span className="hidden md:inline text-[9px] font-black uppercase tracking-widest">{t.label}</span>
             </button>
           ))}
