@@ -99,9 +99,10 @@ interface ReferenceDetailViewProps {
   refRow: TracerReference;
   onClose: () => void;
   onOpenLibrary?: (item: LibraryItem) => void;
+  isRestored?: boolean; // New prop to control animation
 }
 
-const ReferenceDetailView: React.FC<ReferenceDetailViewProps> = ({ item, refRow, onClose, onOpenLibrary }) => {
+const ReferenceDetailView: React.FC<ReferenceDetailViewProps> = ({ item, refRow, onClose, onOpenLibrary, isRestored = false }) => {
   const navigate = useNavigate();
   const [isQuoteOpen, setIsQuoteOpen] = useState(false);
   const [showCite, setShowCite] = useState(false);
@@ -221,9 +222,14 @@ const ReferenceDetailView: React.FC<ReferenceDetailViewProps> = ({ item, refRow,
     }
   };
 
+  // Dynamic animation class: If restored, minimal/fast fade. If fresh open, standard slide.
+  const animationClass = isRestored 
+     ? "animate-in fade-in duration-300" // Gentle fade
+     : "animate-in slide-in-from-right duration-500"; // Normal entry
+
   return (
     <div 
-      className="fixed top-0 right-0 bottom-0 z-[1200] bg-white animate-in slide-in-from-right duration-500 overflow-hidden flex flex-col transition-all duration-500"
+      className={`fixed top-0 right-0 bottom-0 z-[1200] bg-white overflow-hidden flex flex-col transition-all ${animationClass}`}
       style={{ left: 'var(--sidebar-offset, 0px)' }}
     >
       {isQuoteOpen && <QuoteNowModal item={item} onClose={() => setIsQuoteOpen(false)} onSave={handleAddQuotes} />}

@@ -32,11 +32,15 @@ const ReferenceTab: React.FC<ReferenceTabProps> = ({ projectId, libraryItems, re
   const [searchResults, setSearchResults] = useState<LibraryItem[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [selectedRef, setSelectedRef] = useState<LibraryItem & { refRow?: TracerReference } | null>(null);
+  
+  // State to track if the current view was restored from history (to disable slide animation)
+  const [isRestoredSession, setIsRestoredSession] = useState(false);
 
   // AUTO-OPEN LOGIC
   useEffect(() => {
     if (reopenedRef) {
       setSelectedRef(reopenedRef);
+      setIsRestoredSession(true); // Mark as restored
     }
   }, [reopenedRef]);
 
@@ -114,8 +118,10 @@ const ReferenceTab: React.FC<ReferenceTabProps> = ({ projectId, libraryItems, re
         <ReferenceDetailView 
           item={selectedRef} 
           refRow={selectedRef.refRow!} 
+          isRestored={isRestoredSession}
           onClose={() => {
             setSelectedRef(null);
+            setIsRestoredSession(false); // Reset restored state on manual close
             if (onClearReopenRef) onClearReopenRef();
           }}
           onOpenLibrary={(lib) => {
@@ -169,7 +175,10 @@ const ReferenceTab: React.FC<ReferenceTabProps> = ({ projectId, libraryItems, re
             ) : associatedItems.map((lib, idx) => (
               <div 
                 key={lib.id} 
-                onClick={() => setSelectedRef(lib)} 
+                onClick={() => {
+                  setIsRestoredSession(false); // Clean opening from list, so use Slide Animation
+                  setSelectedRef(lib);
+                }}
                 className="group bg-white p-5 rounded-2xl border border-gray-100 flex flex-col md:flex-row md:items-center gap-4 hover:shadow-xl hover:border-[#FED400]/40 transition-all duration-300 cursor-pointer relative overflow-hidden"
               >
                  <div className="absolute top-0 left-0 w-1 h-full bg-gray-100 group-hover:bg-[#FED400] transition-colors" />
