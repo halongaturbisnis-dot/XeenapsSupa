@@ -108,6 +108,8 @@ const TracerLogModal: React.FC<TracerLogModalProps> = ({ projectId, log, initial
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const uploadPromises = useRef<Map<string, Promise<any>>>(new Map());
+  // Tracks pending uploads to lock submit button
+  const [activeUploads, setActiveUploads] = useState(0);
 
   useEffect(() => {
     if (log?.logJsonId && !initialContent) {
@@ -146,6 +148,7 @@ const TracerLogModal: React.FC<TracerLogModalProps> = ({ projectId, log, initial
       };
 
       setContent(prev => ({ ...prev, attachments: [...(prev.attachments || []), placeholder] }));
+      setActiveUploads(prev => prev + 1);
 
       // Use ActivityService uploader which handles GAS logic
       const uploadPromise = uploadVaultFile(file).then(result => {
@@ -168,6 +171,9 @@ const TracerLogModal: React.FC<TracerLogModalProps> = ({ projectId, log, initial
           setContent(prev => ({ ...prev, attachments: prev.attachments.filter(at => at.fileId !== `pending_${tempId}`) }));
         }
         uploadPromises.current.delete(tempId);
+        setActiveUploads(prev => Math.max(0, prev - 1));
+      }).catch(() => {
+        setActiveUploads(prev => Math.max(0, prev - 1));
       });
       uploadPromises.current.set(tempId, uploadPromise);
     }
@@ -191,10 +197,7 @@ const TracerLogModal: React.FC<TracerLogModalProps> = ({ projectId, log, initial
     e.preventDefault();
     if (!formData.title.trim()) return;
     
-    if (uploadPromises.current.size > 0) {
-      showXeenapsToast('info', 'Finishing file uploads...');
-      await Promise.all(uploadPromises.current.values());
-    }
+    if (activeUploads > 0) return;
 
     onSave({ ...formData, updatedAt: new Date().toISOString() }, content);
   };
@@ -328,7 +331,14 @@ const TracerLogModal: React.FC<TracerLogModalProps> = ({ projectId, log, initial
                </div>
 
                <div className="pt-6">
-                  <button type="submit" className="w-full py-5 bg-[#004A74] text-[#FED400] rounded-2xl font-black uppercase tracking-[0.2em] text-xs shadow-xl hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-3"><Save size={18} /> {log ? 'Synchronize Updates' : 'Authorize & Sync Entry'}</button>
+                  <button 
+                    type="submit" 
+                    disabled={activeUploads > 0}
+                    className={`w-full py-5 bg-[#004A74] text-[#FED400] rounded-2xl font-black uppercase tracking-[0.2em] text-xs shadow-xl hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-3 ${activeUploads > 0 ? 'opacity-50 grayscale cursor-not-allowed' : ''}`}
+                  >
+                    {activeUploads > 0 ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />} 
+                    {activeUploads > 0 ? 'Uploading Files...' : (log ? 'Synchronize Updates' : 'Authorize & Sync Entry')}
+                  </button>
                </div>
              </>
            )}

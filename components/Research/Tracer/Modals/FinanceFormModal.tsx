@@ -39,6 +39,9 @@ const FinanceFormModal: React.FC<FinanceFormModalProps> = ({ projectId, item, cu
   const [isLoadingContent, setIsLoadingContent] = useState(!!item?.attachmentsJsonId);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // New state to track uploads in progress
+  const [activeUploads, setActiveUploads] = useState(0);
+
   // Helper to get strictly Local ISO String for NOW()
   const getLocalNowISO = () => {
     const now = new Date();
@@ -88,27 +91,39 @@ const FinanceFormModal: React.FC<FinanceFormModalProps> = ({ projectId, item, cu
 
     for (const file of files) {
       const tempId = crypto.randomUUID();
+      let previewUrl: string | undefined;
+
+      if (file.type.startsWith('image/')) {
+        previewUrl = URL.createObjectURL(file);
+      }
+
       const placeholder: TracerFinanceAttachment = {
         type: 'FILE',
         label: file.name,
         fileId: `pending_${tempId}`,
-        mimeType: file.type
+        mimeType: file.type,
+        url: previewUrl
       };
       setContent(prev => ({ attachments: [...prev.attachments, placeholder] }));
+      setActiveUploads(prev => prev + 1);
 
       const res = await uploadVaultFile(file);
       if (res) {
         setNewlyUploadedFiles(prev => [...prev, { fileId: res.fileId, nodeUrl: res.nodeUrl }]);
+        // Determine view URL based on type (image vs file)
+        const finalUrl = file.type.startsWith('image/') ? `https://lh3.googleusercontent.com/d/${res.fileId}` : `https://drive.google.com/file/d/${res.fileId}/view`;
+
         setContent(prev => ({
           attachments: prev.attachments.map(at => 
             at.fileId === `pending_${tempId}` 
-              ? { ...at, fileId: res.fileId, nodeUrl: res.nodeUrl, url: res.fileId } 
+              ? { ...at, fileId: res.fileId, nodeUrl: res.nodeUrl, url: finalUrl } 
               : at
           )
         }));
       } else {
         setContent(prev => ({ attachments: prev.attachments.filter(at => at.fileId !== `pending_${tempId}`) }));
       }
+      setActiveUploads(prev => Math.max(0, prev - 1));
     }
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
@@ -136,7 +151,7 @@ const FinanceFormModal: React.FC<FinanceFormModalProps> = ({ projectId, item, cu
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.description.trim() || isSubmitting) return;
+    if (!formData.description.trim() || isSubmitting || activeUploads > 0) return;
 
     // VALIDATION: Date must be newer than latest entry
     if (!item && latestDate && new Date(formData.date) < new Date(latestDate)) {
@@ -247,14 +262,18 @@ const FinanceFormModal: React.FC<FinanceFormModalProps> = ({ projectId, item, cu
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                    {content.attachments.map((at, idx) => {
                       const isPending = at.fileId?.startsWith('pending_');
-                      const isImage = at.mimeType?.startsWith('image/');
-                      const viewUrl = at.fileId ? (isImage ? `https://lh3.googleusercontent.com/d/${at.fileId}` : `https://drive.google.com/file/d/${at.fileId}/view`) : at.url;
+                      const isImage = at.mimeType?.startsWith('image/') || (at.url && at.url.includes('lh3.googleusercontent'));
+                      const viewUrl = at.fileId ? (isImage && !isPending ? `https://lh3.googleusercontent.com/d/${at.fileId}` : at.url || `https://drive.google.com/file/d/${at.fileId}/view`) : at.url;
 
                       return (
                         <div key={idx} className="p-3 bg-gray-50 rounded-2xl border border-gray-100 flex items-center gap-3 relative group">
-                           <div className="w-10 h-10 bg-white rounded-xl overflow-hidden flex items-center justify-center shrink-0 border border-gray-100">
-                              {isImage ? <img src={viewUrl} className="w-full h-full object-cover" /> : at.type === 'LINK' ? <Globe size={16} className="text-gray-300" /> : <FileIcon size={16} className="text-gray-300" />}
-                              {isPending && <div className="absolute inset-0 bg-white/60 flex items-center justify-center"><Loader2 size={12} className="animate-spin text-[#004A74]" /></div>}
+                           <div className="w-10 h-10 bg-white rounded-xl overflow-hidden flex items-center justify-center shrink-0 border border-gray-100 relative">
+                              {isImage && at.url ? <img src={at.url} className="w-full h-full object-cover" /> : at.type === 'LINK' ? <Globe size={16} className="text-gray-300" /> : <FileIcon size={16} className="text-gray-300" />}
+                              {isPending && (
+                                 <div className="absolute inset-0 bg-white/60 flex items-center justify-center backdrop-blur-[1px]">
+                                    <Loader2 size={12} className="animate-spin text-[#004A74]" />
+                                 </div>
+                              )}
                            </div>
                            <p className="text-[9px] font-bold text-[#004A74] uppercase truncate flex-1">{at.label}</p>
                            <div className="flex items-center gap-1">
@@ -274,14 +293,14 @@ const FinanceFormModal: React.FC<FinanceFormModalProps> = ({ projectId, item, cu
 
            {!isViewOnly && (
              <div className="pt-8">
-                <button type="submit" disabled={isSubmitting || !formData.description.trim()} className={`w-full py-5 bg-[#004A74] text-[#FED400] rounded-[2rem] font-black uppercase tracking-[0.2em] text-xs shadow-2xl shadow-[#004A74]/30 hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-3 ${isSubmitting ? 'opacity-50 grayscale' : ''}`}>
-                   {isSubmitting ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
-                   Commit Ledger Entry
+                <button type="submit" disabled={isSubmitting || !formData.description.trim() || activeUploads > 0} className={`w-full py-5 bg-[#004A74] text-[#FED400] rounded-[2rem] font-black uppercase tracking-[0.2em] text-xs shadow-2xl shadow-[#004A74]/30 hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-3 ${isSubmitting || activeUploads > 0 ? 'opacity-50 grayscale cursor-not-allowed' : ''}`}>
+                   {isSubmitting || activeUploads > 0 ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
+                   {activeUploads > 0 ? 'Uploading Files...' : 'Commit Ledger Entry'}
                 </button>
              </div>
            )}
 
-           <input type="file" ref={fileInputRef} className="hidden" />
+           <input type="file" ref={fileInputRef} onChange={handleFileSelect} className="hidden" />
         </form>
       </div>
     </div>

@@ -98,9 +98,10 @@ interface ReferenceDetailViewProps {
   item: LibraryItem;
   refRow: TracerReference;
   onClose: () => void;
+  onOpenLibrary?: (item: LibraryItem) => void;
 }
 
-const ReferenceDetailView: React.FC<ReferenceDetailViewProps> = ({ item, refRow, onClose }) => {
+const ReferenceDetailView: React.FC<ReferenceDetailViewProps> = ({ item, refRow, onClose, onOpenLibrary }) => {
   const navigate = useNavigate();
   const [isQuoteOpen, setIsQuoteOpen] = useState(false);
   const [showCite, setShowCite] = useState(false);
@@ -202,13 +203,19 @@ const ReferenceDetailView: React.FC<ReferenceDetailViewProps> = ({ item, refRow,
   };
 
   const handleGoToLibrary = () => {
-    navigate('/', { 
-      state: { 
-        openItem: item, 
-        returnToTracerProject: localRefRow.projectId,
-        returnToRef: item 
-      } 
-    });
+    if (onOpenLibrary) {
+      // Use efficient local overlay method if available
+      onOpenLibrary(item);
+    } else {
+      // Fallback to route navigation (legacy)
+      navigate('/', { 
+        state: { 
+          openItem: item, 
+          returnToTracerProject: localRefRow.projectId,
+          returnToRef: item 
+        } 
+      });
+    }
   };
 
   return (

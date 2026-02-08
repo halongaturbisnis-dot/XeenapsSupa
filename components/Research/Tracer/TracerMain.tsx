@@ -187,7 +187,7 @@ const TracerMain: React.FC = () => {
              <p className="text-sm font-black uppercase tracking-[0.4em]">Audit Registry Empty</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 px-1">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 px-1">
             {projects.map(p => (
               <div key={p.id} onClick={() => navigate(`/research/tracer/${p.id}`)} className="group bg-white border border-gray-100 rounded-[2.5rem] p-8 shadow-sm hover:shadow-2xl hover:-translate-y-1 transition-all duration-500 cursor-pointer flex flex-col h-full">
                 <div className="flex items-start justify-between mb-6">

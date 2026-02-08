@@ -23,9 +23,10 @@ interface ReferenceTabProps {
   setReferences: React.Dispatch<React.SetStateAction<TracerReference[]>>;
   onRefresh: () => Promise<void>;
   reopenedRef?: (LibraryItem & { refRow: TracerReference }) | null;
+  onOpenLibrary?: (item: LibraryItem) => void;
 }
 
-const ReferenceTab: React.FC<ReferenceTabProps> = ({ projectId, libraryItems, references, setReferences, onRefresh, reopenedRef }) => {
+const ReferenceTab: React.FC<ReferenceTabProps> = ({ projectId, libraryItems, references, setReferences, onRefresh, reopenedRef, onOpenLibrary }) => {
   const [localSearch, setLocalSearch] = useState('');
   const [searchResults, setSearchResults] = useState<LibraryItem[]>([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -112,7 +113,8 @@ const ReferenceTab: React.FC<ReferenceTabProps> = ({ projectId, libraryItems, re
         <ReferenceDetailView 
           item={selectedRef} 
           refRow={selectedRef.refRow!} 
-          onClose={() => setSelectedRef(null)} 
+          onClose={() => setSelectedRef(null)}
+          onOpenLibrary={onOpenLibrary}
         />
       )}
 

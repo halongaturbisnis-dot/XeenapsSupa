@@ -35,7 +35,9 @@ import {
   Trash2,
   // Fix: Added missing Bold and Italic icon imports
   Bold,
-  Italic
+  Italic,
+  Save,
+  Loader2
 } from 'lucide-react';
 // Fix: Added missing component imports for the modals used at the end of the file
 import ResearchSourceSelectorModal from '../ResearchSourceSelectorModal';
@@ -47,6 +49,7 @@ import ReferenceTab from './Tabs/ReferenceTab';
 import TodoTab from './Tabs/TodoTab';
 import FinanceTab from './Tabs/FinanceTab';
 import TracerLogModal from './Modals/TracerLogModal';
+import { GlobalSavingOverlay } from '../../Common/LoadingComponents';
 
 // --- SAVE MEMORY CACHE ---
 const logContentCache: Record<string, TracerLogContent> = {};
@@ -133,6 +136,10 @@ const TracerDetail: React.FC<{ libraryItems: LibraryItem[] }> = ({ libraryItems 
   const [isBusy, setIsBusy] = useState(false);
   const [cleanedProfileName, setCleanedProfileName] = useState("Xeenaps User");
 
+  // MANUAL SAVE STATE
+  const [isDirty, setIsDirty] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+
   // RE-OPEN STATE
   const [initialReopenRef, setInitialReopenRef] = useState<any>(null);
   
@@ -140,8 +147,6 @@ const TracerDetail: React.FC<{ libraryItems: LibraryItem[] }> = ({ libraryItems 
   const [logModal, setLogModal] = useState<{ open: boolean; log?: TracerLog; cachedContent?: TracerLogContent }>({ open: false });
 
   // --- SYNC ENGINE REFS ---
-  const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const isDirtyRef = useRef(false);
   const projectRef = useRef<TracerProject | null>(null);
 
   const loadAllData = useCallback(async (showSkeleton = false) => {
@@ -198,32 +203,47 @@ const TracerDetail: React.FC<{ libraryItems: LibraryItem[] }> = ({ libraryItems 
     loadAllData(true);
   }, [loadAllData]);
 
-  // --- AUTO-SAVE FLUSH ON UNMOUNT ---
+  // NAVIGATION GUARD FOR DIRTY STATE
   useEffect(() => {
-    if (!project || isLoading) return;
-    projectRef.current = project;
-    return () => {
-      if (saveTimeoutRef.current) {
-        clearTimeout(saveTimeoutRef.current);
-        if (isDirtyRef.current && projectRef.current) {
-           saveTracerProject(projectRef.current);
-           isDirtyRef.current = false;
-        }
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (isDirty) {
+        e.preventDefault();
+        e.returnValue = '';
       }
     };
-  }, [project, isLoading]);
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [isDirty]);
+
+  // Global Sidebar Guard
+  useEffect(() => {
+    (window as any).xeenapsIsDirty = isDirty;
+    return () => { (window as any).xeenapsIsDirty = false; };
+  }, [isDirty]);
 
   const handleUpdateField = (f: keyof TracerProject, v: any) => {
     if (!project || isLoading) return;
-    isDirtyRef.current = true;
+    setIsDirty(true);
     const updated = { ...project, [f]: v, updatedAt: new Date().toISOString() };
     setProject(updated);
-    
-    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
-    saveTimeoutRef.current = setTimeout(async () => {
-      await saveTracerProject(updated);
-      isDirtyRef.current = false;
-    }, 1500);
+  };
+
+  const handleManualSave = async () => {
+    if (!project) return;
+    setIsSaving(true);
+    try {
+      const success = await saveTracerProject(project);
+      if (success) {
+        setIsDirty(false);
+        showXeenapsToast('success', 'Changes saved successfully');
+      } else {
+        showXeenapsToast('error', 'Failed to save changes');
+      }
+    } catch (e) {
+      showXeenapsToast('error', 'Connection error');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleOpenLog = async (log: TracerLog) => {
@@ -325,6 +345,10 @@ const TracerDetail: React.FC<{ libraryItems: LibraryItem[] }> = ({ libraryItems 
     showXeenapsToast('success', 'Matrix segments updated.');
   };
 
+  const handleOpenLibraryFromRef = (lib: LibraryItem) => {
+    setSelectedSourceForDetail(lib);
+  };
+
   const formatLogTime = (dateStr: string) => {
     try {
       const d = new Date(dateStr);
@@ -351,6 +375,9 @@ const TracerDetail: React.FC<{ libraryItems: LibraryItem[] }> = ({ libraryItems 
 
   return (
     <FormPageContainer>
+      {/* GLOBAL SAVING OVERLAY */}
+      <GlobalSavingOverlay isVisible={isSaving} />
+
       <div className="sticky top-0 z-50 bg-white/95 backdrop-blur-md px-4 md:px-10 py-4 border-b border-gray-100 flex items-center justify-between shrink-0 overflow-x-auto no-scrollbar">
         <div className="flex items-center gap-2 md:gap-4 shrink-0">
           <button onClick={() => navigate('/research/tracer')} className="p-2.5 bg-gray-50 text-gray-400 hover:text-[#004A74] rounded-xl transition-all shadow-sm active:scale-90"><ArrowLeft size={18} /></button>
@@ -373,6 +400,20 @@ const TracerDetail: React.FC<{ libraryItems: LibraryItem[] }> = ({ libraryItems 
               <t.icon size={14} /><span className="hidden md:inline text-[9px] font-black uppercase tracking-widest">{t.label}</span>
             </button>
           ))}
+        </div>
+        
+        {/* MANUAL SAVE BUTTON - Only visible when dirty & active tab is Identity */}
+        <div className="flex items-center justify-end w-[120px]">
+           {activeTab === 'identity' && isDirty && (
+              <button 
+                onClick={handleManualSave}
+                disabled={isSaving}
+                className="flex items-center gap-2 px-4 py-2 bg-[#004A74] text-[#FED400] rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg hover:scale-105 active:scale-95 transition-all animate-in fade-in zoom-in-95"
+              >
+                {isSaving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save size={14} />}
+                Save
+              </button>
+           )}
         </div>
       </div>
 
@@ -442,6 +483,7 @@ const TracerDetail: React.FC<{ libraryItems: LibraryItem[] }> = ({ libraryItems 
                setReferences={setReferences}
                onRefresh={loadAllData} 
                reopenedRef={initialReopenRef}
+               onOpenLibrary={handleOpenLibraryFromRef}
              />
           )}
           {activeTab === 'finance' && <FinanceTab projectId={project.id} />}

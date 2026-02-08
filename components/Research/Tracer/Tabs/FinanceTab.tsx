@@ -13,8 +13,7 @@ import {
   Eye,
   Download,
   Loader2,
-  FileText,
-  ChevronDown
+  FileText
 } from 'lucide-react';
 import { SmartSearchBox } from '../../../Common/SearchComponents';
 import { 
@@ -63,10 +62,7 @@ const FinanceTab: React.FC<FinanceTabProps> = ({ projectId }) => {
   const [items, setItems] = useState<TracerFinanceItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isExporting, setIsExporting] = useState(false);
-  const [showExportMenu, setShowExportMenu] = useState(false);
   const [currency, setCurrency] = useState(CURRENCIES[0]);
-  
-  const exportMenuRef = useRef<HTMLDivElement>(null);
 
   // Filters (Cumulative Logic)
   const [localSearch, setLocalSearch] = useState('');
@@ -91,17 +87,6 @@ const FinanceTab: React.FC<FinanceTabProps> = ({ projectId }) => {
 
   useEffect(() => { loadData(); }, [loadData]);
 
-  // Handle click outside for export menu
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (exportMenuRef.current && !exportMenuRef.current.contains(event.target as Node)) {
-        setShowExportMenu(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
   const handleApplyFilters = () => {
     setAppliedSearch(localSearch);
     setStartDate(tempStartDate);
@@ -120,11 +105,12 @@ const FinanceTab: React.FC<FinanceTabProps> = ({ projectId }) => {
   };
 
   const totals = useMemo(() => {
-    return items.reduce((acc, curr) => ({
-      credit: acc.credit + (curr.credit || 0),
-      debit: acc.debit + (curr.debit || 0),
-      balance: items.length > 0 ? items[items.length - 1].balance : 0
-    }), { credit: 0, debit: 0, balance: 0 });
+    // Calculate totals directly from all available items for accurate summary
+    const credit = items.reduce((sum, item) => sum + (item.credit || 0), 0);
+    const debit = items.reduce((sum, item) => sum + (item.debit || 0), 0);
+    const balance = credit - debit;
+    
+    return { credit, debit, balance };
   }, [items]);
 
   const latestDate = useMemo(() => {
@@ -169,7 +155,6 @@ const FinanceTab: React.FC<FinanceTabProps> = ({ projectId }) => {
   };
 
   const handleExport = async () => {
-    setShowExportMenu(false);
     setIsExporting(true);
     showXeenapsToast('info', `Synthesizing Premium Report...`);
     
@@ -289,30 +274,13 @@ const FinanceTab: React.FC<FinanceTabProps> = ({ projectId }) => {
          </div>
          
          <div className="flex items-center gap-3 w-full lg:w-auto relative">
-            <div ref={exportMenuRef} className="relative flex-1 lg:flex-none">
-              <button 
-                onClick={() => setShowExportMenu(!showExportMenu)}
+            <button 
+                onClick={handleExport}
                 disabled={isExporting || items.length === 0}
                 className="w-full flex items-center justify-center gap-2 px-6 py-4 bg-white border border-gray-200 text-[#004A74] rounded-2xl font-black uppercase tracking-widest text-[11px] shadow-sm hover:bg-gray-50 active:scale-95 transition-all disabled:opacity-50"
-              >
-                {isExporting ? <Loader2 size={18} className="animate-spin" /> : <Download size={18} />} Export Ledger <ChevronDown size={14} className={`ml-1 transition-transform ${showExportMenu ? 'rotate-180' : ''}`} />
-              </button>
-              
-              {showExportMenu && (
-                <div className="absolute bottom-full mb-3 right-0 w-64 bg-white rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.15)] border border-gray-100 p-2 z-[60] animate-in slide-in-from-bottom-2 fade-in duration-300">
-                  <button 
-                    onClick={handleExport}
-                    className="w-full flex items-center gap-3 px-4 py-4 rounded-2xl hover:bg-[#FED400]/10 transition-all text-left group"
-                  >
-                    <div className="p-2 bg-red-50 text-red-600 rounded-xl"><FileText size={18} /></div>
-                    <div>
-                      <p className="text-[10px] font-black text-[#004A74] uppercase tracking-tight">Official Report</p>
-                      <p className="text-[8px] font-bold text-gray-400 uppercase">Premium Audit PDF (.pdf)</p>
-                    </div>
-                  </button>
-                </div>
-              )}
-            </div>
+            >
+                {isExporting ? <Loader2 size={18} className="animate-spin" /> : <Download size={18} />} Export PDF
+            </button>
             <button 
               onClick={() => { setViewingItem(undefined); setIsFormOpen(true); }}
               className="flex-[2] lg:flex-none flex items-center justify-center gap-2 px-8 py-4 bg-[#004A74] text-[#FED400] rounded-2xl font-black uppercase tracking-widest text-[11px] shadow-lg hover:scale-105 active:scale-95 transition-all"
