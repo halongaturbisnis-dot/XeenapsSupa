@@ -109,24 +109,44 @@ ALTER TABLE public.sharbox_sent ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Public Access Sharbox Inbox" ON public.sharbox_inbox FOR ALL USING (true);
 CREATE POLICY "Public Access Sharbox Sent" ON public.sharbox_sent FOR ALL USING (true);
 
--- Triggers (Optional Search Index)
-CREATE OR REPLACE FUNCTION public.update_sharbox_search_index()
+-- --- FIX: SEPARATED TRIGGERS FOR INBOX AND SENT ---
+
+-- 1. Function for INBOX (Includes senderName)
+CREATE OR REPLACE FUNCTION public.update_sharbox_inbox_search_index()
 RETURNS TRIGGER AS $$
 BEGIN
     NEW."search_all" := LOWER(
         COALESCE(NEW."title", '') || ' ' || 
         COALESCE(NEW."message", '') || ' ' ||
-        COALESCE(NEW."senderName", '') || ' ' ||
-        COALESCE(NEW."receiverName", '')
+        COALESCE(NEW."senderName", '') -- Valid in Inbox
     );
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 
+-- 2. Function for SENT (Includes receiverName, NO senderName)
+CREATE OR REPLACE FUNCTION public.update_sharbox_sent_search_index()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW."search_all" := LOWER(
+        COALESCE(NEW."title", '') || ' ' || 
+        COALESCE(NEW."message", '') || ' ' ||
+        COALESCE(NEW."receiverName", '') -- Valid in Sent
+    );
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Drop old triggers if they exist to prevent conflicts
+DROP TRIGGER IF EXISTS trigger_update_inbox_search ON public.sharbox_inbox;
+DROP TRIGGER IF EXISTS trigger_update_sent_search ON public.sharbox_sent;
+DROP FUNCTION IF EXISTS public.update_sharbox_search_index; -- Remove the old buggy generic function
+
+-- Re-create Triggers pointing to correct functions
 CREATE TRIGGER trigger_update_inbox_search
     BEFORE INSERT OR UPDATE ON public.sharbox_inbox
-    FOR EACH ROW EXECUTE FUNCTION public.update_sharbox_search_index();
+    FOR EACH ROW EXECUTE FUNCTION public.update_sharbox_inbox_search_index();
 
 CREATE TRIGGER trigger_update_sent_search
     BEFORE INSERT OR UPDATE ON public.sharbox_sent
-    FOR EACH ROW EXECUTE FUNCTION public.update_sharbox_search_index();
+    FOR EACH ROW EXECUTE FUNCTION public.update_sharbox_sent_search_index();

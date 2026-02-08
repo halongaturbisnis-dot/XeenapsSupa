@@ -112,18 +112,12 @@ export const shareToColleague = async (
 
     if (result.status === 'success') {
       
-      // DEEP CLEANING: Remove any previous Sharbox metadata (Sender Info) from the item
-      // This prevents "senderName" column error when saving to Sent box
-      const { 
-        senderName, senderPhotoUrl, senderAffiliation, senderUniqueAppId, 
-        senderEmail, senderPhone, senderSocialMedia, 
-        isRead, status, id: oldId, timestamp: oldTs,
-        ...cleanLibraryData 
-      } = item as any;
-
       // 2. Save to Local Supabase History (Sent Box)
+      // FIX: Explicitly construct the Sent Item to avoid any prototype pollution 
+      // or stray properties from the source item (like senderName from Inbox items)
+      
       const sentItem: SharboxItem = {
-        ...cleanLibraryData, // Spread strictly cleaned data
+        // Identity
         id: transactionId,
         receiverName,
         receiverPhotoUrl,
@@ -134,7 +128,41 @@ export const shareToColleague = async (
         message,
         timestamp,
         status: SharboxStatus.SENT,
-        id_item: item.id
+        
+        // Content Reference
+        id_item: item.id,
+        title: item.title,
+        type: item.type,
+        category: item.category,
+        topic: item.topic,
+        subTopic: item.subTopic,
+        authors: item.authors,
+        publisher: item.publisher,
+        year: item.year,
+        fullDate: item.fullDate,
+        pubInfo: item.pubInfo,
+        identifiers: item.identifiers,
+        source: item.source,
+        format: item.format,
+        url: item.url,
+        fileId: item.fileId,
+        imageView: item.imageView,
+        youtubeId: item.youtubeId,
+        tags: item.tags,
+        abstract: item.abstract,
+        mainInfo: item.mainInfo,
+        extractedJsonId: item.extractedJsonId,
+        insightJsonId: item.insightJsonId,
+        storageNodeUrl: item.storageNodeUrl,
+        supportingReferences: item.supportingReferences,
+        
+        // Added missing properties from LibraryItem
+        createdAt: item.createdAt,
+        updatedAt: item.updatedAt,
+        
+        // Forced Cleanup (Just in case)
+        isRead: undefined as any,
+        senderName: undefined as any
       };
 
       await upsertSentItemToSupabase(sentItem);
@@ -155,18 +183,20 @@ export const claimSharboxItem = async (transactionId: string): Promise<boolean> 
     if (itemToClaim.status === SharboxStatus.CLAIMED) return false;
 
     // 2. Construct Library Item
-    // DEEP CLEANING: Remove ALL Sharbox-specific fields before saving to Library
+    // Explicitly destructure to ensure we only get LibraryItem props
     const { 
-      id, // Transaction ID (remove)
-      senderName, senderPhotoUrl, senderAffiliation, senderUniqueAppId, 
+      id, senderName, senderPhotoUrl, senderAffiliation, senderUniqueAppId, 
       senderEmail, senderPhone, senderSocialMedia, receiverName, message, 
       timestamp, status, isRead, id_item, 
-      ...cleanLibraryItem 
+      ...rawLibraryData 
     } = itemToClaim as any;
 
     const libraryItem: LibraryItem = {
-      ...cleanLibraryItem,
+      ...rawLibraryData,
       id: itemToClaim.id_item || crypto.randomUUID(),
+      // Force clean ownership
+      isFavorite: false,
+      isBookmarked: false,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
