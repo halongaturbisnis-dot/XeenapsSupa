@@ -128,6 +128,20 @@ export const fetchTracerTodosFromSupabase = async (projectId: string): Promise<T
   return data || [];
 };
 
+// NEW: Fetch ALL pending todos across all projects for Global Notification
+export const fetchAllPendingTodosFromSupabase = async (): Promise<TracerTodo[]> => {
+  const client = getSupabase();
+  if (!client) return [];
+  const { data, error } = await client
+    .from('tracer_todos')
+    .select('*')
+    .eq('isDone', false)
+    .order('deadline', { ascending: true });
+  
+  if (error) return [];
+  return data || [];
+};
+
 export const upsertTracerTodoToSupabase = async (item: TracerTodo): Promise<boolean> => {
   const client = getSupabase();
   if (!client) return false;

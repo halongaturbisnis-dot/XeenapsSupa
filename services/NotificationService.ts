@@ -1,5 +1,7 @@
+
 import { GAS_WEB_APP_URL } from '../constants';
 import { SharboxItem, TracerTodo } from '../types';
+import { fetchAllPendingTodosFromSupabase } from './TracerSupabaseService';
 
 export interface NotificationData {
   sharbox: SharboxItem[];
@@ -7,18 +9,44 @@ export interface NotificationData {
 }
 
 export const fetchNotifications = async (): Promise<NotificationData> => {
-  if (!GAS_WEB_APP_URL) return { sharbox: [], todos: [] };
-  try {
-    const response = await fetch(`${GAS_WEB_APP_URL}?action=getNotifications`);
-    const result = await response.json();
-    if (result.status === 'success') {
-      return result.data;
+  let sharboxData: SharboxItem[] = [];
+  let todosData: TracerTodo[] = [];
+
+  // 1. Fetch Sharbox from GAS (Existing Source)
+  if (GAS_WEB_APP_URL) {
+    try {
+      const response = await fetch(`${GAS_WEB_APP_URL}?action=getNotifications`);
+      const result = await response.json();
+      if (result.status === 'success') {
+        sharboxData = result.data.sharbox || [];
+        // Note: We intentionally ignore result.data.todos from GAS now
+      }
+    } catch (error) {
+      console.error("Failed to fetch GAS notifications:", error);
     }
-    return { sharbox: [], todos: [] };
-  } catch (error) {
-    console.error("Failed to fetch notifications:", error);
-    return { sharbox: [], todos: [] };
   }
+
+  // 2. Fetch Todos from Supabase (New Source)
+  try {
+    const allPending = await fetchAllPendingTodosFromSupabase();
+    
+    // Filter Logic: Overdue, Today, or Next 3 Days
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const limitDate = new Date(today);
+    limitDate.setDate(today.getDate() + 3); // Threshold: 3 days from now
+
+    todosData = allPending.filter(t => {
+      if (!t.deadline) return false;
+      const d = new Date(t.deadline);
+      // Include if deadline is past (overdue), today, or within 3 days
+      return d <= limitDate;
+    });
+  } catch (error) {
+    console.error("Failed to fetch Supabase todos:", error);
+  }
+
+  return { sharbox: sharboxData, todos: todosData };
 };
 
 export const getUrgencyColor = (todo: TracerTodo): string => {
