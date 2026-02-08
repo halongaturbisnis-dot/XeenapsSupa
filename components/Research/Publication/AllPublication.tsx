@@ -234,7 +234,7 @@ const AllPublication: React.FC = () => {
           value={localSearch} 
           onChange={setLocalSearch} 
           onSearch={() => { setAppliedSearch(localSearch); setCurrentPage(1); }} 
-          phrases={["Search publications...", "Search publishers...", "Search status..."]}
+          phrases={["Search publications...", "Search publishers...", "Search index...", "Search status..."]}
         />
         <StandardPrimaryButton onClick={handleNewPublication} icon={<Plus size={20} />}>
           REGISTER
