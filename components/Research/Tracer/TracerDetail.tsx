@@ -1,3 +1,5 @@
+
+
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 // @ts-ignore - Resolving TS error for missing exported members
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
@@ -468,8 +470,9 @@ const TracerDetail: React.FC<{ libraryItems: LibraryItem[] }> = ({ libraryItems 
         <div className="flex items-center gap-2 md:gap-4 shrink-0">
           <button onClick={handleSafeBack} className="p-2.5 bg-gray-50 text-gray-400 hover:text-[#004A74] rounded-xl transition-all shadow-sm active:scale-90"><ArrowLeft size={18} /></button>
           <div className="min-w-0 hidden lg:block">
-            <h2 className="text-sm font-black text-[#004A74] truncate">{project.title || project.label}</h2>
-            <p className="text-[8px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">Project ID: {project.id.substring(0,8)}</p>
+            {/* UPDATED HEADER: STATIC TEXT */}
+            <h2 className="text-sm font-black text-[#004A74] truncate">RESEARCH TRACER</h2>
+            {/* REMOVED PROJECT ID PARAGRAPH */}
           </div>
           <button 
             onClick={handlePermanentDeleteProject}

@@ -43,12 +43,11 @@ const FinanceFormModal: React.FC<FinanceFormModalProps> = ({ projectId, item, cu
   // New state to track uploads in progress
   const [activeUploads, setActiveUploads] = useState(0);
 
-  // Helper to get strictly Local ISO String for NOW() without Z timezone shift
+  // Helper to get strictly Local ISO String for NOW()
   const getLocalNowISO = () => {
     const now = new Date();
     const offset = now.getTimezoneOffset() * 60000;
-    // Slice off the 'Z' to treat as local time and prevent double-conversion in table view
-    return new Date(now.getTime() - offset).toISOString().slice(0, -1);
+    return new Date(now.getTime() - offset).toISOString();
   };
 
   const [formData, setFormData] = useState<TracerFinanceItem>(item || {
@@ -163,8 +162,14 @@ const FinanceFormModal: React.FC<FinanceFormModalProps> = ({ projectId, item, cu
 
     setIsSubmitting(true);
     const amount = parseInt(amountStr) || 0;
+    
+    // RECONSTRUCT DATE: Clean "Z" suffix to ensure it stays as Local Wall Time
+    // This prevents browser/server from shifting it back to UTC if it was initialized with getLocalNowISO
+    const cleanDateStr = formData.date.endsWith('Z') ? formData.date.slice(0, -1) : formData.date;
+
     const finalItem = {
       ...formData,
+      date: cleanDateStr, // Use clean local string
       credit: isCredit ? amount : 0,
       debit: !isCredit ? amount : 0,
       updatedAt: new Date().toISOString()
@@ -186,8 +191,9 @@ const FinanceFormModal: React.FC<FinanceFormModalProps> = ({ projectId, item, cu
 
   const isViewOnly = !!item;
 
+  // Render via Portal to fix z-index/overflow issues
   return createPortal(
-    <div className="fixed inset-0 z-[1200] bg-black/60 backdrop-blur-xl flex items-center justify-center p-4 md:p-10 animate-in fade-in">
+    <div className="fixed inset-0 z-[9999] bg-black/60 backdrop-blur-xl flex items-center justify-center p-4 md:p-10 animate-in fade-in">
       <div className="bg-white rounded-[3.5rem] w-full max-w-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] border border-white/20">
         
         <div className="px-8 py-8 border-b border-gray-100 flex items-center justify-between shrink-0 bg-gray-50/50">
