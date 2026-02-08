@@ -1,3 +1,4 @@
+
 /**
  * XEENAPS PKM - TRACER REGISTRY MODULE
  * Handles Audit Trail, Lab Notebooks, Project References, and Finance Ledger.
@@ -748,7 +749,7 @@ function deleteTracerFinanceFromRegistry(id) {
     for (let i = 1; i < data.length; i++) {
       if (data[i][idIdx] === id) { 
         targetRowIndex = i + 1; 
-        targetProjectId = data[i][pId];
+        targetProjectId = data[i][pIdIdx];
         break; 
       }
     }
@@ -849,44 +850,21 @@ function getFinanceExportDataFromRegistry(projectId) {
 /**
  * PREMIUM GENERATOR: Produces Official PDF as Base64 for Direct Public Download
  * EXCEL logic removed as per request.
+ * UPDATED: Accepts payload directly to avoid Sheet lookups when metadata is external.
  */
-function generateFinanceExportFileFromRegistry(projectId, format, currency) {
+function generateFinanceExportFileFromRegistry(payload) {
   try {
-    const data = getFinanceExportDataFromRegistry(projectId);
-    if (data.length === 0) return { status: 'error', message: 'No transaction data available.' };
-
-    const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEETS.TRACER);
-    const pSheet = ss.getSheetByName("TracerProjects");
-    const pData = pSheet.getDataRange().getValues();
-    const pHeaders = pData[0];
-    const pIdIdx = pHeaders.indexOf('id');
-    const pLabelIdx = pHeaders.indexOf('label');
-    const pTitleIdx = pHeaders.indexOf('title');
-    const pAuthorIdx = pHeaders.indexOf('authors');
+    const { transactions, projectTitle, projectAuthors, currency } = payload;
     
-    let pLabel = "Project";
-    let pTitle = "Financial Ledger";
-    let pAuthors = "N/A";
-    for(let i=1; i<pData.length; i++) {
-       if(pData[i][pIdIdx] === projectId) {
-         pLabel = pData[i][pLabelIdx];
-         pTitle = pData[i][pTitleIdx] || pLabel;
-         try {
-           const authorsRaw = pData[i][pAuthorIdx];
-           const authorsArr = typeof authorsRaw === 'string' ? JSON.parse(authorsRaw) : authorsRaw;
-           pAuthors = Array.isArray(authorsArr) ? authorsArr.join(", ") : authorsRaw;
-         } catch(e) { pAuthors = pData[i][pAuthorIdx]; }
-         break;
-       }
-    }
+    if (!transactions || transactions.length === 0) return { status: 'error', message: 'No transaction data available.' };
 
-    const filename = `Ledger_${pLabel}_${new Date().toISOString().split('T')[0]}`;
+    const filename = `Ledger_${projectTitle.substring(0, 20)}_${new Date().toISOString().split('T')[0]}`;
     
     // FORMATTING 2D ARRAY FOR PDF TEMPLATE
-    const rows = data.map(d => {
+    const rows = transactions.map(d => {
        const date = new Date(d.date);
        const dateFmt = `${date.getDate().toString().padStart(2,'0')}/${(date.getMonth()+1).toString().padStart(2,'0')}/${date.getFullYear()} ${date.getHours().toString().padStart(2,'0')}:${date.getMinutes().toString().padStart(2,'0')}`;
-       return [dateFmt, d.credit, d.debit, d.balance, d.description, d.links];
+       return [dateFmt, d.credit, d.debit, d.balance, d.description, d.links || '-'];
     });
 
     // OFFICIAL PDF GENERATOR
@@ -938,11 +916,11 @@ function generateFinanceExportFileFromRegistry(projectId, format, currency) {
            <div>
               <div class="meta-item">
                 <span class="meta-label">Research Title</span>
-                <span class="meta-value" style="font-size: 10pt;">${pTitle}</span>
+                <span class="meta-value" style="font-size: 10pt;">${projectTitle}</span>
               </div>
               <div class="meta-item">
                 <span class="meta-label">Author Team</span>
-                <span class="meta-value">${pAuthors}</span>
+                <span class="meta-value">${projectAuthors}</span>
               </div>
            </div>
            <div>
@@ -977,7 +955,7 @@ function generateFinanceExportFileFromRegistry(projectId, format, currency) {
               <td class="num expense">${r[2] > 0 ? '-' + Number(r[2]).toLocaleString() : '-'}</td>
               <td class="num balance">${Number(r[3]).toLocaleString()}</td>
               <td class="desc">${r[4]}</td>
-              <td>${r[5].split(' | ').map(l => `<a class="link" href="${l}">${l}</a>`).join('<br/>')}</td>
+              <td>${r[5].split(' | ').map(l => l !== '-' ? `<a class="link" href="${l}">${l}</a>` : '-').join('<br/>')}</td>
             </tr>
           `).join('')}
         </tbody>

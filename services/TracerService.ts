@@ -1,3 +1,4 @@
+
 import { TracerProject, TracerLog, TracerReference, TracerReferenceContent, TracerTodo, TracerFinanceItem, TracerFinanceContent, GASResponse } from '../types';
 import { GAS_WEB_APP_URL } from '../constants';
 import { 
@@ -17,7 +18,8 @@ import {
   upsertTracerFinanceToSupabase,
   deleteTracerFinanceFromSupabase
 } from './TracerSupabaseService';
-import { deleteRemoteFile } from './ActivityService';
+import { deleteRemoteFile, fetchVaultContent } from './ActivityService';
+import { fetchFileContent } from './gasService';
 
 /**
  * XEENAPS TRACER SERVICE (HYBRID ARCHITECTURE)
@@ -199,29 +201,67 @@ export const fetchTracerFinance = async (projectId: string, startDate = "", endD
   return await fetchTracerFinanceFromSupabase(projectId, startDate, endDate, search);
 };
 
-export const fetchFinanceExportData = async (projectId: string): Promise<any[]> => {
-  // Export logic still relies on GAS stitching logic if needed, 
-  // but since we moved metadata to Supabase, GAS 'getFinanceExportData' will fail unless updated.
-  // STRATEGY: Fetch metadata here, then construct export payload for GAS PDF engine.
-  // Note: For now, keeping legacy call or returning empty if critical.
-  // Recommend reimplementing export logic client-side or sending data to GAS generator.
-  
-  // Implementation: Returning raw items for client-side processing (or future feature)
-  const items = await fetchTracerFinanceFromSupabase(projectId);
-  return items;
-};
-
+/**
+ * EXPORT PDF LOGIC (Hybrid Stitching)
+ * 1. Fetch metadata from Supabase
+ * 2. Fetch attachments info (sharded JSON)
+ * 3. Construct payload
+ * 4. POST payload to GAS PDF Engine
+ */
 export const exportFinanceLedger = async (projectId: string, currency: string): Promise<{ base64: string, filename: string } | null> => {
   if (!GAS_WEB_APP_URL) return null;
   try {
-     // TODO: Modify GAS backend to accept 'data' payload instead of reading from sheet.
-     // Current 'generateFinanceExport' reads from sheet. 
-     // Migration strategy: We will skip this for now or assumes GAS still has legacy data.
-     // Ideally: Send full JSON data to GAS to generate PDF.
+     // 1. Fetch Finance Items (All)
+     const financeItems = await fetchTracerFinanceFromSupabase(projectId);
+     if (financeItems.length === 0) return null;
+
+     // 2. Fetch Project Info
+     const { items: projects } = await fetchTracerProjectsFromSupabase(1, 1000, ""); 
+     const project = projects.find(p => p.id === projectId);
+     const projectTitle = project?.title || project?.label || "Financial Report";
+     const projectAuthors = Array.isArray(project?.authors) ? project.authors.join(", ") : "Xeenaps User";
+
+     // 3. Enrich Items with Attachment Links (Async Batch)
+     const enrichedTransactions = await Promise.all(financeItems.map(async (item) => {
+        let linkString = "-";
+        if (item.attachmentsJsonId) {
+           try {
+              const content = await fetchFileContent(item.attachmentsJsonId, item.storageNodeUrl);
+              if (content && Array.isArray(content.attachments)) {
+                 const urls = content.attachments.map((a: any) => 
+                    a.url || (a.fileId ? `https://drive.google.com/file/d/${a.fileId}/view` : "")
+                 ).filter((u: string) => u !== "");
+                 if (urls.length > 0) linkString = urls.join(" | ");
+              }
+           } catch (e) { console.warn("Failed to fetch attachment for export", e); }
+        }
+        return { ...item, links: linkString };
+     }));
+
+     // 4. Construct Payload
+     const payload = {
+        transactions: enrichedTransactions,
+        projectTitle,
+        projectAuthors,
+        currency
+     };
+
+     // 5. Send to GAS
+     const res = await fetch(GAS_WEB_APP_URL, {
+        method: 'POST',
+        body: JSON.stringify({
+           action: 'generateFinanceExport',
+           payload: payload
+        })
+     });
      
-     // Fallback: Return null to disable export temporarily until GAS backend is updated to accept payload.
-     return null; 
+     const result = await res.json();
+     if (result.status === 'success') {
+        return { base64: result.base64, filename: result.filename };
+     }
+     return null;
   } catch (e) {
+    console.error("Finance Export Error:", e);
     return null;
   }
 };

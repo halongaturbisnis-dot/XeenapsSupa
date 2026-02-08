@@ -119,14 +119,6 @@ function doGet(e) {
       return createJsonResponse({ status: 'success', data: result });
     }
 
-    // NEW: Tracer Finance Premium Export (Excel/PDF)
-    // MODIFIED: Pass currency to the generator
-    if (action === 'generateFinanceExport') {
-      const { projectId, format, currency } = e.parameter;
-      const result = generateFinanceExportFileFromRegistry(projectId, format, currency);
-      return createJsonResponse(result);
-    }
-
     // NEW: getReviews (LITERATURE REVIEW MODULE)
     if (action === 'getReviews') {
       const page = parseInt(e.parameter.page || "1");
@@ -383,6 +375,14 @@ function doPost(e) {
     // NEW: Tracer Finance
     if (action === 'saveTracerFinance') return createJsonResponse(saveTracerFinanceToRegistry(body.item, body.content));
     if (action === 'deleteTracerFinance') return createJsonResponse(deleteTracerFinanceFromRegistry(body.id));
+
+    // NEW: Tracer Finance Premium Export (Excel/PDF)
+    // MOVED FROM GET TO POST TO HANDLE LARGE PAYLOADS FROM SUPABASE
+    if (action === 'generateFinanceExport') {
+      const { payload } = body;
+      const result = generateFinanceExportFileFromRegistry(payload);
+      return createJsonResponse(result);
+    }
 
     // NEW: aiTracerProxy
     if (action === 'aiTracerProxy') {

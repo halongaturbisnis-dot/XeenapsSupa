@@ -1,20 +1,19 @@
+
 import React, { useState, useEffect } from 'react';
 import { LibraryItem, TracerReference } from '../../../../types';
 import { linkTracerReference, unlinkTracerReference } from '../../../../services/TracerService';
-import { fetchLibraryPaginatedFromSupabase } from '../../../../services/LibrarySupabaseService';
 import { 
   Plus, 
   Trash2, 
   ChevronRight, 
-  Loader2, 
   Library,
   BookOpen,
   Calendar
 } from 'lucide-react';
-import { SmartSearchBox } from '../../../Common/SearchComponents';
 import { showXeenapsToast } from '../../../../utils/toastUtils';
 import { showXeenapsDeleteConfirm } from '../../../../utils/confirmUtils';
 import ReferenceDetailView from '../Modals/ReferenceDetailView';
+import ResourcePicker from '../../../Teaching/ResourcePicker'; // Path verified
 
 interface ReferenceTabProps {
   projectId: string;
@@ -28,13 +27,11 @@ interface ReferenceTabProps {
 }
 
 const ReferenceTab: React.FC<ReferenceTabProps> = ({ projectId, libraryItems, references, setReferences, onRefresh, reopenedRef, onOpenLibrary, onClearReopenRef }) => {
-  const [localSearch, setLocalSearch] = useState('');
-  const [searchResults, setSearchResults] = useState<LibraryItem[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
   const [selectedRef, setSelectedRef] = useState<LibraryItem & { refRow?: TracerReference } | null>(null);
   
   // State to track if the current view was restored from history (to disable slide animation)
   const [isRestoredSession, setIsRestoredSession] = useState(false);
+  const [isPickerOpen, setIsPickerOpen] = useState(false);
 
   // AUTO-OPEN LOGIC
   useEffect(() => {
@@ -44,47 +41,42 @@ const ReferenceTab: React.FC<ReferenceTabProps> = ({ projectId, libraryItems, re
     }
   }, [reopenedRef]);
 
-  const handleSearch = async () => {
-    if (localSearch.length < 3) return;
-    setIsSearching(true);
-    // Updated to use Supabase fetcher
-    const result = await fetchLibraryPaginatedFromSupabase(1, 10, localSearch, 'Literature', 'research');
-    setSearchResults(result.items);
-    setIsSearching(false);
-  };
-
-  const handleLink = async (lib: LibraryItem) => {
-    if (references.some(r => r.collectionId === lib.id)) {
-      showXeenapsToast('warning', 'Document already anchored');
+  const handleSelectSources = async (selectedItems: any[]) => {
+    setIsPickerOpen(false);
+    
+    // Filter duplicates locally first
+    const newItems = selectedItems.filter(item => !references.some(r => r.collectionId === item.id));
+    
+    if (newItems.length === 0) {
+      showXeenapsToast('warning', 'Selected items already anchored.');
       return;
     }
 
-    // OPTIMISTIC ADD: Instant UI feedback
-    const tempId = crypto.randomUUID();
-    const mockRef: TracerReference = {
-      id: tempId,
-      projectId,
-      collectionId: lib.id,
-      contentJsonId: '',
-      storageNodeUrl: '',
-      createdAt: new Date().toISOString()
-    };
-    
-    setReferences(prev => [mockRef, ...prev]);
-    setSearchResults([]);
-    setLocalSearch('');
+    let successCount = 0;
+    for (const item of newItems) {
+      // Optimistic Add
+      const tempId = crypto.randomUUID();
+      const mockRef: TracerReference = {
+        id: tempId,
+        projectId,
+        collectionId: item.id,
+        contentJsonId: '',
+        storageNodeUrl: '',
+        createdAt: new Date().toISOString()
+      };
+      setReferences(prev => [mockRef, ...prev]);
 
-    // Background Sync
-    const realData = await linkTracerReference({ projectId, collectionId: lib.id });
-    if (realData) {
-      // Synchronize state with real ID from database
-      setReferences(prev => prev.map(r => r.id === tempId ? realData : r));
-      showXeenapsToast('success', 'Reference anchored');
-    } else {
-      // Rollback on failure
-      setReferences(prev => prev.filter(r => r.id !== tempId));
-      showXeenapsToast('error', 'Anchoring failed');
+      // Background Sync
+      const realData = await linkTracerReference({ projectId, collectionId: item.id });
+      if (realData) {
+        setReferences(prev => prev.map(r => r.id === tempId ? realData : r));
+        successCount++;
+      } else {
+        setReferences(prev => prev.filter(r => r.id !== tempId));
+      }
     }
+    
+    if (successCount > 0) showXeenapsToast('success', `${successCount} sources anchored`);
   };
 
   const handleUnlink = async (e: React.MouseEvent, id: string) => {
@@ -132,29 +124,25 @@ const ReferenceTab: React.FC<ReferenceTabProps> = ({ projectId, libraryItems, re
         />
       )}
 
-      {/* SEARCH SECTION */}
-      <section className="space-y-4">
-         <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-400">Anchor New Knowledge Source</h3>
-         <div className="relative">
-            <SmartSearchBox value={localSearch} onChange={setLocalSearch} onSearch={handleSearch} className="w-full" phrases={["Search in main library to link..."]} />
-            {isSearching && <div className="absolute right-16 top-1/2 -translate-y-1/2"><Loader2 size={16} className="animate-spin text-[#004A74]" /></div>}
-         </div>
+      {isPickerOpen && (
+        <ResourcePicker 
+          type="LIBRARY"
+          onClose={() => setIsPickerOpen(false)}
+          onSelect={handleSelectSources}
+        />
+      )}
 
-         {searchResults.length > 0 && (
-           <div className="grid grid-cols-1 gap-3 animate-in slide-in-from-top-2 duration-500">
-              {searchResults.map(lib => (
-                <div key={lib.id} onClick={() => handleLink(lib)} className="p-4 bg-white border border-gray-100 rounded-2xl flex items-center justify-between cursor-pointer hover:border-[#FED400] hover:shadow-lg transition-all group">
-                   <div className="min-w-0 flex-1">
-                      <p className="text-[10px] font-black text-[#004A74] uppercase truncate">{lib.title}</p>
-                      <p className="text-[8px] font-bold text-gray-400 uppercase">{lib.authors[0]} • {lib.year}</p>
-                   </div>
-                   <div className="w-8 h-8 bg-gray-50 rounded-lg flex items-center justify-center text-gray-400 group-hover:bg-[#004A74] group-hover:text-white transition-all">
-                      <Plus size={18} strokeWidth={3} />
-                   </div>
-                </div>
-              ))}
-           </div>
-         )}
+      {/* SEARCH SECTION REPLACED WITH ACTION BUTTON */}
+      <section className="space-y-4">
+         <div className="flex items-center justify-between">
+           <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-400">Anchor New Knowledge Source</h3>
+           <button 
+             onClick={() => setIsPickerOpen(true)}
+             className="flex items-center gap-2 px-6 py-3 bg-[#004A74] text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-lg hover:scale-105 active:scale-95 transition-all"
+           >
+             <Plus size={16} /> ADD SOURCE
+           </button>
+         </div>
       </section>
 
       {/* ASSOCIATED REFERENCES - LIST MODEL */}

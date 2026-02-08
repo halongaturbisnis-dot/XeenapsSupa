@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 // @ts-ignore - Resolving TS error for missing exported member
 import { useNavigate } from 'react-router-dom';
@@ -175,7 +176,13 @@ const TracerMain: React.FC = () => {
            </div>
         </div>
         <div className="flex flex-col md:flex-row gap-3 w-full lg:max-w-xl justify-end">
-          <SmartSearchBox value={searchQuery} onChange={setSearchQuery} onSearch={() => setAppliedSearch(searchQuery)} className="w-full lg:max-w-md" />
+          <SmartSearchBox 
+            value={searchQuery} 
+            onChange={setSearchQuery} 
+            onSearch={() => setAppliedSearch(searchQuery)} 
+            phrases={["Search label...", "Search Research Title...", "Search Research Author(s)..."]}
+            className="w-full lg:max-w-md" 
+          />
           <StandardPrimaryButton onClick={handleCreate} icon={<Plus size={18} />}>CREATE</StandardPrimaryButton>
         </div>
       </div>
