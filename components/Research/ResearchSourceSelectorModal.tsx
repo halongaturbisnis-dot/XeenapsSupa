@@ -29,14 +29,6 @@ const ResearchSourceSelectorModal: React.FC<ResearchSourceSelectorModalProps> = 
   const [appliedSearch, setAppliedSearch] = useState('');
   const [selected, setSelected] = useState<LibraryItem[]>([]);
 
-  // BODY SCROLL LOCK: Mencegah scroll tembus ke belakang
-  useEffect(() => {
-    document.body.style.overflow = 'hidden';
-    return () => {
-      document.body.style.overflow = 'unset';
-    };
-  }, []);
-
   const itemsPerPage = 10;
   const GLOBAL_MAX = 10;
   const SESSION_MAX = 3;
@@ -91,8 +83,8 @@ const ResearchSourceSelectorModal: React.FC<ResearchSourceSelectorModalProps> = 
   const end = Math.min(currentPage * itemsPerPage, totalCount);
 
   return (
-    <div className="fixed inset-0 z-[1000] flex items-center justify-center p-2 md:p-6 bg-black/40 backdrop-blur-md animate-in fade-in">
-      <div className="bg-white rounded-[3rem] w-full max-w-5xl shadow-2xl overflow-hidden flex flex-col max-h-[95vh] border border-white/20">
+    <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 md:p-8 bg-black/40 backdrop-blur-md animate-in fade-in">
+      <div className="bg-white rounded-[3rem] w-full max-w-5xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh] border border-white/20">
         
         {/* Header */}
         <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between shrink-0 bg-gray-50/50">
