@@ -188,7 +188,7 @@ const ColleagueMain: React.FC = () => {
            </div>
            <div>
               <h2 className="text-2xl font-black text-[#004A74] uppercase tracking-tight">Colleagues</h2>
-              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">Professional Network Management</p>
+              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">Xeenaps Network Management</p>
            </div>
         </div>
 
@@ -200,7 +200,7 @@ const ColleagueMain: React.FC = () => {
             className="w-full lg:max-w-md"
           />
           <StandardPrimaryButton onClick={() => { setSelectedItem(undefined); setIsFormOpen(true); }} icon={<Plus size={20} />}>
-            Add Colleague
+            ADD
           </StandardPrimaryButton>
         </div>
       </div>
@@ -232,7 +232,8 @@ const ColleagueMain: React.FC = () => {
             {items.map(item => (
               <div 
                 key={item.id}
-                className={`group relative bg-white border border-gray-100 rounded-[2rem] p-5 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col ${selectedIds.includes(item.id) ? 'ring-2 ring-[#004A74] border-[#004A74]' : ''}`}
+                onClick={(e) => handleEdit(e, item)}
+                className={`group relative bg-white border border-gray-100 rounded-[2rem] p-5 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col cursor-pointer ${selectedIds.includes(item.id) ? 'ring-2 ring-[#004A74] border-[#004A74]' : ''}`}
               >
                 {/* TOP LEFT: CIRCLE CHECKBOX */}
                 <div className="flex justify-between items-start mb-3">

@@ -138,7 +138,7 @@ const ColleagueForm: React.FC<ColleagueFormProps> = ({ item, onClose, onComplete
                 </button>
                 <input type="file" ref={fileInputRef} onChange={handlePhotoUpload} accept="image/*" className="hidden" />
              </div>
-             <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Colleague Portrait</p>
+             <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Colleague Photo</p>
           </div>
 
           {/* MANDATORY FIELDS */}
@@ -149,7 +149,7 @@ const ColleagueForm: React.FC<ColleagueFormProps> = ({ item, onClose, onComplete
                   className="w-full px-5 py-4 bg-gray-50 border border-gray-200 rounded-2xl font-bold text-[#004A74] outline-none focus:bg-white focus:ring-4 focus:ring-[#004A74]/5 transition-all"
                   value={formData.name}
                   onChange={e => setFormData({...formData, name: e.target.value})}
-                  placeholder="Authenticated Name..."
+                  placeholder="Comlete Name with Title..."
                 />
              </FormField>
              <FormField label="Unique App ID" required error={!formData.uniqueAppId.trim()}>
