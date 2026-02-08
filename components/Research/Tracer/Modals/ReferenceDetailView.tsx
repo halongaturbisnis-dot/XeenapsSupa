@@ -206,6 +206,8 @@ const ReferenceDetailView: React.FC<ReferenceDetailViewProps> = ({ item, refRow,
     if (onOpenLibrary) {
       // Use efficient local overlay method if available
       onOpenLibrary(item);
+      // CRITICAL FIX: Close current modal (Quote View) to allow Library Detail to be visible
+      onClose();
     } else {
       // Fallback to route navigation (legacy)
       navigate('/', { 

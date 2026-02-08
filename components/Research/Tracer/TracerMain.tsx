@@ -171,12 +171,12 @@ const TracerMain: React.FC = () => {
            </div>
            <div>
               <h2 className="text-xl md:text-2xl font-black text-[#004A74] uppercase tracking-tight">Tracer</h2>
-              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">Research Audit Trail & Lab Logs</p>
+              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">Research Management</p>
            </div>
         </div>
         <div className="flex flex-col md:flex-row gap-3 w-full lg:max-w-xl justify-end">
           <SmartSearchBox value={searchQuery} onChange={setSearchQuery} onSearch={() => setAppliedSearch(searchQuery)} className="w-full lg:max-w-md" />
-          <StandardPrimaryButton onClick={handleCreate} icon={<Plus size={18} />}>Initialize Audit</StandardPrimaryButton>
+          <StandardPrimaryButton onClick={handleCreate} icon={<Plus size={18} />}>CREATE</StandardPrimaryButton>
         </div>
       </div>
 
