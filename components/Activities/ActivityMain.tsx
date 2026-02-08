@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 // @ts-ignore
 import { useNavigate, useLocation, Routes, Route } from 'react-router-dom';
@@ -12,35 +11,22 @@ import {
   Calendar, 
   MapPin, 
   User, 
-  Award,
+  Award, 
   ChevronRight,
-  Sparkles,
   ClipboardCheck,
   Check,
-  LayoutGrid,
   List as ListIcon,
   X as XIcon
 } from 'lucide-react';
 import { SmartSearchBox } from '../Common/SearchComponents';
-import { 
-  StandardTableContainer, 
-  StandardTableWrapper, 
-  StandardTh, 
-  StandardTr, 
-  StandardTd, 
-  StandardTableFooter,
-  StandardCheckbox,
-  StandardGridContainer,
-  StandardItemCard,
-  ElegantTooltip
-} from '../Common/TableComponents';
 import { 
   StandardPrimaryButton, 
   StandardQuickAccessBar, 
   StandardQuickActionButton,
   StandardFilterButton
 } from '../Common/ButtonComponents';
-import { CardGridSkeleton, TableSkeletonRows } from '../Common/LoadingComponents';
+import { StandardTableFooter } from '../Common/TableComponents';
+import { CardGridSkeleton } from '../Common/LoadingComponents';
 import { useAsyncWorkflow } from '../../hooks/useAsyncWorkflow';
 import { useOptimisticUpdate } from '../../hooks/useOptimisticUpdate';
 import { showXeenapsDeleteConfirm } from '../../utils/confirmUtils';
@@ -96,52 +82,32 @@ const ActivityDashboard: React.FC = () => {
     loadData();
   }, [loadData]);
 
-  const handleNewActivity = async () => {
-    const { value: name } = await Swal.fire({
-      title: 'NEW ACTIVITY',
-      input: 'text',
-      inputLabel: 'Event or Activity Name',
-      inputPlaceholder: 'e.g., International Seminar on AI...',
-      showCancelButton: true,
-      confirmButtonText: 'INITIALIZE',
-      ...XEENAPS_SWAL_CONFIG,
-      inputValidator: (value) => {
-        if (!value) return 'Name is mandatory!';
-        return null;
-      }
-    });
+  const handleNewActivity = () => {
+    const id = crypto.randomUUID();
+    const newItem: ActivityItem = {
+      id,
+      eventName: '', // Empty draft
+      organizer: '',
+      location: '',
+      type: ActivityType.SEMINAR,
+      level: 'Local' as any,
+      role: 'Participant' as any,
+      startDate: new Date().toISOString().substring(0, 10),
+      endDate: new Date().toISOString().substring(0, 10),
+      description: '',
+      notes: '',
+      certificateNumber: '',
+      credit: '',
+      link: '',
+      isFavorite: false,
+      vaultJsonId: '',
+      storageNodeUrl: '',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
 
-    if (name) {
-      const id = crypto.randomUUID();
-      const newItem: ActivityItem = {
-        id,
-        eventName: name,
-        organizer: '',
-        location: '',
-        type: ActivityType.SEMINAR,
-        level: 'Local' as any,
-        role: 'Participant' as any,
-        startDate: new Date().toISOString().substring(0, 10),
-        endDate: new Date().toISOString().substring(0, 10),
-        description: '',
-        notes: '',
-        certificateNumber: '',
-        credit: '',
-        link: '',
-        isFavorite: false,
-        vaultJsonId: '',
-        storageNodeUrl: '',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      };
-
-      const success = await saveActivity(newItem);
-      if (success) {
-        navigate(`/activities/${id}`);
-      } else {
-        showXeenapsToast('error', 'Failed to create activity');
-      }
-    }
+    // INSTANT NAVIGATION: Optimistic creation
+    navigate(`/activities/${id}`, { state: { item: newItem, isNew: true } });
   };
 
   const handleToggleFavorite = async (e: React.MouseEvent, item: ActivityItem) => {

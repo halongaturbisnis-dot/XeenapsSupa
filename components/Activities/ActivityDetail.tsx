@@ -19,8 +19,10 @@ import {
   CheckCircle2,
   Link as LinkIcon,
   Eye,
-  RefreshCcw
+  RefreshCcw,
+  Save
 } from 'lucide-react';
+import { ArrowPathIcon } from '@heroicons/react/24/outline';
 import { 
   FormPageContainer, 
   FormStickyHeader, 
@@ -30,6 +32,9 @@ import {
 } from '../Common/FormComponents';
 import { showXeenapsToast } from '../../utils/toastUtils';
 import { showXeenapsDeleteConfirm } from '../../utils/confirmUtils';
+import { GlobalSavingOverlay } from '../Common/LoadingComponents';
+import Swal from 'sweetalert2';
+import { XEENAPS_SWAL_CONFIG } from '../../utils/swalUtils';
 
 /**
  * Rich Text Summary Editor (Identical to LibraryForm AbstractEditor)
@@ -97,7 +102,10 @@ const ActivityDetail: React.FC = () => {
   const [isUploading, setIsUploading] = useState(false);
   const [optimisticCertPreview, setOptimisticCertPreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  
+  // State Management for Manual Save
+  const [isDirty, setIsDirty] = useState(() => (location.state as any)?.isNew || false);
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -118,16 +126,51 @@ const ActivityDetail: React.FC = () => {
     load();
   }, [id, location.state, navigate]);
 
-  // Background Auto-save Logic
+  // Prevent accidental browser closure
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (isDirty) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [isDirty]);
+
+  // Sync Global Dirty Flag for Sidebar Interception
+  useEffect(() => {
+    (window as any).xeenapsIsDirty = isDirty;
+    return () => {
+      (window as any).xeenapsIsDirty = false;
+    };
+  }, [isDirty]);
+
+  // Manual Field Change Handler (No Auto-Save)
   const handleFieldChange = (field: keyof ActivityItem, val: any) => {
     if (!item) return;
     const updated = { ...item, [field]: val, updatedAt: new Date().toISOString() };
     setItem(updated);
+    setIsDirty(true);
+  };
 
-    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
-    saveTimeoutRef.current = setTimeout(async () => {
-      await saveActivity(updated);
-    }, 1500);
+  const handleSaveChanges = async () => {
+    if (!item) return;
+    setIsSaving(true);
+    
+    try {
+      const success = await saveActivity({ ...item, updatedAt: new Date().toISOString() });
+      if (success) {
+        setIsDirty(false);
+        showXeenapsToast('success', 'Activity saved successfully');
+      } else {
+        showXeenapsToast('error', 'Failed to save activity');
+      }
+    } catch (e) {
+      showXeenapsToast('error', 'Connection error');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleDelete = async () => {
@@ -163,7 +206,7 @@ const ActivityDetail: React.FC = () => {
 
     const result = await uploadVaultFile(file);
     if (result) {
-      // 2. FORCE SYNC: Update state and save immediately to Registry
+      // 2. FORCE SYNC: Update state and save immediately to Registry (Exceptions for file uploads)
       const updatedItem = { 
         ...item, 
         certificateFileId: result.fileId, 
@@ -172,7 +215,8 @@ const ActivityDetail: React.FC = () => {
       };
       
       setItem(updatedItem);
-      await saveActivity(updatedItem); // Immediate Cloud Sync
+      // For file uploads, we generally want to persist metadata immediately to link the file
+      await saveActivity(updatedItem); 
       
       // 3. PERMANENT DELETION OF OLD CERTIFICATE
       if (oldFileId && oldNodeUrl) {
@@ -215,6 +259,25 @@ const ActivityDetail: React.FC = () => {
     showXeenapsToast('success', 'Certificate cleared');
   };
 
+  const handleSafeBack = async () => {
+    if (isDirty) {
+      const result = await Swal.fire({
+        ...XEENAPS_SWAL_CONFIG,
+        title: 'Unsaved Changes',
+        text: 'Anda memiliki perubahan yang belum disimpan. Yakin ingin keluar?',
+        showCancelButton: true,
+        confirmButtonText: 'Discard & Leave',
+        cancelButtonText: 'Cancel',
+        confirmButtonColor: '#ef4444'
+      });
+      if (result.isConfirmed) {
+        navigate('/activities');
+      }
+    } else {
+      navigate('/activities');
+    }
+  };
+
   if (isLoading) return <div className="p-20 text-center animate-pulse font-black text-[#004A74] uppercase tracking-widest">Loading Portfolio...</div>;
   if (!item) return null;
 
@@ -223,33 +286,64 @@ const ActivityDetail: React.FC = () => {
 
   return (
     <FormPageContainer>
+      
+      {/* SAVING OVERLAY */}
+      <GlobalSavingOverlay isVisible={isSaving} />
+
       <FormStickyHeader 
         title="Activity Detail" 
         subtitle="Manage your academic portfolio" 
-        onBack={() => navigate('/activities')} 
+        onBack={handleSafeBack} 
         rightElement={
           <div className="flex items-center gap-2">
-            <button 
-              onClick={() => handleFieldChange('isFavorite', !item.isFavorite)}
-              className={`p-2.5 rounded-xl border transition-all shadow-sm active:scale-90 ${item.isFavorite ? 'bg-yellow-50 border-yellow-200 text-[#FED400]' : 'bg-white border-gray-100 text-gray-300 hover:text-[#FED400]'}`}
-              title="Favorite"
-            >
-              <Star size={18} className={item.isFavorite ? "fill-[#FED400]" : ""} />
-            </button>
-            <button 
-              onClick={() => navigate(`/activities/${item.id}/vault`, { state: { item } })}
-              className="p-2.5 bg-white border border-gray-100 text-[#004A74] hover:bg-blue-50 rounded-xl transition-all shadow-sm active:scale-90"
-              title="Documentation Gallery"
-            >
-              <FolderOpen size={18} />
-            </button>
-            <button 
-              onClick={handleDelete}
-              className="p-2.5 bg-white border border-gray-100 text-red-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all shadow-sm active:scale-90"
-              title="Delete"
-            >
-              <Trash2 size={18} />
-            </button>
+            {isDirty ? (
+              <button 
+                onClick={handleSaveChanges}
+                disabled={isSaving}
+                className={`flex items-center gap-2 px-6 py-3 bg-[#004A74] text-[#FED400] rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg transition-all animate-in zoom-in-95 ${isSaving ? 'opacity-70 cursor-not-allowed' : 'hover:scale-105 active:scale-95'}`}
+              >
+                {isSaving ? (
+                  <>
+                    <ArrowPathIcon className="w-4 h-4 animate-spin" /> Saving...
+                  </>
+                ) : (
+                  <>
+                    <Save size={16} /> Save Changes
+                  </>
+                )}
+              </button>
+            ) : (
+              <>
+                <button 
+                  onClick={() => {
+                     const newVal = !item.isFavorite;
+                     const updated = { ...item, isFavorite: newVal };
+                     setItem(updated);
+                     // For favorite toggle, we can auto-save silently or mark dirty. 
+                     // To be consistent with "Manual Save" request, mark dirty.
+                     setIsDirty(true);
+                  }}
+                  className={`p-2.5 rounded-xl border transition-all shadow-sm active:scale-90 ${item.isFavorite ? 'bg-yellow-50 border-yellow-200 text-[#FED400]' : 'bg-white border-gray-100 text-gray-300 hover:text-[#FED400]'}`}
+                  title="Favorite"
+                >
+                  <Star size={18} className={item.isFavorite ? "fill-[#FED400]" : ""} />
+                </button>
+                <button 
+                  onClick={() => navigate(`/activities/${item.id}/vault`, { state: { item } })}
+                  className="p-2.5 bg-white border border-gray-100 text-[#004A74] hover:bg-blue-50 rounded-xl transition-all shadow-sm active:scale-90"
+                  title="Documentation Gallery"
+                >
+                  <FolderOpen size={18} />
+                </button>
+                <button 
+                  onClick={handleDelete}
+                  className="p-2.5 bg-white border border-gray-100 text-red-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all shadow-sm active:scale-90"
+                  title="Delete"
+                >
+                  <Trash2 size={18} />
+                </button>
+              </>
+            )}
           </div>
         }
       />
