@@ -2,6 +2,7 @@ import { QuestionItem, BloomsLevel, GASResponse } from '../types';
 import { GAS_WEB_APP_URL } from '../constants';
 import { 
   fetchQuestionsFromSupabase, 
+  fetchQuestionsByIds as fetchByIdsSupabase,
   upsertQuestionToSupabase, 
   deleteQuestionFromSupabase 
 } from './QuestionSupabaseService';
@@ -37,6 +38,13 @@ export const fetchAllQuestionsPaginated = async (
   signal?: AbortSignal
 ): Promise<{ items: QuestionItem[], totalCount: number }> => {
   return await fetchQuestionsFromSupabase(page, limit, search, "", bloomFilter, startDate, endDate, sortKey, sortDir);
+};
+
+/**
+ * Fetch specific questions by IDs
+ */
+export const fetchQuestionsByIds = async (ids: string[]): Promise<QuestionItem[]> => {
+  return await fetchByIdsSupabase(ids);
 };
 
 /**

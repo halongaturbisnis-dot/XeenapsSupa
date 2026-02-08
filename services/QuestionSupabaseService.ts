@@ -62,6 +62,23 @@ export const fetchQuestionsFromSupabase = async (
   };
 };
 
+export const fetchQuestionsByIds = async (ids: string[]): Promise<QuestionItem[]> => {
+  const client = getSupabase();
+  if (!client || ids.length === 0) return [];
+
+  const { data, error } = await client
+    .from('questions')
+    .select('*')
+    .in('id', ids);
+
+  if (error) {
+    console.error("Supabase Questions By IDs Fetch Error:", error);
+    return [];
+  }
+
+  return data || [];
+};
+
 export const upsertQuestionToSupabase = async (item: QuestionItem): Promise<boolean> => {
   const client = getSupabase();
   if (!client) return false;

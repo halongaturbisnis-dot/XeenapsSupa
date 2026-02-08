@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 // @ts-ignore
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { QuestionItem, TeachingItem, BloomsLevel, LibraryItem } from '../../types';
-import { fetchAllQuestionsPaginated } from '../../services/QuestionService';
+import { fetchQuestionsByIds } from '../../services/QuestionService';
 import { fetchTeachingPaginated } from '../../services/TeachingService';
 import { fetchLibraryFromSupabase } from '../../services/LibrarySupabaseService';
 import { 
@@ -33,6 +33,7 @@ const AttachedQuestion: React.FC = () => {
   const location = useLocation();
   const workflow = useAsyncWorkflow(30000);
 
+  // Initialize with state if available to prevent layout shift
   const [teaching, setTeaching] = useState<TeachingItem | null>((location.state as any)?.item || null);
   const [questions, setQuestions] = useState<QuestionItem[]>([]);
   const [libraryItems, setLibraryItems] = useState<LibraryItem[]>([]);
@@ -43,40 +44,46 @@ const AttachedQuestion: React.FC = () => {
 
   const bloomFilters = ['All', ...Object.values(BloomsLevel)];
 
+  // Separate non-critical library load
+  useEffect(() => {
+    fetchLibraryFromSupabase().then(setLibraryItems).catch(console.error);
+  }, []);
+
   const loadData = useCallback(() => {
     workflow.execute(
       async (signal) => {
         setIsLoading(true);
         
-        // 1. Fetch Teaching Session if missing
+        // 1. Resolve Teaching Session
         let session = teaching;
         if (!session && sessionId) {
-          // fetchTeachingPaginated now points to Supabase via service update
           const res = await fetchTeachingPaginated(1, 1000, "", "", "", signal);
           session = res.items.find(i => i.id === sessionId) || null;
-          setTeaching(session);
+          if (session) setTeaching(session);
         }
 
-        // 2. Fetch Library Items to resolve root sources
-        const libs = await fetchLibraryFromSupabase();
-        setLibraryItems(libs);
-
-        if (!session || !Array.isArray(session.questionBankId) || session.questionBankId.length === 0) {
-          setQuestions([]);
+        if (!session) {
+          // Session not found
           setIsLoading(false);
           return;
         }
 
-        // 3. Fetch All Questions to filter (Supabase)
-        const qRes = await fetchAllQuestionsPaginated(1, 1000, "", "", "", "All", "createdAt", "desc", signal);
-        const attachedIds = session.questionBankId.map(q => q.id);
-        const filtered = qRes.items.filter(q => attachedIds.includes(q.id));
-        setQuestions(filtered);
+        // 2. Fetch Attached Questions Directly by IDs
+        if (Array.isArray(session.questionBankId) && session.questionBankId.length > 0) {
+          const attachedIds = session.questionBankId.map(q => q.id);
+          const fetchedQuestions = await fetchQuestionsByIds(attachedIds);
+          setQuestions(fetchedQuestions);
+        } else {
+          setQuestions([]);
+        }
       },
       () => setIsLoading(false),
-      () => setIsLoading(false)
+      (err) => {
+        console.error("Attached Questions Load Error:", err);
+        setIsLoading(false);
+      }
     );
-  }, [sessionId, teaching, workflow]);
+  }, [sessionId, workflow]); // Removed 'teaching' from dependency to prevent loop
 
   useEffect(() => {
     loadData();
