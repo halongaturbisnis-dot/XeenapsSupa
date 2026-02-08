@@ -1,5 +1,6 @@
 import { UserProfile, EducationEntry, CareerEntry, GASResponse } from '../types';
 import { GAS_WEB_APP_URL } from '../constants';
+import { fetchProfileFromSupabase } from './ProfileSupabaseService';
 
 /**
  * XEENAPS PROFILE SERVICE
@@ -19,9 +20,10 @@ export const fetchUserProfile = async (): Promise<UserProfile | null> => {
 
 /**
  * NEW: Get profile name stripped of all academic titles (Prefixes & Suffixes)
+ * Updated to use Supabase for faster and reliable fetching
  */
 export const getCleanedProfileName = async (): Promise<string> => {
-  const profile = await fetchUserProfile();
+  const profile = await fetchProfileFromSupabase();
   if (!profile || !profile.fullName) return "Xeenaps User";
   
   // 1. Remove Suffixes (Everything after the first comma is considered a degree/title)

@@ -4,21 +4,22 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { PublicationItem, PublicationStatus } from '../../../types';
 import { savePublication, fetchPublicationsPaginated, deletePublication } from '../../../services/PublicationService';
+import { getCleanedProfileName } from '../../../services/ProfileService';
 import { 
   ArrowLeft, 
   ExternalLink, 
   BookOpen, 
   Target, 
-  Layers,
-  FileText,
-  Link as LinkIcon,
-  Globe,
-  Loader2,
-  Tag,
-  Share2,
-  Star,
-  Trash2,
-  Save
+  Layers, 
+  FileText, 
+  Link as LinkIcon, 
+  Globe, 
+  Loader2, 
+  Tag, 
+  Share2, 
+  Star, 
+  Trash2, 
+  Save 
 } from 'lucide-react';
 import { ArrowPathIcon } from '@heroicons/react/24/outline';
 import { showXeenapsToast } from '../../../utils/toastUtils';
@@ -54,6 +55,26 @@ const PublicationDetail: React.FC = () => {
     };
     load();
   }, [id, item, navigate]);
+
+  // LAZY FETCH FOR NEW DRAFTS: Get Profile Name from Supabase if empty
+  useEffect(() => {
+    const initializeAuthor = async () => {
+      const isNewDraft = (location.state as any)?.isNew;
+      if (isNewDraft && item && (!item.authors || item.authors.length === 0)) {
+        try {
+          const name = await getCleanedProfileName();
+          if (name) {
+            setItem(prev => prev ? { ...prev, authors: [name] } : null);
+            // Intentionally not setting isDirty true here to avoid blocking immediate exit if user did nothing else,
+            // but effectively it will be part of the first save.
+          }
+        } catch (e) {
+          console.error("Failed to lazy load profile name", e);
+        }
+      }
+    };
+    initializeAuthor();
+  }, []);
 
   // Prevent accidental browser closure
   useEffect(() => {

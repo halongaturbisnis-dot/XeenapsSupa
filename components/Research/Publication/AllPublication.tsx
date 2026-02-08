@@ -3,7 +3,6 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PublicationItem, PublicationStatus } from '../../../types';
 import { fetchPublicationsPaginated, deletePublication, savePublication } from '../../../services/PublicationService';
-import { getCleanedProfileName } from '../../../services/ProfileService';
 import { 
   Plus, 
   Trash2, 
@@ -94,14 +93,13 @@ const AllPublication: React.FC = () => {
   }, [loadData]);
 
   const handleNewPublication = async () => {
-    // Fetch Cleaned Profile Name for dynamic initialization
-    const cleanedAuthorName = await getCleanedProfileName();
+    // INSTANT NAVIGATION: Fetching profile moved to PublicationDetail (Lazy Fetch)
     
     const id = crypto.randomUUID();
     const newItem: PublicationItem = {
       id,
       title: '', // Empty title for draft
-      authors: [cleanedAuthorName],
+      authors: [], // Initialize empty, fetch in Detail
       type: 'Journal',
       status: PublicationStatus.DRAFT,
       publisherName: '',
