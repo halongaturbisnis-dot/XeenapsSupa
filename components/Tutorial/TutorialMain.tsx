@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { TutorialItem } from '../../types';
 import { fetchTutorials } from '../../services/TutorialService';
 import { 
-  PlayCircle, 
   Youtube, 
   ChevronDown, 
   ChevronUp, 
@@ -69,35 +68,35 @@ const TutorialMain: React.FC = () => {
              <p className="text-sm font-black uppercase tracking-[0.4em]">Tutorials coming soon</p>
           </div>
         ) : (
-          <div className="space-y-6 max-w-4xl mx-auto">
+          <div className="space-y-4 max-w-4xl mx-auto">
              {Object.entries(groupedTutorials).map(([category, items]) => (
-               <div key={category} className="bg-white border border-gray-100 rounded-[2rem] overflow-hidden shadow-sm hover:shadow-md transition-all">
+               <div key={category} className="bg-white border border-gray-100 rounded-[1.5rem] overflow-hidden shadow-sm hover:shadow-md transition-all">
                   <button 
                     onClick={() => toggleCategory(category)}
-                    className="w-full flex items-center justify-between p-6 bg-gray-50/50 hover:bg-gray-100/50 transition-colors"
+                    className="w-full flex items-center justify-between p-4 bg-gray-50/50 hover:bg-gray-100/50 transition-colors"
                   >
-                     <h3 className="text-sm font-black text-[#004A74] uppercase tracking-widest flex items-center gap-3">
-                        <span className="w-2 h-8 bg-[#004A74] rounded-full" />
+                     <h3 className="text-xs font-black text-[#004A74] tracking-wide flex items-center gap-3">
+                        <span className="w-1.5 h-6 bg-[#004A74] rounded-full" />
                         {category}
                      </h3>
-                     <div className="p-2 bg-white rounded-xl text-[#004A74] shadow-sm">
-                        {openCategories[category] ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+                     <div className="p-1.5 bg-white rounded-lg text-[#004A74] shadow-sm">
+                        {openCategories[category] ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                      </div>
                   </button>
                   
                   {openCategories[category] && (
-                    <div className="p-4 space-y-2 bg-white">
+                    <div className="p-3 space-y-1 bg-white">
                        {items.map(item => (
                          <div 
                            key={item.id}
                            onClick={() => handleOpenLink(item.link)}
-                           className="group flex items-center gap-4 p-4 rounded-2xl border border-transparent hover:border-gray-100 hover:bg-[#004A74]/5 cursor-pointer transition-all"
+                           className="group flex items-center gap-3 p-3 rounded-xl border border-transparent hover:border-gray-100 hover:bg-[#004A74]/5 cursor-pointer transition-all"
                          >
-                            <div className="w-10 h-10 bg-white border border-gray-100 rounded-xl flex items-center justify-center text-[#FED400] group-hover:bg-[#004A74] group-hover:text-white transition-all shadow-sm">
-                               <PlayCircle size={20} />
+                            <div className="w-8 h-8 bg-white border border-gray-100 rounded-lg flex items-center justify-center text-[#FED400] group-hover:bg-[#004A74] group-hover:text-white transition-all shadow-sm">
+                               <Youtube size={16} />
                             </div>
                             <div className="flex-1 min-w-0">
-                               <h4 className="text-xs font-bold text-[#004A74] uppercase tracking-wide group-hover:text-[#003859] transition-colors line-clamp-1">
+                               <h4 className="text-xs font-medium text-[#004A74] group-hover:text-[#003859] transition-colors line-clamp-2 leading-relaxed">
                                  {item.title}
                                </h4>
                             </div>
