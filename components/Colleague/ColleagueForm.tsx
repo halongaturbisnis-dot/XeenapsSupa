@@ -27,6 +27,7 @@ interface ColleagueFormProps {
 const ColleagueForm: React.FC<ColleagueFormProps> = ({ item, onClose, onComplete }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [formData, setFormData] = useState<ColleagueItem>(item || {
@@ -52,6 +53,12 @@ const ColleagueForm: React.FC<ColleagueFormProps> = ({ item, onClose, onComplete
     if (!file) return;
 
     setIsUploading(true);
+
+    // Instant Preview
+    const reader = new FileReader();
+    reader.onload = (e) => setPreviewUrl(e.target?.result as string);
+    reader.readAsDataURL(file);
+
     const result = await uploadColleaguePhoto(file);
     if (result) {
       setFormData({ 
@@ -60,16 +67,18 @@ const ColleagueForm: React.FC<ColleagueFormProps> = ({ item, onClose, onComplete
         photoFileId: result.fileId, 
         photoNodeUrl: result.nodeUrl 
       });
+      setPreviewUrl(null); // Clear preview, use confirmed URL
       showXeenapsToast('success', 'Profile photo updated');
     } else {
       showXeenapsToast('error', 'Upload failed');
+      setPreviewUrl(null); // Revert on failure
     }
     setIsUploading(false);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (isInvalid) return;
+    if (isInvalid || isUploading) return;
 
     setIsSubmitting(true);
     const success = await saveColleague({ 
@@ -109,8 +118,15 @@ const ColleagueForm: React.FC<ColleagueFormProps> = ({ item, onClose, onComplete
           {/* PHOTO UPLOAD AREA */}
           <div className="flex flex-col items-center space-y-4">
              <div className="relative group">
-                <div className="w-32 h-32 rounded-full p-1 border-4 border-[#FED400] bg-white shadow-xl overflow-hidden">
-                   <img src={formData.photoUrl || BRAND_ASSETS.USER_DEFAULT} className="w-full h-full object-cover rounded-full" alt="Avatar" />
+                <div className="w-32 h-32 rounded-full p-1 border-4 border-[#FED400] bg-white shadow-xl overflow-hidden relative">
+                   <img src={previewUrl || formData.photoUrl || BRAND_ASSETS.USER_DEFAULT} className="w-full h-full object-cover rounded-full" alt="Avatar" />
+                   
+                   {/* In-Frame Spinning Loader */}
+                   {isUploading && (
+                      <div className="absolute inset-0 bg-white/50 backdrop-blur-sm flex items-center justify-center z-10">
+                        <Loader2 size={32} className="text-[#004A74] animate-spin" />
+                      </div>
+                   )}
                 </div>
                 <button 
                   type="button"
@@ -118,7 +134,7 @@ const ColleagueForm: React.FC<ColleagueFormProps> = ({ item, onClose, onComplete
                   disabled={isUploading}
                   className="absolute bottom-1 right-1 p-2.5 bg-[#004A74] text-white rounded-full shadow-lg hover:scale-110 active:scale-95 transition-all disabled:opacity-50"
                 >
-                   {isUploading ? <Loader2 size={16} className="animate-spin" /> : <Camera size={16} />}
+                   <Camera size={16} />
                 </button>
                 <input type="file" ref={fileInputRef} onChange={handlePhotoUpload} accept="image/*" className="hidden" />
              </div>
@@ -204,20 +220,11 @@ const ColleagueForm: React.FC<ColleagueFormProps> = ({ item, onClose, onComplete
              </FormField>
           </div>
 
-          {isInvalid && (
-             <div className="flex items-center gap-3 p-4 bg-orange-50 border border-orange-100 rounded-2xl animate-in slide-in-from-top-2">
-                <AlertCircle className="text-orange-500 shrink-0" size={18} />
-                <p className="text-[10px] font-bold text-orange-700 uppercase tracking-widest leading-relaxed">
-                   Validation required: "Name" and "Unique App ID" must be filled to authorize cloud synchronization.
-                </p>
-             </div>
-          )}
-
           <div className="pt-6">
              <button 
                type="submit" 
-               disabled={isSubmitting || isInvalid}
-               className={`w-full py-5 bg-[#004A74] text-[#FED400] rounded-2xl font-black uppercase tracking-[0.2em] shadow-xl flex items-center justify-center gap-3 transition-all ${isSubmitting || isInvalid ? 'opacity-40 grayscale cursor-not-allowed' : 'hover:scale-[1.02] active:scale-95'}`}
+               disabled={isSubmitting || isInvalid || isUploading}
+               className={`w-full py-5 bg-[#004A74] text-[#FED400] rounded-2xl font-black uppercase tracking-[0.2em] shadow-xl flex items-center justify-center gap-3 transition-all ${isSubmitting || isInvalid || isUploading ? 'opacity-40 grayscale cursor-not-allowed' : 'hover:scale-[1.02] active:scale-95'}`}
              >
                 {isSubmitting ? <Loader2 size={20} className="animate-spin" /> : <Save size={20} />}
                 {isSubmitting ? 'SYCHRONIZING...' : 'AUTHORIZE & SYNC'}
