@@ -129,8 +129,14 @@ const TracerDetail: React.FC<{ libraryItems: LibraryItem[] }> = ({ libraryItems 
   // Fix: Added missing state variables to resolve "Cannot find name" errors
   const [sources, setSources] = useState<ResearchSource[]>([]);
   const [isSelectorOpen, setIsSelectorOpen] = useState(false);
+  
+  // STATE MANAGEMENT FOR OVERLAYS
   const [selectedSourceForDetail, setSelectedSourceForDetail] = useState<LibraryItem | null>(null);
   
+  // NAVIGATION MEMORY (Return Ticket)
+  // Holds the Reference Item to re-open after LibraryDetail is closed
+  const [returnToReferenceItem, setReturnToReferenceItem] = useState<any>(null);
+
   const [activeTab, setActiveTab] = useState<'identity' | 'todo' | 'log' | 'refs' | 'finance'>(
     (location.state as any)?.activeTab || 'identity'
   );
@@ -142,7 +148,7 @@ const TracerDetail: React.FC<{ libraryItems: LibraryItem[] }> = ({ libraryItems 
   const [isDirty, setIsDirty] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
-  // RE-OPEN STATE
+  // RE-OPEN STATE (Passed to Reference Tab)
   const [initialReopenRef, setInitialReopenRef] = useState<any>(null);
   
   // LOG MODAL STATE
@@ -404,8 +410,23 @@ const TracerDetail: React.FC<{ libraryItems: LibraryItem[] }> = ({ libraryItems 
     showXeenapsToast('success', 'Matrix segments updated.');
   };
 
-  const handleOpenLibraryFromRef = (lib: LibraryItem) => {
+  // UPDATED: Handle opening Library Detail. 
+  // Optionally receives 'referenceItem' to be saved as the return ticket.
+  const handleOpenLibraryFromRef = (lib: LibraryItem, referenceContext?: any) => {
     setSelectedSourceForDetail(lib);
+    if (referenceContext) {
+      setReturnToReferenceItem(referenceContext);
+    }
+  };
+  
+  // UPDATED: Handle Closing Library Detail
+  // Checks if there's a return ticket to re-open the reference modal.
+  const handleCloseLibraryDetail = () => {
+    setSelectedSourceForDetail(null);
+    if (returnToReferenceItem) {
+      setInitialReopenRef(returnToReferenceItem);
+      setReturnToReferenceItem(null); // Clear the ticket
+    }
   };
 
   const formatLogTime = (dateStr: string) => {
@@ -561,7 +582,7 @@ const TracerDetail: React.FC<{ libraryItems: LibraryItem[] }> = ({ libraryItems 
       {selectedSourceForDetail && (
         <LibraryDetailView 
           item={selectedSourceForDetail} 
-          onClose={() => setSelectedSourceForDetail(null)} 
+          onClose={handleCloseLibraryDetail} 
           isLoading={false}
           isLocalOverlay={true}
         />

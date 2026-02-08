@@ -23,7 +23,7 @@ interface ReferenceTabProps {
   setReferences: React.Dispatch<React.SetStateAction<TracerReference[]>>;
   onRefresh: () => Promise<void>;
   reopenedRef?: (LibraryItem & { refRow: TracerReference }) | null;
-  onOpenLibrary?: (item: LibraryItem) => void;
+  onOpenLibrary?: (item: LibraryItem, referenceContext: any) => void;
 }
 
 const ReferenceTab: React.FC<ReferenceTabProps> = ({ projectId, libraryItems, references, setReferences, onRefresh, reopenedRef, onOpenLibrary }) => {
@@ -114,7 +114,11 @@ const ReferenceTab: React.FC<ReferenceTabProps> = ({ projectId, libraryItems, re
           item={selectedRef} 
           refRow={selectedRef.refRow!} 
           onClose={() => setSelectedRef(null)}
-          onOpenLibrary={onOpenLibrary}
+          onOpenLibrary={(lib) => {
+            if (onOpenLibrary) {
+              onOpenLibrary(lib, selectedRef);
+            }
+          }}
         />
       )}
 
