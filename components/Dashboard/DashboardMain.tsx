@@ -8,7 +8,7 @@ import {
   Title, 
   Tooltip, 
   Legend, 
-  ArcElement,
+  ArcElement, 
   Filler 
 } from 'chart.js';
 import ChartDataLabels from 'chartjs-plugin-datalabels';
@@ -292,7 +292,7 @@ const DashboardMain: React.FC<DashboardMainProps> = ({
             <div className="relative z-10">
                <LibraryBig size={32} className="text-[#FED400] mb-4" />
                <p className="text-[10px] font-black uppercase tracking-[0.4em] opacity-60">Total Library Collection</p>
-               <h2 className="text-6xl font-black tracking-tighter mt-2">{libraryItems.length}</h2>
+               <h2 className="text-6xl font-black tracking-tighter mt-2 text-center">{libraryItems.length}</h2>
             </div>
             <button 
               onClick={() => navigate('/')}
