@@ -1,3 +1,4 @@
+
 export enum SourceType {
   LINK = 'LINK',
   FILE = 'FILE',
@@ -808,6 +809,23 @@ export interface ConsultationItem {
 export interface ConsultationAnswerContent {
   answer: string;
   reasoning?: string;
+}
+
+// --- COLLABORATION MODULE TYPES ---
+
+export interface CollaborationItem {
+  id: string; // derived from No
+  status: string;
+  category: string;
+  collaboratorName: string;
+  startDate: string;
+  duration: string;
+  endDate: string;
+  title: string;
+  campaign: string;
+  keyword: string;
+  images: string[];
+  ctaLink: string;
 }
 
 // --- TUTORIAL MODULE TYPES ---

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 // @ts-ignore - Resolving TS error for missing exported members
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
@@ -50,7 +51,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onMobileClose }) => {
 
   const navItemsBlock1 = [
     { name: 'Dashboard', path: '/dashboard', icon: LayoutGrid },
-    { name: 'Collaboration', path: '#', icon: Handshake, inactive: true },
+    { name: 'Collaboration', path: '/collaboration', icon: Handshake },
     { name: 'Library', path: '/', icon: LibraryBig },
     { name: 'Favorite', path: '/favorite', icon: Star },
     { name: 'Bookmark', path: '/bookmark', icon: Bookmark },
@@ -206,7 +207,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onMobileClose }) => {
       <nav className="flex-1 mt-4 lg:mt-6 px-2 space-y-1 lg:space-y-2 overflow-y-auto overflow-x-hidden custom-scrollbar">
         {/* Block 1: Items 1-5 */}
         {navItemsBlock1.map((item) => {
-          const isActive = location.pathname === item.path;
+          const isActive = location.pathname.startsWith(item.path) && (item.path !== '/' || location.pathname === '/');
 
           if ((item as any).inactive) {
             return (

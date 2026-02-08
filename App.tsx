@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 // @ts-ignore - Resolving TS error for missing exported members in some environments
 import { HashRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
@@ -35,6 +36,7 @@ const TracerMain = React.lazy(() => import('./components/Research/Tracer/TracerM
 const TracerDetail = React.lazy(() => import('./components/Research/Tracer/TracerDetail'));
 const SharboxMain = React.lazy(() => import('./components/Sharbox/SharboxMain'));
 const TutorialMain = React.lazy(() => import('./components/Tutorial/TutorialMain'));
+const CollaborationMain = React.lazy(() => import('./components/Collaboration/CollaborationMain'));
 
 import { BRAND_ASSETS } from './assets';
 import { GlobalAppLoader } from './components/Common/LoadingComponents';
@@ -315,6 +317,8 @@ const App: React.FC = () => {
                 <Route path="/colleagues/*" element={<ColleagueMain />} />
 
                 <Route path="/tutorial" element={<TutorialMain />} />
+                
+                <Route path="/collaboration/*" element={<CollaborationMain />} />
                 
                 <Route path="/add" element={isLoading ? <GlobalAppLoader /> : <LibraryForm onComplete={loadData} items={items} />} />
                 <Route path="/edit/:id" element={isLoading ? <GlobalAppLoader /> : <LibraryEditForm onComplete={loadData} items={items} />} />
