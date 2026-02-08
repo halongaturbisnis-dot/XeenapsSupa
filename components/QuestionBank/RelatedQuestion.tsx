@@ -267,7 +267,6 @@ const RelatedQuestion: React.FC<RelatedQuestionProps> = ({ collection, onBack })
             </button>
             <div className="min-w-0">
               <h2 className="text-xl md:text-2xl font-black text-[#004A74] uppercase tracking-tight">Question Bank</h2>
-              <p className="text-[9px] md:text-[10px] font-bold text-gray-400 uppercase tracking-widest truncate max-w-[250px] md:max-w-md">Source: {collection.title}</p>
             </div>
           </div>
 
