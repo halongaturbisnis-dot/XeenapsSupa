@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { TracerFinanceItem, TracerFinanceContent, TracerFinanceAttachment } from '../../../../types';
 import { saveTracerFinance } from '../../../../services/TracerService';
 import { fetchFileContent } from '../../../../services/gasService';
@@ -42,11 +43,12 @@ const FinanceFormModal: React.FC<FinanceFormModalProps> = ({ projectId, item, cu
   // New state to track uploads in progress
   const [activeUploads, setActiveUploads] = useState(0);
 
-  // Helper to get strictly Local ISO String for NOW()
+  // Helper to get strictly Local ISO String for NOW() without Z timezone shift
   const getLocalNowISO = () => {
     const now = new Date();
     const offset = now.getTimezoneOffset() * 60000;
-    return new Date(now.getTime() - offset).toISOString();
+    // Slice off the 'Z' to treat as local time and prevent double-conversion in table view
+    return new Date(now.getTime() - offset).toISOString().slice(0, -1);
   };
 
   const [formData, setFormData] = useState<TracerFinanceItem>(item || {
@@ -184,7 +186,7 @@ const FinanceFormModal: React.FC<FinanceFormModalProps> = ({ projectId, item, cu
 
   const isViewOnly = !!item;
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-[1200] bg-black/60 backdrop-blur-xl flex items-center justify-center p-4 md:p-10 animate-in fade-in">
       <div className="bg-white rounded-[3.5rem] w-full max-w-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] border border-white/20">
         
@@ -303,7 +305,8 @@ const FinanceFormModal: React.FC<FinanceFormModalProps> = ({ projectId, item, cu
            <input type="file" ref={fileInputRef} onChange={handleFileSelect} className="hidden" />
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 
