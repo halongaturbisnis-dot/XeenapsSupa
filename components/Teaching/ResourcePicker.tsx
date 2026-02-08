@@ -150,7 +150,7 @@ const ResourcePicker: React.FC<ResourcePickerProps> = ({ type, onClose, onSelect
                onChange={setLocalSearch} 
                onSearch={handleSearch} 
                className="w-full"
-               phrases={["Search title...", "Search keywords...", "Search by collection source..."]}
+               phrases={["Search title...", "Search title..."]}
              />
           </div>
 

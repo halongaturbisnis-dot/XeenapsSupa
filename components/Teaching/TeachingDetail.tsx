@@ -517,7 +517,7 @@ const TeachingDetail: React.FC = () => {
                      Resource Attachments
                   </h4>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                     <div className="bg-white border border-gray-100 rounded-[2rem] p-5 shadow-sm flex flex-col min-h-[320px]">
+                     <div className="bg-[#004A74]/20 border border-gray-100 rounded-[2rem] p-5 shadow-sm flex flex-col min-h-[320px]">
                         <div className="flex items-center justify-between mb-4">
                            <span className="text-[9px] font-black uppercase tracking-widest text-gray-400 flex items-center gap-1.5"><BookOpen size={12} /> Library</span>
                            <button onClick={() => openPicker('LIBRARY')} className="p-1.5 bg-[#004A74]/5 text-[#004A74] rounded-lg hover:bg-[#004A74] hover:text-white transition-all"><Plus size={14} /></button>
@@ -537,7 +537,7 @@ const TeachingDetail: React.FC = () => {
                         </div>
                      </div>
 
-                     <div className="bg-white border border-gray-100 rounded-[2rem] p-5 shadow-sm flex flex-col min-h-[320px]">
+                     <div className="bg-[#004A74]/20 border border-gray-100 rounded-[2rem] p-5 shadow-sm flex flex-col min-h-[320px]">
                         <div className="flex items-center justify-between mb-4">
                            <span className="text-[9px] font-black uppercase tracking-widest text-gray-400 flex items-center gap-1.5"><Presentation size={12} /> Slides</span>
                            <button onClick={() => openPicker('PRESENTATION')} className="p-1.5 bg-[#004A74]/5 text-[#004A74] rounded-lg hover:bg-[#004A74] hover:text-white transition-all"><Plus size={14} /></button>
@@ -568,7 +568,7 @@ const TeachingDetail: React.FC = () => {
                         </div>
                      </div>
 
-                     <div className="bg-white border border-gray-100 rounded-[2rem] p-5 shadow-sm flex flex-col min-h-[320px]">
+                     <div className="bg-[#004A74]/20 border border-gray-100 rounded-[2rem] p-5 shadow-sm flex flex-col min-h-[320px]">
                         <div className="flex items-center justify-between mb-4">
                            <span className="text-[9px] font-black uppercase tracking-widest text-gray-400 flex items-center gap-1.5"><GraduationCap size={12} /> Questions</span>
                            <div className="flex items-center gap-1.5">
@@ -598,7 +598,7 @@ const TeachingDetail: React.FC = () => {
                         </div>
                      </div>
 
-                     <div className="bg-white border border-gray-100 rounded-[2rem] p-5 shadow-sm flex flex-col min-h-[320px]">
+                     <div className="bg-[#004A74]/20 border border-gray-100 rounded-[2rem] p-5 shadow-sm flex flex-col min-h-[320px]">
                         <div className="flex items-center justify-between mb-4">
                            <span className="text-[9px] font-black uppercase tracking-widest text-gray-400 flex items-center gap-1.5"><LinkIcon size={12} /> External</span>
                            <button onClick={handleAddExternalLink} className="p-1.5 bg-[#004A74]/5 text-[#004A74] rounded-lg hover:bg-[#004A74] hover:text-white transition-all"><Plus size={14} /></button>

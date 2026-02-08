@@ -17,6 +17,10 @@ import {
   ChatBubbleBottomCenterTextIcon,
   ShareIcon
 } from '@heroicons/react/24/outline';
+import { 
+  LibraryBig,
+  SendHorizontal, 
+} from 'lucide-react';
 import { SmartSearchBox } from '../Common/SearchComponents';
 import { CardGridSkeleton } from '../Common/LoadingComponents';
 import { showXeenapsToast } from '../../utils/toastUtils';
@@ -144,7 +148,7 @@ const SharboxMain: React.FC = () => {
               <InboxIcon className="w-6 h-6" />
            </div>
            <div>
-              <h2 className="text-xl md:text-2xl font-black text-[#004A74] uppercase tracking-tight">Sharbox</h2>
+              <h2 className="text-xl md:text-2xl font-black text-[#004A74] uppercase tracking-tight">Sharebox</h2>
               <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">Cross-User Knowledge Hub</p>
            </div>
         </div>
@@ -161,7 +165,7 @@ const SharboxMain: React.FC = () => {
             onClick={() => setActiveTab('Sent')} 
             className={`flex items-center gap-2 px-6 py-2.5 rounded-xl transition-all ${activeTab === 'Sent' ? 'bg-[#004A74] text-white shadow-md' : 'text-gray-400 hover:text-[#004A74]'}`}
           >
-            <PaperAirplaneIcon className="w-4 h-4" />
+            <SendHorizontal className="w-4 h-4" />
             <span className="text-[10px] font-black uppercase tracking-widest">Sent</span>
           </button>
         </div>
@@ -181,7 +185,7 @@ const SharboxMain: React.FC = () => {
             onClick={() => setIsWorkflowOpen(true)}
             className="flex items-center justify-center gap-3 px-8 py-3.5 bg-[#FED400] text-[#004A74] rounded-2xl font-black uppercase tracking-widest text-[11px] shadow-xl hover:scale-105 transition-all w-full md:w-auto"
           >
-            <ShareIcon className="w-4 h-4 stroke-[3]" /> Share New Knowledge
+            <ShareIcon className="w-4 h-4 stroke-[3]" /> Share Collection
           </button>
         )}
       </div>
