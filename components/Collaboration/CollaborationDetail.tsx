@@ -7,9 +7,6 @@ import {
   ChevronLeftIcon, 
   ChevronRightIcon, 
   ArrowTopRightOnSquareIcon,
-  MapPinIcon,
-  TagIcon,
-  CalendarIcon,
   UserIcon,
   ArrowsPointingOutIcon,
   XCircleIcon
@@ -68,7 +65,7 @@ const CollaborationDetail: React.FC<CollaborationDetailProps> = ({ items, curren
          <div className="fixed inset-0 z-[2100] bg-black flex flex-col items-center justify-center">
             <button 
               onClick={() => setIsFullscreen(false)} 
-              className="absolute top-6 right-6 p-2 bg-white/10 text-white rounded-full hover:bg-white/20 transition-all"
+              className="absolute top-6 right-6 p-2 bg-white/10 text-white rounded-full hover:bg-white/20 transition-all z-50"
             >
                <XCircleIcon className="w-8 h-8" />
             </button>
@@ -145,66 +142,34 @@ const CollaborationDetail: React.FC<CollaborationDetailProps> = ({ items, curren
                <XMarkIcon className="w-8 h-8" />
             </button>
 
-            <div className="flex-1 overflow-y-auto custom-scrollbar p-6 md:p-10 space-y-8">
+            <div className="flex-1 overflow-y-auto custom-scrollbar p-6 md:p-10 space-y-6">
                
-               {/* Header Info */}
-               <div className="space-y-4">
-                  <div className="flex items-center gap-3">
-                     <span className="px-3 py-1 bg-[#004A74] text-white text-[9px] font-black uppercase tracking-widest rounded-full shadow-md">
-                        {item.category}
-                     </span>
-                     <span className="px-3 py-1 bg-[#FED400]/20 text-[#004A74] text-[9px] font-black uppercase tracking-widest rounded-full border border-[#FED400]/30">
-                        {item.status}
-                     </span>
-                  </div>
-                  
-                  <h2 className="text-2xl md:text-3xl font-black text-[#004A74] uppercase leading-tight tracking-tight">
-                     {item.title}
-                  </h2>
+               {/* b. Title (Bold Text) */}
+               <h2 className="text-2xl md:text-3xl font-black text-[#004A74] uppercase leading-tight tracking-tight">
+                  {item.title}
+               </h2>
 
-                  <div className="flex items-center gap-3 py-3 border-y border-gray-50">
-                     <div className="flex items-center gap-2 text-gray-500">
-                        <UserIcon className="w-4 h-4" />
-                        <span className="text-xs font-bold uppercase tracking-wide">{item.collaboratorName}</span>
-                     </div>
-                  </div>
+               {/* d. CollaboratorName (Bold seperti Akun instagram) */}
+               <div className="flex items-center gap-2 text-gray-800">
+                  <UserIcon className="w-5 h-5 text-[#004A74]" />
+                  <span className="text-sm font-bold">{item.collaboratorName}</span>
                </div>
 
-               {/* Meta Details */}
-               <div className="grid grid-cols-2 gap-6">
-                  <div className="space-y-1">
-                     <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-1.5"><TagIcon className="w-3 h-3" /> Campaign</span>
-                     <p className="text-sm font-bold text-[#004A74]">{item.campaign}</p>
-                  </div>
-                  <div className="space-y-1">
-                     <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-1.5"><CalendarIcon className="w-3 h-3" /> Duration</span>
-                     <p className="text-sm font-bold text-[#004A74]">{item.duration}</p>
-                  </div>
+               {/* c. Campaign (Longtext seperti caption instagram) */}
+               <div className="text-sm text-gray-600 leading-relaxed font-medium whitespace-pre-wrap">
+                  {item.campaign}
                </div>
 
-               <div className="p-5 bg-gray-50 rounded-2xl border border-gray-100 space-y-3">
-                  <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest block">Keywords & Tags</span>
-                  <div className="flex flex-wrap gap-2">
-                     {item.keyword.split(',').map((k, i) => (
-                        <span key={i} className="px-2.5 py-1 bg-white border border-gray-200 rounded-lg text-[10px] font-bold text-[#004A74] uppercase tracking-wide shadow-sm">
-                           #{k.trim()}
-                        </span>
-                     ))}
-                  </div>
-               </div>
-
-               <div className="text-xs text-gray-400 font-medium italic">
-                  <p>Valid from: {item.startDate} until {item.endDate}</p>
-               </div>
             </div>
 
             {/* ACTION FOOTER */}
             <div className="p-6 md:p-8 border-t border-gray-100 bg-gray-50/50 flex flex-col gap-3 shrink-0">
+               {/* e. CTA Link (Tombol CTA redaksi "VISIT") */}
                <button 
                   onClick={() => window.open(item.ctaLink, '_blank')}
                   className="w-full py-4 bg-[#004A74] text-[#FED400] rounded-2xl font-black uppercase tracking-[0.2em] text-xs shadow-xl hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-3"
                >
-                  Visit Collaboration <ArrowTopRightOnSquareIcon className="w-4 h-4 stroke-[3]" />
+                  VISIT <ArrowTopRightOnSquareIcon className="w-4 h-4 stroke-[3]" />
                </button>
                
                {/* Mobile Navigation */}
