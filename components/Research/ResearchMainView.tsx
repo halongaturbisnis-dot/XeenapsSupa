@@ -95,7 +95,7 @@ const ResearchMainView: React.FC<ResearchMainViewProps> = () => {
       inputLabel: 'Project Name / Label',
       inputPlaceholder: 'e.g., Green Architecture Review 2024...',
       showCancelButton: true,
-      confirmButtonText: 'INITIALIZE',
+      confirmButtonText: 'CREATE',
       ...XEENAPS_SWAL_CONFIG,
       inputAttributes: {
         autocapitalize: 'off'
@@ -276,7 +276,7 @@ const ResearchMainView: React.FC<ResearchMainViewProps> = () => {
           phrases={["Search project name...", "Search research gaps..."]}
         />
         <AddButton onClick={handleNewAudit} icon={<PlusIcon size={20} />}>
-          Create
+          CREATE
         </AddButton>
       </div>
 

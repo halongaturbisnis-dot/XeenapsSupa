@@ -302,7 +302,7 @@ const LibraryMain: React.FC<LibraryMainProps> = ({ items, isLoading: isGlobalLoa
             value={localSearch} 
             onChange={setLocalSearch} 
             onSearch={handleSearchTrigger} />
-          <AddButton onClick={() => navigate('/add')} icon={<PlusIcon className="w-5 h-5" />}>Add Collection</AddButton>
+          <AddButton onClick={() => navigate('/add')} icon={<PlusIcon className="w-5 h-5" />}>ADD</AddButton>
         </div>
 
         <div className="flex items-center justify-between lg:justify-start gap-4 shrink-0 relative z-[30] mb-4">

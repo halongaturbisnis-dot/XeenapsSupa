@@ -214,7 +214,7 @@ const AllReview: React.FC = () => {
             className="w-full lg:max-w-md"
           />
           <StandardPrimaryButton onClick={handleNewReview} icon={<Plus size={20} />}>
-            Create
+            CREATE
           </StandardPrimaryButton>
         </div>
       </div>

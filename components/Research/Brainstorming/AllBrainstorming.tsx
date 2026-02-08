@@ -274,7 +274,7 @@ const AllBrainstorming: React.FC = () => {
           phrases={["Search label...", "Search research ideas...", "Search gap..."]}
         />
         <StandardPrimaryButton onClick={handleNewProject} icon={<PlusIcon size={20} />}>
-          Create
+          CREATE
         </StandardPrimaryButton>
       </div>
 

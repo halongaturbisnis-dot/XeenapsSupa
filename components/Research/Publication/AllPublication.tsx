@@ -237,7 +237,7 @@ const AllPublication: React.FC = () => {
           phrases={["Search publications...", "Search publishers...", "Search status..."]}
         />
         <StandardPrimaryButton onClick={handleNewPublication} icon={<Plus size={20} />}>
-          Register Publication
+          REGISTER
         </StandardPrimaryButton>
       </div>
 

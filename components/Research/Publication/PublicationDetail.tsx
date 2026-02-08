@@ -185,8 +185,8 @@ const PublicationDetail: React.FC = () => {
                <ArrowLeft size={18} />
             </button>
             <div className="min-w-0">
-               <h2 className="text-sm md:text-xl font-black text-[#004A74] uppercase tracking-tighter truncate">Publication Workspace</h2>
-               <p className="text-[8px] md:text-[9px] font-bold text-gray-400 uppercase tracking-widest mt-1 truncate">Output Management & Tracker</p>
+               <h2 className="text-sm md:text-xl font-black text-[#004A74] uppercase tracking-tighter truncate">Publication</h2>
+               <p className="text-[8px] md:text-[9px] font-bold text-gray-400 uppercase tracking-widest mt-1 truncate">Personal Publication Identity</p>
             </div>
          </div>
          <div className="flex items-center gap-1.5 md:gap-3 shrink-0">
@@ -236,7 +236,7 @@ const PublicationDetail: React.FC = () => {
               <div className="flex flex-col md:flex-row gap-6 md:items-start justify-between">
                  <div className="flex-1 space-y-4">
                     <label className="text-[9px] font-black uppercase tracking-[0.4em] text-gray-400 flex items-center gap-2">
-                       <FileText size={14} /> Full Manuscript Title
+                       <FileText size={14} />Title
                     </label>
                     <textarea 
                       ref={titleRef}
@@ -265,7 +265,7 @@ const PublicationDetail: React.FC = () => {
               {/* Left Column: Core Metadata */}
               <div className="space-y-8 bg-white p-8 md:p-10 rounded-[2.5rem] border border-gray-100 shadow-sm">
                  <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-[#004A74] flex items-center gap-2 mb-6">
-                    <Layers size={16} className="text-[#FED400]" /> Core Classification
+                    <Layers size={16} className="text-[#FED400]" />Classification
                  </h3>
                  
                  <div className="grid grid-cols-2 gap-6">
@@ -277,7 +277,7 @@ const PublicationDetail: React.FC = () => {
                          placeholder="Type"
                        />
                     </FormField>
-                    <FormField label="Target/Publisher Name">
+                    <FormField label="Publisher/Journal">
                        <input className="w-full bg-gray-50 border-none px-4 py-3 rounded-xl text-xs font-bold text-[#004A74]" 
                          value={item.publisherName || ''} onChange={(e) => handleManualChange({...item, publisherName: e.target.value})} />
                     </FormField>
@@ -301,7 +301,7 @@ const PublicationDetail: React.FC = () => {
                  </div>
 
                  <div className="grid grid-cols-2 gap-6">
-                    <FormField label="Indexing (Scopus/WoS)">
+                    <FormField label="Indexing">
                        <FormDropdown 
                          value={item.indexing || ''}
                          options={['Scopus', 'Web of Science', 'Sinta', 'Google Scholar', 'Others']}
@@ -309,7 +309,7 @@ const PublicationDetail: React.FC = () => {
                          placeholder="Indexing"
                        />
                     </FormField>
-                    <FormField label="Quartile (Q1-Q4)">
+                    <FormField label="Rank">
                        <FormDropdown 
                          value={item.quartile || ''}
                          options={['Q1', 'Q2', 'Q3', 'Q4', 'Non-Q']}
@@ -331,7 +331,7 @@ const PublicationDetail: React.FC = () => {
                     />
                  </FormField>
                  
-                 <FormField label="Manuscript / Source Link">
+                 <FormField label="Link">
                     <div className="relative group">
                        <LinkIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300 group-focus-within:text-[#004A74]" />
                        <input className="w-full bg-gray-50 border-none pl-12 pr-4 py-3 rounded-xl text-xs font-bold text-blue-500 underline outline-none focus:bg-white focus:ring-2 focus:ring-[#004A74]/10 transition-all" 
@@ -424,12 +424,6 @@ const PublicationDetail: React.FC = () => {
                  />
               </div>
            </div>
-
-           {/* Branded Footer */}
-           <footer className="pt-20 pb-10 space-y-3 opacity-20 text-center">
-              <Share2 size={48} className="mx-auto text-[#004A74]" />
-              <p className="text-[8px] font-black uppercase tracking-[0.8em] text-[#004A74]">XEENAPS PUBLICATION INFRASTRUCTURE</p>
-           </footer>
         </div>
       </div>
     </div>
