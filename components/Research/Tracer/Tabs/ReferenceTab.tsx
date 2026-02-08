@@ -1,13 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { LibraryItem, TracerReference } from '../../../../types';
 import { linkTracerReference, unlinkTracerReference } from '../../../../services/TracerService';
-import { fetchLibraryPaginated } from '../../../../services/gasService';
+import { fetchLibraryPaginatedFromSupabase } from '../../../../services/LibrarySupabaseService';
 import { 
   Plus, 
   Trash2, 
   ChevronRight, 
   Loader2, 
-  Quote,
   Library,
   BookOpen,
   Calendar
@@ -42,7 +41,8 @@ const ReferenceTab: React.FC<ReferenceTabProps> = ({ projectId, libraryItems, re
   const handleSearch = async () => {
     if (localSearch.length < 3) return;
     setIsSearching(true);
-    const result = await fetchLibraryPaginated(1, 10, localSearch, 'Literature', 'research');
+    // Updated to use Supabase fetcher
+    const result = await fetchLibraryPaginatedFromSupabase(1, 10, localSearch, 'Literature', 'research');
     setSearchResults(result.items);
     setIsSearching(false);
   };

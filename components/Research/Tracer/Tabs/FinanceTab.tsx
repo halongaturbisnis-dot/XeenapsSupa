@@ -11,12 +11,9 @@ import {
   Clock,
   Banknote,
   Eye,
-  Calendar,
-  Filter,
   Download,
   Loader2,
   FileText,
-  Table as TableIcon,
   ChevronDown
 } from 'lucide-react';
 import { SmartSearchBox } from '../../../Common/SearchComponents';
@@ -25,8 +22,7 @@ import {
   StandardTableWrapper, 
   StandardTh, 
   StandardTr, 
-  StandardTd,
-  StandardTableFooter
+  StandardTd
 } from '../../../Common/TableComponents';
 import { TableSkeletonRows } from '../../../Common/LoadingComponents';
 import { showXeenapsDeleteConfirm } from '../../../../utils/confirmUtils';

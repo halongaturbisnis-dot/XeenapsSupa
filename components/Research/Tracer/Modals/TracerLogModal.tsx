@@ -147,6 +147,7 @@ const TracerLogModal: React.FC<TracerLogModalProps> = ({ projectId, log, initial
 
       setContent(prev => ({ ...prev, attachments: [...(prev.attachments || []), placeholder] }));
 
+      // Use ActivityService uploader which handles GAS logic
       const uploadPromise = uploadVaultFile(file).then(result => {
         if (result) {
           const isImage = file.type.startsWith('image/');

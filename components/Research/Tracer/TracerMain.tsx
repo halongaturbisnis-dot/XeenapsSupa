@@ -149,7 +149,7 @@ const TracerMain: React.FC = () => {
     if (await showXeenapsDeleteConfirm(1)) {
       if (await deleteTracerProject(id)) {
         showXeenapsToast('success', 'Project purged');
-        loadData();
+        // Optimistic UI handled by global listener
       }
     }
   };

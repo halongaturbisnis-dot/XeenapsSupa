@@ -150,7 +150,7 @@ const TracerDetail: React.FC<{ libraryItems: LibraryItem[] }> = ({ libraryItems 
     
     try {
       const [resProjects, resLogs, resTodos, resRefs, cleanedName, resSources] = await Promise.all([
-        fetchTracerProjects(1, 1000),
+        fetchTracerProjects(1, 1000), // Updated service call returns { items, totalCount }
         fetchTracerLogs(id),
         fetchTracerTodos(id),
         fetchTracerReferences(id),
