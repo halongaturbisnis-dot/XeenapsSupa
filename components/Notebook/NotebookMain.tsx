@@ -250,7 +250,7 @@ const NotebookMain: React.FC<NotebookMainProps> = ({ libraryItems = [], collecti
            </div>
            
            <div className="text-[10px] font-black uppercase tracking-widest text-[#004A74]/60 px-4 whitespace-nowrap">
-             {totalCount} Note(s) Found
+             {totalCount} Notes Found
            </div>
         </div>
       </div>

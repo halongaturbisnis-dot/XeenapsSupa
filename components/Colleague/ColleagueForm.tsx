@@ -227,7 +227,7 @@ const ColleagueForm: React.FC<ColleagueFormProps> = ({ item, onClose, onComplete
                className={`w-full py-5 bg-[#004A74] text-[#FED400] rounded-2xl font-black uppercase tracking-[0.2em] shadow-xl flex items-center justify-center gap-3 transition-all ${isSubmitting || isInvalid || isUploading ? 'opacity-40 grayscale cursor-not-allowed' : 'hover:scale-[1.02] active:scale-95'}`}
              >
                 {isSubmitting ? <Loader2 size={20} className="animate-spin" /> : <Save size={20} />}
-                {isSubmitting ? 'SYCHRONIZING...' : 'AUTHORIZE & SYNC'}
+                {isSubmitting ? 'SAVING...' : 'SAVE'}
              </button>
           </div>
         </form>

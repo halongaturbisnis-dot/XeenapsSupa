@@ -229,7 +229,7 @@ const ConsultationGallery: React.FC<ConsultationGalleryProps> = ({ collection, o
             className="w-full lg:max-w-xl"
            />
            <div className="text-[10px] font-black uppercase tracking-widest text-[#004A74]/60 px-4">
-             {totalCount} Session(s) Stored
+             {totalCount} Sessions Stored
            </div>
         </div>
       </div>

@@ -183,7 +183,7 @@ const FinanceTab: React.FC<FinanceTabProps> = ({ projectId }) => {
 
   const handleExport = async () => {
     setIsExporting(true);
-    showXeenapsToast('info', `Synthesizing Premium Report...`);
+    showXeenapsToast('info', `Synthesizing Report...`);
     
     try {
       // Export call uses projectId, so backend logic (which fetches all items for project) is preserved.
@@ -279,7 +279,7 @@ const FinanceTab: React.FC<FinanceTabProps> = ({ projectId }) => {
               value={localSearch} 
               onChange={setLocalSearch} 
               onSearch={handleApplyFilters} 
-              phrases={["Search ledger narrative...", "Find specific transaction..."]}
+              phrases={["Find specific transaction...", "Find specific transaction..."]}
               className="w-full lg:max-w-md"
             />
             
