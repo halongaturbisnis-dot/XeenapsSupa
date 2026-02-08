@@ -284,8 +284,82 @@ const ActivityDetail: React.FC = () => {
     }
   };
 
-  if (isLoading) return <div className="p-20 text-center animate-pulse font-black text-[#004A74] uppercase tracking-widest">Loading Portfolio...</div>;
-  if (!item) return null;
+  // INLINE SKELETON REPLACEMENT
+  if (isLoading || !item) {
+    return (
+      <FormPageContainer>
+         {/* Skeleton Header */}
+         <div className="sticky top-0 z-30 bg-white/95 backdrop-blur-md px-6 md:px-10 py-6 border-b border-gray-50 shrink-0">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+               <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-xl bg-gray-100 animate-pulse" />
+                  <div className="space-y-2">
+                     <div className="h-6 w-48 bg-gray-100 rounded-lg animate-pulse" />
+                     <div className="h-3 w-32 bg-gray-100 rounded-lg animate-pulse" />
+                  </div>
+               </div>
+               <div className="flex gap-2">
+                  <div className="w-10 h-10 bg-gray-100 rounded-xl animate-pulse" />
+                  <div className="w-10 h-10 bg-gray-100 rounded-xl animate-pulse" />
+                  <div className="w-10 h-10 bg-gray-100 rounded-xl animate-pulse" />
+               </div>
+            </div>
+         </div>
+         
+         <FormContentArea>
+            <div className="space-y-12">
+               {/* Identity Skeleton */}
+               <div className="space-y-8">
+                  <div className="space-y-2">
+                     <div className="h-3 w-32 bg-gray-100 rounded-md animate-pulse" />
+                     <div className="h-24 w-full bg-gray-100 rounded-2xl animate-pulse" />
+                  </div>
+                  <div className="space-y-2">
+                     <div className="h-3 w-24 bg-gray-100 rounded-md animate-pulse" />
+                     <div className="h-12 w-full bg-gray-100 rounded-2xl animate-pulse" />
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-10 pt-4">
+                     <div className="space-y-6">
+                        {[1,2,3].map(i => (
+                           <div key={i} className="space-y-2">
+                              <div className="h-3 w-24 bg-gray-100 rounded-md animate-pulse" />
+                              <div className="h-12 w-full bg-gray-100 rounded-xl animate-pulse" />
+                           </div>
+                        ))}
+                     </div>
+                     <div className="space-y-6">
+                        {[1,2,3].map(i => (
+                           <div key={i} className="space-y-2">
+                              <div className="h-3 w-24 bg-gray-100 rounded-md animate-pulse" />
+                              <div className="h-12 w-full bg-gray-100 rounded-xl animate-pulse" />
+                           </div>
+                        ))}
+                     </div>
+                  </div>
+               </div>
+
+               {/* Credential Skeleton */}
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-10 border-t border-gray-50 pt-10">
+                  <div className="space-y-2">
+                     <div className="h-3 w-40 bg-gray-100 rounded-md animate-pulse" />
+                     <div className="aspect-[1.414/1] w-full bg-gray-100 rounded-[2.5rem] animate-pulse" />
+                  </div>
+                  <div className="space-y-6">
+                     <div className="space-y-2">
+                        <div className="h-3 w-32 bg-gray-100 rounded-md animate-pulse" />
+                        <div className="h-12 w-full bg-gray-100 rounded-xl animate-pulse" />
+                     </div>
+                     <div className="space-y-2">
+                        <div className="h-3 w-32 bg-gray-100 rounded-md animate-pulse" />
+                        <div className="h-12 w-full bg-gray-100 rounded-xl animate-pulse" />
+                     </div>
+                  </div>
+               </div>
+            </div>
+         </FormContentArea>
+      </FormPageContainer>
+    );
+  }
 
   const hasCertificate = !!(item.certificateFileId || optimisticCertPreview);
   const certificateUrl = optimisticCertPreview || (item.certificateFileId ? `https://lh3.googleusercontent.com/d/${item.certificateFileId}` : null);
