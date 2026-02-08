@@ -1,3 +1,4 @@
+
 import React, { useState, useRef } from 'react';
 import { ColleagueItem } from '../../types';
 import { saveColleague, uploadColleaguePhoto } from '../../services/ColleagueService';
@@ -61,12 +62,12 @@ const ColleagueForm: React.FC<ColleagueFormProps> = ({ item, onClose, onComplete
 
     const result = await uploadColleaguePhoto(file);
     if (result) {
-      setFormData({ 
-        ...formData, 
+      setFormData(prev => ({ 
+        ...prev, 
         photoUrl: result.photoUrl, 
         photoFileId: result.fileId, 
         photoNodeUrl: result.nodeUrl 
-      });
+      }));
       setPreviewUrl(null); // Clear preview, use confirmed URL
       showXeenapsToast('success', 'Profile photo updated');
     } else {
