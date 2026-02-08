@@ -1,13 +1,14 @@
 /**
- * XEENAPS PKM - SHARBOX REGISTRY MODULE
+ * XEENAPS PKM - SHARBOX REGISTRY MODULE (HYBRID MODE)
  * Handles P2P Cross-Spreadsheet Knowledge Exchange.
+ * "Sent" Logic removed here, only "Inbox" buffer remains for transfer.
  */
 
 function setupSharboxDatabase() {
   try {
     const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEETS.SHARBOX);
     
-    // 1. Inbox Sheet
+    // 1. Inbox Sheet (The Buffer)
     let iSheet = ss.getSheetByName("Inbox");
     if (!iSheet) {
       iSheet = ss.insertSheet("Inbox");
@@ -25,24 +26,6 @@ function setupSharboxDatabase() {
       }
     }
 
-    // 2. Sent Sheet
-    let sSheet = ss.getSheetByName("Sent");
-    if (!sSheet) {
-      sSheet = ss.insertSheet("Sent");
-      const headers = CONFIG.SCHEMAS.SHARBOX_SENT;
-      sSheet.getRange(1, 1, 1, headers.length).setValues([headers]);
-      sSheet.getRange(1, 1, 1, headers.length).setFontWeight("bold").setBackground("#f3f3f3");
-      sSheet.setFrozenRows(1);
-    } else {
-      // Auto-update Sent sheet headers to include contacts
-      const currentHeaders = sSheet.getRange(1, 1, 1, sSheet.getLastColumn()).getValues()[0];
-      const targetHeaders = CONFIG.SCHEMAS.SHARBOX_SENT;
-      const missing = targetHeaders.filter(h => !currentHeaders.includes(h));
-      if (missing.length > 0) {
-        sSheet.getRange(1, currentHeaders.length + 1, 1, missing.length).setValues([missing]).setFontWeight("bold").setBackground("#f3f3f3");
-      }
-    }
-
     return { status: 'success', message: 'Sharbox structure initialized.' };
   } catch (err) {
     return { status: 'error', message: err.toString() };
@@ -50,8 +33,8 @@ function setupSharboxDatabase() {
 }
 
 /**
- * Handle Knowledge Sharing (Double Write Logic)
- * UPDATED: Persists receiver contact info.
+ * Handle Knowledge Sharing (Modified: Only writes to Target Inbox)
+ * Local Sent history is now handled by Supabase on client-side.
  */
 function handleSendToSharbox(targetUniqueAppId, receiverName, receiverPhotoUrl, message, item, receiverContacts) {
   try {
@@ -102,42 +85,20 @@ function handleSendToSharbox(targetUniqueAppId, receiverName, receiverPhotoUrl, 
     });
     targetInbox.appendRow(inboxRow);
 
-    // 3. WRITE TO LOCAL (Sender's Sent)
-    const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEETS.SHARBOX);
-    let sentSheet = ss.getSheetByName("Sent");
-    if (!sentSheet) { setupSharboxDatabase(); sentSheet = ss.getSheetByName("Sent"); }
-
-    const sentRow = CONFIG.SCHEMAS.SHARBOX_SENT.map(h => {
-      if (h === 'id') return transactionId;
-      if (h === 'receiverName') return receiverName;
-      if (h === 'receiverPhotoUrl') return receiverPhotoUrl;
-      if (h === 'receiverUniqueAppId') return targetUniqueAppId;
-      if (h === 'receiverEmail') return (receiverContacts && receiverContacts.email) || '';
-      if (h === 'receiverPhone') return (receiverContacts && receiverContacts.phone) || '';
-      if (h === 'receiverSocialMedia') return (receiverContacts && receiverContacts.socialMedia) || '';
-      if (h === 'message') return message || '';
-      if (h === 'timestamp') return timestamp;
-      if (h === 'status') return 'SENT';
-      
-      const colKey = h === 'id_item' ? 'id' : h;
-      const val = item[colKey];
-      return (Array.isArray(val) || (typeof val === 'object' && val !== null)) ? JSON.stringify(val) : (val !== undefined ? val : '');
-    });
-    sentSheet.appendRow(sentRow);
-
     return { status: 'success' };
   } catch (e) {
-    return { status: 'error', message: "Double-write failed: " + e.toString() };
+    return { status: 'error', message: "Transfer failed: " + e.toString() };
   }
 }
 
 /**
- * Retrieval logic for Inbox or Sent
+ * Retrieval logic for Inbox Buffer
+ * Reads 'Inbox' sheet to find pending messages to sync.
  */
-function getSharboxItemsFromRegistry(type) {
+function getInboxBufferFromRegistry() {
   try {
     const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEETS.SHARBOX);
-    const sheet = ss.getSheetByName(type); // 'Inbox' or 'Sent'
+    const sheet = ss.getSheetByName("Inbox");
     if (!sheet) return [];
     
     const data = sheet.getDataRange().getValues();
@@ -145,11 +106,10 @@ function getSharboxItemsFromRegistry(type) {
     
     const headers = data[0];
     const jsonFields = ['authors', 'pubInfo', 'identifiers', 'tags', 'supportingReferences'];
-    const schema = type === 'Inbox' ? CONFIG.SCHEMAS.SHARBOX_INBOX : CONFIG.SCHEMAS.SHARBOX_SENT;
 
     return data.slice(1).map(row => {
       let obj = {};
-      schema.forEach(schemaKey => {
+      CONFIG.SCHEMAS.SHARBOX_INBOX.forEach(schemaKey => {
         const spreadsheetIdx = headers.indexOf(schemaKey);
         let val = spreadsheetIdx !== -1 ? row[spreadsheetIdx] : '';
 
@@ -174,16 +134,66 @@ function getSharboxItemsFromRegistry(type) {
         }
       });
       return obj;
-    }).sort((a,b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+    });
   } catch (e) { return []; }
 }
 
 /**
- * Handle Claim/Import knowledge to local Library
+ * Clear Synced Items from Inbox Buffer
+ * Deletes rows from Sheet Inbox after successful sync to Supabase.
+ */
+function clearInboxBuffer(idsToDelete) {
+  try {
+    if (!idsToDelete || idsToDelete.length === 0) return { status: 'success', message: 'No items to clear.' };
+
+    const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEETS.SHARBOX);
+    const sheet = ss.getSheetByName("Inbox");
+    if (!sheet) return { status: 'error', message: 'Inbox sheet not found.' };
+
+    const data = sheet.getDataRange().getValues();
+    const headers = data[0];
+    const idIdx = headers.indexOf('id');
+    
+    // We process deletions from bottom to top to avoid index shifting issues
+    // OR cleaner approach: Re-write the sheet excluding deleted IDs (Better for batch)
+    
+    const newBody = [];
+    const idsSet = new Set(idsToDelete);
+    
+    // Start from row 1 (data), keep row 0 (headers)
+    for (let i = 1; i < data.length; i++) {
+      if (!idsSet.has(data[i][idIdx])) {
+        newBody.push(data[i]);
+      }
+    }
+
+    // Clear everything below header
+    if (data.length > 1) {
+      sheet.getRange(2, 1, data.length - 1, headers.length).clearContent();
+    }
+    
+    // Write back remaining rows
+    if (newBody.length > 0) {
+      sheet.getRange(2, 1, newBody.length, headers.length).setValues(newBody);
+    }
+    
+    return { status: 'success' };
+  } catch (e) {
+    return { status: 'error', message: e.toString() };
+  }
+}
+
+/**
+ * Legacy: Handle Claim/Import knowledge to local Library
  * Future Proof: Clones JSON content to local Storage Node
  */
 function handleClaimSharboxItem(transactionId) {
   try {
+    // Note: We can claim from the Buffer sheet directly if it exists, or check arguments.
+    // However, with Hybrid model, claiming is done via Supabase client mostly.
+    // This legacy function is kept if you want to claim WITHOUT syncing to Supabase first (rare case).
+    // Or if `claimSharboxItem` is called from `Main.gs`.
+    
     const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEETS.SHARBOX);
     const sheet = ss.getSheetByName("Inbox");
     if (!sheet) throw new Error("Inbox not found.");
@@ -205,7 +215,7 @@ function handleClaimSharboxItem(transactionId) {
       }
     }
 
-    if (targetRowIndex === -1) throw new Error("Item not found.");
+    if (targetRowIndex === -1) throw new Error("Item not found in buffer.");
     if (sharboxItem.status === 'CLAIMED') throw new Error("Already claimed.");
 
     // 1. DATA RECONSTRUCTION for Collections
@@ -229,61 +239,13 @@ function handleClaimSharboxItem(transactionId) {
     collectionItem.createdAt = now;
     collectionItem.updatedAt = now;
 
-    // 2. REGISTER TO LOCAL LIBRARY
+    // 2. REGISTER TO LOCAL LIBRARY (Legacy Sheet)
     saveToSheet(CONFIG.SPREADSHEETS.LIBRARY, "Collections", collectionItem);
 
     // 3. MARK AS CLAIMED
     sheet.getRange(targetRowIndex, statusIdx + 1).setValue('CLAIMED');
 
     return { status: 'success' };
-  } catch (e) {
-    return { status: 'error', message: e.toString() };
-  }
-}
-
-/**
- * NEW: Mark Sharbox Inbox item as Read
- */
-function markSharboxItemAsRead(id) {
-  try {
-    const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEETS.SHARBOX);
-    const sheet = ss.getSheetByName("Inbox");
-    if (!sheet) return { status: 'error', message: 'Inbox not found' };
-    const data = sheet.getDataRange().getValues();
-    const headers = data[0];
-    const idIdx = headers.indexOf('id');
-    const isReadIdx = headers.indexOf('isRead');
-    if (isReadIdx === -1) return { status: 'error', message: 'isRead column missing. Please re-initialize Sharbox.' };
-    
-    for (let i = 1; i < data.length; i++) {
-      if (data[i][idIdx] === id) {
-        sheet.getRange(i + 1, isReadIdx + 1).setValue(true);
-        return { status: 'success' };
-      }
-    }
-    return { status: 'error', message: 'Item not found' };
-  } catch (e) {
-    return { status: 'error', message: e.toString() };
-  }
-}
-
-/**
- * NEW: Delete Sharbox Record
- */
-function deleteSharboxItem(id, type) {
-  try {
-    const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEETS.SHARBOX);
-    const sheet = ss.getSheetByName(type);
-    if (!sheet) throw new Error("Sheet not found");
-    const data = sheet.getDataRange().getValues();
-    const idIdx = data[0].indexOf('id');
-    for (let i = 1; i < data.length; i++) {
-      if (data[i][idIdx] === id) {
-        sheet.deleteRow(i + 1);
-        return { status: 'success' };
-      }
-    }
-    return { status: 'error', message: 'Item not found' };
   } catch (e) {
     return { status: 'error', message: e.toString() };
   }

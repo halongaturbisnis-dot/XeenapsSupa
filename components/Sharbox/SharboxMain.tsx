@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 // @ts-ignore
 import { useLocation } from 'react-router-dom';
 import { SharboxItem, SharboxStatus } from '../../types';
-import { fetchSharboxItems, claimSharboxItem, deleteSharboxItem, markSharboxItemAsRead } from '../../services/SharboxService';
+import { fetchSharboxItems, claimSharboxItem, deleteSharboxItem, markSharboxItemAsRead, syncInboxBackground } from '../../services/SharboxService';
 import { 
   InboxIcon, 
   PaperAirplaneIcon, 
@@ -38,6 +38,16 @@ const SharboxMain: React.FC = () => {
   
   const [isWorkflowOpen, setIsWorkflowOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<SharboxItem | null>(null);
+
+  // HYBRID SYNC: Trigger background synchronization on mount
+  useEffect(() => {
+    const runSync = async () => {
+       await syncInboxBackground();
+       // Reload data after sync possibility
+       if (activeTab === 'Inbox') loadItems();
+    };
+    runSync();
+  }, []);
 
   const loadItems = useCallback(async () => {
     setIsLoading(true);

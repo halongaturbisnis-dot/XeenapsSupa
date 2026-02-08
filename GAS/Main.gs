@@ -1,4 +1,5 @@
 
+
 /**
  * XEENAPS PKM - MAIN ROUTER
  */
@@ -36,38 +37,32 @@ function doGet(e) {
     }
 
     // NEW: getNotifications with Server-Side Date Filtering
+    // Note: In Hybrid mode, Sharbox notifications are mostly handled by Supabase client-side, 
+    // but this endpoint might still be used for legacy or specific checks if needed. 
+    // We keep it compatible but lighter.
     if (action === 'getNotifications') {
-      const unreadSharbox = getSharboxItemsFromRegistry('Inbox').filter(i => !i.isRead);
-      const allUnfinished = getGlobalUnfinishedTodos();
+      // For Inbox Buffer Strategy: GAS checks Sheet Inbox (Buffer) to notify of PENDING syncs
+      const bufferItems = getInboxBufferFromRegistry(); 
+      // Supabase handles the rest. This endpoint notifies about *unsynced* items in sheet.
+      const unreadSharbox = bufferItems; 
       
-      // Calculate Time Thresholds
-      const today = new Date();
-      today.setHours(0,0,0,0);
-      const limitDate = new Date(today);
-      limitDate.setDate(today.getDate() + 3); // Threshold: 3 days from now
-      
-      const criticalTodos = allUnfinished.filter(t => {
-        if (!t.deadline) return false;
-        const d = new Date(t.deadline);
-        // Only include if deadline is past (overdue), today, or within 3 days
-        return d <= limitDate;
-      });
-
       return createJsonResponse({
         status: 'success',
         data: {
           sharbox: unreadSharbox,
-          todos: criticalTodos
+          todos: [] // Todos moved to Supabase completely
         }
       });
     }
 
-    // NEW: getSharboxItems
-    if (action === 'getSharboxItems') {
-      const type = e.parameter.type || 'Inbox'; // 'Inbox' or 'Sent'
-      const result = getSharboxItemsFromRegistry(type);
+    // UPDATED: getInboxBuffer (For Background Sync)
+    if (action === 'getInboxBuffer') {
+      const result = getInboxBufferFromRegistry();
       return createJsonResponse({ status: 'success', data: result });
     }
+
+    // DEPRECATED: getSharboxItems (Direct read from sheet is now only for buffer)
+    // if (action === 'getSharboxItems') { ... }
 
     // DEPRECATED: getNotes (Moved to Supabase)
     // if (action === 'getNotes') { ... }
@@ -342,11 +337,14 @@ function doPost(e) {
     if (action === 'setupTracerDatabase') return createJsonResponse(setupTracerDatabase());
     if (action === 'setupBookArchiveDatabase') return createJsonResponse(setupBookArchiveDatabase());
     
-    // NEW: Sharbox Actions
+    // NEW: Sharbox Actions (Updated for Inbox Buffer)
     if (action === 'sendToSharbox') return createJsonResponse(handleSendToSharbox(body.targetUniqueAppId, body.receiverName, body.receiverPhotoUrl, body.message, body.item, body.receiverContacts));
-    if (action === 'claimSharboxItem') return createJsonResponse(handleClaimSharboxItem(body.id));
-    if (action === 'deleteSharboxItem') return createJsonResponse(deleteSharboxItem(body.id, body.type));
-    if (action === 'markSharboxRead') return createJsonResponse(markSharboxItemAsRead(body.id));
+    if (action === 'clearInboxBuffer') return createJsonResponse(clearInboxBuffer(body.ids)); // New Buffer Cleanup
+    
+    // Legacy Sharbox Actions (Deprecated or moved to Supabase logic, but maintained if needed by old buffer)
+    if (action === 'claimSharboxItem') return createJsonResponse(handleClaimSharboxItem(body.id)); 
+    // markSharboxRead & deleteSharboxItem now handled by Supabase for final storage, 
+    // but clearing buffer is key.
 
     // MODIFIED: saveNoteContent (Worker Only)
     if (action === 'saveNoteContent') return createJsonResponse(saveNoteContentToDrive(body.item, body.content));

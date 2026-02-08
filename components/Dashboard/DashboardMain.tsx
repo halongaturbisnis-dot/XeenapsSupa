@@ -212,7 +212,7 @@ const DashboardMain: React.FC<DashboardMainProps> = ({
          <div className="flex items-center justify-between mb-10 relative z-10">
             <div className="space-y-1">
                <h3 className="text-xl font-black text-[#004A74] flex items-center gap-3">
-                  Library Growth
+                  LIBRARY GROWTH
                </h3>
             </div>
             <div className="flex flex-wrap justify-end gap-x-4 gap-y-2 max-w-[200px] md:max-w-none">
@@ -467,12 +467,6 @@ const DashboardMain: React.FC<DashboardMainProps> = ({
             </div>
          </div>
       </section>
-
-      {/* FOOTER */}
-      <footer className="pt-20 text-center opacity-20">
-         <div className="w-10 h-0.5 bg-[#004A74] mx-auto mb-4 rounded-full" />
-         <p className="text-[8px] font-black text-[#004A74] uppercase tracking-[0.8em]">XEENAPS ANALYTIC INFRASTRUCTURE</p>
-      </footer>
     </div>
   );
 };
