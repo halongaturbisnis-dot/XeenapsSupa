@@ -390,3 +390,48 @@ export const translateInsightSection = async (item: LibraryItem, sectionName: st
     return null;
   }
 };
+
+/**
+ * NEW: Save raw extracted content directly to Drive (Sharding)
+ * This function bypasses metadata sheets and talks directly to the storage worker.
+ */
+export const saveExtractedContentToDrive = async (item: LibraryItem, content: string): Promise<{fileId: string, nodeUrl: string, status: string} | null> => {
+  if (!GAS_WEB_APP_URL) return null;
+  try {
+    // Determine target node: use existing if available, otherwise Master GAS will decide
+    const targetUrl = item.storageNodeUrl || GAS_WEB_APP_URL;
+    
+    // Construct payload
+    const jsonFileName = `extracted_${item.id}.json`;
+    const jsonBody = JSON.stringify({ id: item.id, fullText: content });
+
+    const res = await fetch(targetUrl, {
+      method: 'POST',
+      mode: 'cors',
+      redirect: 'follow',
+      body: JSON.stringify({ 
+        action: 'saveJsonFile', 
+        fileId: item.extractedJsonId || null, // If exists, overwrite. If null, create.
+        fileName: jsonFileName, 
+        content: jsonBody,
+        folderId: null // Let backend use default logic
+      })
+    });
+    
+    const result = await res.json();
+    
+    if (result.status === 'success') {
+      // If we saved to a specific node URL (slave), we must return that. 
+      // If we saved to default GAS URL, it might be the master node.
+      return { 
+        status: 'success', 
+        fileId: result.fileId, 
+        nodeUrl: targetUrl 
+      };
+    }
+    return null;
+  } catch (e) {
+    console.error("Save Extracted Content Failed:", e);
+    return null;
+  }
+};

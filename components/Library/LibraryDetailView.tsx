@@ -48,7 +48,8 @@ import {
   Presentation,
   ListTodo,
   NotebookPen,
-  Grip
+  Grip,
+  FileCode
 } from 'lucide-react';
 import { showXeenapsToast } from '../../utils/toastUtils';
 import { showXeenapsDeleteConfirm } from '../../utils/confirmUtils';
@@ -64,6 +65,7 @@ import NotebookMain from '../Notebook/NotebookMain';
 import SharboxWorkflowModal from '../Sharbox/SharboxWorkflowModal';
 import TracerProjectPicker from '../Research/Tracer/TracerProjectPicker';
 import TeachingSessionPicker from '../Teaching/TeachingSessionPicker';
+import ContentManagerModal from './ContentManagerModal';
 
 interface LibraryDetailViewProps {
   item: LibraryItem;
@@ -373,6 +375,7 @@ const LibraryDetailView: React.FC<LibraryDetailViewProps> = ({ item, onClose, is
   const [isShareModalOpen, setIsShareModalOpen] = useState(false); 
   const [isTracerPickerOpen, setIsTracerPickerOpen] = useState(false);
   const [isTeachingPickerOpen, setIsTeachingPickerOpen] = useState(false);
+  const [isContentManagerOpen, setIsContentManagerOpen] = useState(false);
   const [dummySearch, setDummySearch] = useState('');
   
   const [isBookmarked, setIsBookmarked] = useState(!!item.isBookmarked);
@@ -719,6 +722,20 @@ const LibraryDetailView: React.FC<LibraryDetailViewProps> = ({ item, onClose, is
         />
       )}
       
+      {/* INTEGRATION: Content Manager Modal */}
+      {isContentManagerOpen && (
+        <ContentManagerModal 
+          item={currentItem} 
+          onClose={() => setIsContentManagerOpen(false)} 
+          onSuccess={(updatedItem) => {
+            // Update local state to reflect changes instantly (e.g. enabling Insight button)
+            setCurrentItem(updatedItem);
+            // Notify parent if callback exists
+            if (onUpdateOptimistic) onUpdateOptimistic(updatedItem);
+          }} 
+        />
+      )}
+      
       {/* 1. STICKY TOP AREA: MAINTAIN APP HEADER */}
       <div className="sticky top-0 z-[90] bg-white/95 backdrop-blur-xl border-b border-gray-100">
         <div className="px-4 md:px-8">
@@ -783,6 +800,14 @@ const LibraryDetailView: React.FC<LibraryDetailViewProps> = ({ item, onClose, is
                     <button onClick={handleUpdate} className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-gray-600 hover:bg-[#004A74] hover:text-white rounded-xl transition-all">
                       <PencilIcon className="w-4 h-4" /> Update
                     </button>
+                    {/* NEW BUTTON: Manage Content Source */}
+                    <button 
+                      onClick={() => { setIsContentManagerOpen(true); setIsMenuOpen(false); }} 
+                      className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-gray-600 hover:bg-[#004A74] hover:text-white rounded-xl transition-all"
+                    >
+                      <FileCode className="w-4 h-4" /> Manage Content Source
+                    </button>
+                    
                     <button 
                       onClick={() => { if(hasContent) { setShowPresentations(true); setIsMenuOpen(false); } }} 
                       disabled={!hasContent}
