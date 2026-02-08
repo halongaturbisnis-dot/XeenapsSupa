@@ -180,7 +180,7 @@ const SharboxWorkflowModal: React.FC<SharboxWorkflowModalProps> = ({ initialItem
                      disabled={isSharing}
                      className="flex-1 py-5 bg-[#004A74] text-[#FED400] rounded-[2rem] font-black uppercase tracking-[0.3em] text-xs shadow-2xl flex items-center justify-center gap-4 hover:scale-105 active:scale-95 transition-all disabled:opacity-50"
                    >
-                     {isSharing ? <ArrowPathIcon className="w-5 h-5 animate-spin" /> : <SendHorizontal className="w-5 h-5 -rotate-45" />}
+                     {isSharing ? <ArrowPathIcon className="w-5 h-5 animate-spin" /> : <SendHorizontal className="w-5 h-5" />}
                      {isSharing ? 'TRANSMITTING...' : 'SEND'}
                    </button>
                 </div>
@@ -194,7 +194,7 @@ const SharboxWorkflowModal: React.FC<SharboxWorkflowModalProps> = ({ initialItem
                     onChange={setSearch} 
                     onSearch={() => setCurrentPage(1)} 
                     className="flex-1"
-                    phrases={step === 'PICK_COLLEAGUE' ? ["Search colleague name...", "Search unique ID..."] : ["Search document title...", "Search topic..."]}
+                    phrases={step === 'PICK_COLLEAGUE' ? ["Search colleague name...", "Search affiliaton...", "Search unique ID..."] : ["Search title...", "Search author(s)...", "Search topic..."]}
                    />
                    {step === 'PICK_LIBRARY' && selectedColleague && (
                      <div className="flex items-center gap-3 px-4 py-2 bg-[#004A74] text-white rounded-xl shadow-md border border-white/10 max-w-[200px] shrink-0">

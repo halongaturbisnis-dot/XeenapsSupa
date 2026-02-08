@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 // @ts-ignore
 import { useLocation } from 'react-router-dom';
@@ -32,52 +33,92 @@ import SharboxDetailView from './SharboxDetailView';
 const SharboxMain: React.FC = () => {
   const location = useLocation();
   const [activeTab, setActiveTab] = useState<'Inbox' | 'Sent'>('Inbox');
-  const [items, setItems] = useState<SharboxItem[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  
+  // State Segregation: Separate buckets for Inbox and Sent to prevent race conditions
+  const [inboxItems, setInboxItems] = useState<SharboxItem[]>([]);
+  const [sentItems, setSentItems] = useState<SharboxItem[]>([]);
+  
+  // Independent Loading States
+  const [isInboxLoading, setIsInboxLoading] = useState(true);
+  const [isSentLoading, setIsSentLoading] = useState(true);
+
   const [search, setSearch] = useState('');
   
   const [isWorkflowOpen, setIsWorkflowOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<SharboxItem | null>(null);
 
-  // HYBRID SYNC: Trigger background synchronization on mount
-  useEffect(() => {
-    const runSync = async () => {
-       await syncInboxBackground();
-       // Reload data after sync possibility
-       if (activeTab === 'Inbox') loadItems();
-    };
-    runSync();
+  // --- FETCHING LOGIC ---
+
+  const loadInbox = useCallback(async (isSilent = false) => {
+    if (!isSilent) setIsInboxLoading(true);
+    try {
+      const data = await fetchSharboxItems('Inbox');
+      setInboxItems(data);
+      
+      // AUTO-OPEN LOGIC FROM NOTIFICATION (Only for Inbox)
+      const state = location.state as any;
+      if (state?.openItemId && !isSilent) {
+         const found = data.find(i => i.id === state.openItemId);
+         if (found) {
+           setSelectedItem(found);
+           if (!found.isRead) {
+              markSharboxItemAsRead(found.id);
+              window.dispatchEvent(new CustomEvent('xeenaps-notif-refresh'));
+           }
+         }
+      }
+    } finally {
+      if (!isSilent) setIsInboxLoading(false);
+    }
+  }, [location.state]);
+
+  const loadSent = useCallback(async () => {
+    setIsSentLoading(true);
+    try {
+      const data = await fetchSharboxItems('Sent');
+      setSentItems(data);
+    } finally {
+      setIsSentLoading(false);
+    }
   }, []);
 
-  const loadItems = useCallback(async () => {
-    setIsLoading(true);
-    const data = await fetchSharboxItems(activeTab);
-    setItems(data);
-    
-    // AUTO-OPEN LOGIC FROM NOTIFICATION
-    const state = location.state as any;
-    if (state?.openItemId && activeTab === 'Inbox') {
-       const found = data.find(i => i.id === state.openItemId);
-       if (found) {
-         setSelectedItem(found);
-         if (!found.isRead) {
-            markSharboxItemAsRead(found.id);
-            window.dispatchEvent(new CustomEvent('xeenaps-notif-refresh'));
-         }
-       }
-    }
-    
-    setIsLoading(false);
-  }, [activeTab, location.state]);
-
+  // --- EFFECT 1: INITIAL MOUNT & BACKGROUND SYNC ---
   useEffect(() => {
-    loadItems();
-  }, [loadItems]);
+    // Initial fetch for the default tab (Inbox)
+    loadInbox();
+
+    // HYBRID SYNC: Trigger background synchronization
+    const runSync = async () => {
+       await syncInboxBackground();
+       // Reload Inbox silently after sync possibility
+       loadInbox(true);
+    };
+    runSync();
+
+    // Listen for global notification refresh signals
+    const handleRefresh = () => loadInbox(true);
+    window.addEventListener('xeenaps-notif-refresh', handleRefresh);
+    return () => window.removeEventListener('xeenaps-notif-refresh', handleRefresh);
+  }, []);
+
+  // --- EFFECT 2: TAB SWITCHING ---
+  useEffect(() => {
+    if (activeTab === 'Inbox') {
+      // If we already have data, do a silent refresh, otherwise show loader
+      const silent = inboxItems.length > 0;
+      loadInbox(silent);
+    } else {
+      loadSent();
+    }
+  }, [activeTab]);
+
+  // --- HANDLERS ---
 
   const handleItemClick = (item: SharboxItem) => {
     setSelectedItem(item);
     if (activeTab === 'Inbox' && !item.isRead) {
-      setItems(prev => prev.map(i => i.id === item.id ? { ...i, isRead: true } : i));
+      // Optimistic Update for Inbox
+      setInboxItems(prev => prev.map(i => i.id === item.id ? { ...i, isRead: true } : i));
       markSharboxItemAsRead(item.id);
       // Trigger notification update
       window.dispatchEvent(new CustomEvent('xeenaps-notif-refresh'));
@@ -91,7 +132,7 @@ const SharboxMain: React.FC = () => {
       showXeenapsToast('success', 'Claimed successfully');
       // Trigger notification update (as status changed from UNCLAIMED)
       window.dispatchEvent(new CustomEvent('xeenaps-notif-refresh'));
-      loadItems();
+      loadInbox(true); // Silent reload
       setSelectedItem(null);
     } else {
       showXeenapsToast('error', 'Import failed');
@@ -106,14 +147,23 @@ const SharboxMain: React.FC = () => {
       if (success) {
         showXeenapsToast('success', 'Record removed');
         window.dispatchEvent(new CustomEvent('xeenaps-notif-refresh'));
-        loadItems();
+        
+        // Refresh specific list
+        if (activeTab === 'Inbox') loadInbox(true);
+        else loadSent();
       } else {
         showXeenapsToast('error', 'Delete failed');
       }
     }
   };
 
-  const filteredItems = items.filter(i => {
+  // --- RENDER HELPERS ---
+
+  // Determine which data set to display based on active tab
+  const currentItems = activeTab === 'Inbox' ? inboxItems : sentItems;
+  const isCurrentLoading = activeTab === 'Inbox' ? isInboxLoading : isSentLoading;
+
+  const filteredItems = currentItems.filter(i => {
     const s = search.toLowerCase();
     const titleMatch = (i.title || '').toLowerCase().includes(s);
     const senderMatch = (i.senderName || '').toLowerCase().includes(s);
@@ -141,7 +191,7 @@ const SharboxMain: React.FC = () => {
           item={selectedItem} 
           activeTab={activeTab} 
           onClose={() => setSelectedItem(null)} 
-          onRefresh={loadItems}
+          onRefresh={() => activeTab === 'Inbox' ? loadInbox(true) : loadSent()}
           onClaim={() => handleClaim(selectedItem)}
         />
       )}
@@ -201,7 +251,7 @@ const SharboxMain: React.FC = () => {
       </div>
 
       <div className="flex-1 overflow-y-auto custom-scrollbar pb-20">
-        {isLoading ? (
+        {isCurrentLoading ? (
           <CardGridSkeleton count={8} />
         ) : filteredItems.length === 0 ? (
           <div className="py-40 text-center flex flex-col items-center justify-center space-y-4 opacity-20 grayscale">
@@ -279,5 +329,6 @@ const SharboxMain: React.FC = () => {
     </div>
   );
 };
+
 
 export default SharboxMain;

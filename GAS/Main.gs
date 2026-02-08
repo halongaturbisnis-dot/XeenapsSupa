@@ -338,7 +338,16 @@ function doPost(e) {
     if (action === 'setupBookArchiveDatabase') return createJsonResponse(setupBookArchiveDatabase());
     
     // NEW: Sharbox Actions (Updated for Inbox Buffer)
-    if (action === 'sendToSharbox') return createJsonResponse(handleSendToSharbox(body.targetUniqueAppId, body.receiverName, body.receiverPhotoUrl, body.message, body.item, body.receiverContacts));
+    // FIX: Pass senderProfile from body to handleSendToSharbox
+    if (action === 'sendToSharbox') return createJsonResponse(handleSendToSharbox(
+      body.targetUniqueAppId, 
+      body.receiverName, 
+      body.receiverPhotoUrl, 
+      body.message, 
+      body.item, 
+      body.receiverContacts,
+      body.senderProfile // Pass Supabase Profile Data
+    ));
     if (action === 'clearInboxBuffer') return createJsonResponse(clearInboxBuffer(body.ids)); // New Buffer Cleanup
     
     // Legacy Sharbox Actions (Deprecated or moved to Supabase logic, but maintained if needed by old buffer)

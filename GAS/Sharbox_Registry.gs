@@ -36,10 +36,12 @@ function setupSharboxDatabase() {
  * Handle Knowledge Sharing (Modified: Only writes to Target Inbox)
  * Local Sent history is now handled by Supabase on client-side.
  */
-function handleSendToSharbox(targetUniqueAppId, receiverName, receiverPhotoUrl, message, item, receiverContacts) {
+function handleSendToSharbox(targetUniqueAppId, receiverName, receiverPhotoUrl, message, item, receiverContacts, senderProfile) {
   try {
-    const profile = getProfileFromRegistry();
-    if (!profile) throw new Error("Sender profile not found.");
+    // FIX: Use profile passed from Frontend (Supabase), do NOT read from local Sheet.
+    const profile = senderProfile;
+    
+    if (!profile) throw new Error("Sender profile payload missing.");
 
     // 1. PREPARE PERMISSIONS: Auto-set files to "Anyone with link can view"
     const fileIdsToShare = [item.fileId, item.extractedJsonId, item.insightJsonId].filter(id => id && id.trim() !== "");
