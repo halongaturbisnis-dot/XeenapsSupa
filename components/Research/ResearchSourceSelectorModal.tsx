@@ -114,8 +114,8 @@ const ResearchSourceSelectorModal: React.FC<ResearchSourceSelectorModalProps> = 
         </div>
 
         {/* Content Area */}
-        <div className="flex-1 overflow-hidden px-4 py-2 flex flex-col bg-[#fcfcfc]">
-           <div className="flex-1 overflow-y-auto custom-scrollbar space-y-1.5 pr-1 pb-2">
+        <div className="flex-1 overflow-hidden px-4 py-2 flex flex-col bg-[#fcfcfc] min-h-0">
+           <div className="flex-1 overflow-y-auto custom-scrollbar space-y-1.5 pr-1 pb-2 overscroll-contain">
               {isLoading ? (
                 <CardGridSkeleton count={6} />
               ) : items.length === 0 ? (

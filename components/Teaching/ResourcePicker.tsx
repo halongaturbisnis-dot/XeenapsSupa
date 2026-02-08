@@ -242,7 +242,7 @@ const ResourcePicker: React.FC<ResourcePickerProps> = ({ type, onClose, onSelect
                      onClick={() => onSelect(selectedItems)}
                      className="px-8 py-3.5 bg-[#004A74] text-[#FED400] rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-2xl hover:scale-105 active:scale-95 transition-all flex items-center gap-3 shrink-0 animate-in slide-in-from-right-2"
                    >
-                     Add Selected ({selectedItems.length}) <Plus size={16} strokeWidth={4} />
+                     Add Selected ({selectedItems.length})
                    </button>
                 )}
              </div>
