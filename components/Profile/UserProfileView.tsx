@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { UserProfile, EducationEntry, CareerEntry } from '../../types';
 import { 
   fetchProfileFromSupabase,
@@ -11,7 +12,6 @@ import {
   deleteCareerFromSupabase
 } from '../../services/ProfileSupabaseService';
 import { 
-  uploadProfilePhoto, 
   deleteProfilePhoto
 } from '../../services/ProfileService';
 import IDCardSection from './IDCardSection';
@@ -25,10 +25,16 @@ import {
   Award,
   BookMarked,
   Globe,
-  Link as LinkIcon
+  Link as LinkIcon,
+  Save,
+  Loader2
 } from 'lucide-react';
 import { showXeenapsToast } from '../../utils/toastUtils';
 import { BRAND_ASSETS } from '../../assets';
+import { FormPageContainer, FormStickyHeader, FormContentArea } from '../Common/FormComponents';
+import { GlobalSavingOverlay } from '../Common/LoadingComponents';
+import Swal from 'sweetalert2';
+import { XEENAPS_SWAL_CONFIG } from '../../utils/swalUtils';
 
 /**
  * XEENAPS PROFILE SKELETON
@@ -51,13 +57,19 @@ const ProfileSkeleton: React.FC = () => (
 );
 
 const UserProfileView: React.FC = () => {
+  const navigate = useNavigate();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [localProfile, setLocalProfile] = useState<UserProfile | null>(null);
   const [education, setEducation] = useState<EducationEntry[]>([]);
   const [career, setCareer] = useState<CareerEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isSyncing, setIsSyncing] = useState(false);
   
+  // MANUAL SAVE STATES
+  const [isDirty, setIsDirty] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [deletedEducationIds, setDeletedEducationIds] = useState<string[]>([]);
+  const [deletedCareerIds, setDeletedCareerIds] = useState<string[]>([]);
+
   // Modals state
   const [isEduModalOpen, setIsEduModalOpen] = useState(false);
   const [isCareerModalOpen, setIsCareerModalOpen] = useState(false);
@@ -98,6 +110,11 @@ const UserProfileView: React.FC = () => {
       setLocalProfile(finalProfile);
       setEducation(e);
       setCareer(c);
+      
+      // Reset dirty state on load
+      setIsDirty(false);
+      setDeletedEducationIds([]);
+      setDeletedCareerIds([]);
     } catch (err) {
       showXeenapsToast('error', 'Failed to synchronize profile data');
     } finally {
@@ -109,108 +126,136 @@ const UserProfileView: React.FC = () => {
     loadAllData();
   }, [loadAllData]);
 
+  // --- NAVIGATION GUARD ---
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (isDirty) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [isDirty]);
+
+  useEffect(() => {
+    (window as any).xeenapsIsDirty = isDirty;
+    return () => { (window as any).xeenapsIsDirty = false; };
+  }, [isDirty]);
+
   const dispatchProfileUpdate = (updatedProfile: UserProfile) => {
     window.dispatchEvent(new CustomEvent('xeenaps-profile-updated', { detail: updatedProfile }));
   };
 
-  // --- OPTIMISTIC HISTORY HANDLERS ---
+  // --- BATCH SAVE LOGIC ---
 
-  const handleSaveEducation = async (data: EducationEntry) => {
-    const original = [...education];
+  const handleSaveChanges = async () => {
+    if (!localProfile) return;
+    setIsSaving(true);
+
+    try {
+      // 1. Save Profile Identity
+      await upsertProfileToSupabase(localProfile);
+      dispatchProfileUpdate(localProfile); // Update global header instantly
+
+      // 2. Process Education (Upsert & Delete)
+      const eduUpsertPromises = education.map(e => upsertEducationToSupabase(e));
+      const eduDeletePromises = deletedEducationIds.map(id => deleteEducationFromSupabase(id));
+
+      // 3. Process Career (Upsert & Delete)
+      const careerUpsertPromises = career.map(c => upsertCareerToSupabase(c));
+      const careerDeletePromises = deletedCareerIds.map(id => deleteCareerFromSupabase(id));
+
+      await Promise.all([
+        ...eduUpsertPromises,
+        ...eduDeletePromises,
+        ...careerUpsertPromises,
+        ...careerDeletePromises
+      ]);
+
+      // 4. Cleanup & Feedback
+      setIsDirty(false);
+      setDeletedEducationIds([]);
+      setDeletedCareerIds([]);
+      showXeenapsToast('success', 'Profile updated successfully');
+
+    } catch (error) {
+      console.error("Save failed:", error);
+      showXeenapsToast('error', 'Failed to save changes. Please try again.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleSafeBack = async () => {
+    if (isDirty) {
+      const result = await Swal.fire({
+        ...XEENAPS_SWAL_CONFIG,
+        title: 'Unsaved Changes',
+        text: 'You have unsaved changes. Are you sure you want to leave?',
+        showCancelButton: true,
+        confirmButtonText: 'Discard & Leave',
+        cancelButtonText: 'Cancel',
+        confirmButtonColor: '#ef4444'
+      });
+      if (result.isConfirmed) {
+        navigate('/dashboard');
+      }
+    } else {
+      navigate('/dashboard');
+    }
+  };
+
+  // --- OPTIMISTIC HISTORY HANDLERS (LOCAL STATE ONLY) ---
+
+  const handleSaveEducation = (data: EducationEntry) => {
     const isEdit = education.some(item => item.id === data.id);
-    
     setEducation(prev => isEdit 
       ? prev.map(item => item.id === data.id ? data : item)
       : [...prev, data]
     );
+    setIsDirty(true);
     setIsEduModalOpen(false);
-
-    setIsSyncing(true);
-    const success = await upsertEducationToSupabase(data);
-    if (!success) {
-      setEducation(original);
-      showXeenapsToast('error', 'Supabase sync failed. History rolled back.');
-    }
-    setIsSyncing(false);
   };
 
-  const handleDeleteEducation = async (id: string) => {
-    const original = [...education];
+  const handleDeleteEducation = (id: string) => {
     setEducation(prev => prev.filter(item => item.id !== id));
-    
-    setIsSyncing(true);
-    const success = await deleteEducationFromSupabase(id);
-    if (!success) {
-      setEducation(original);
-      showXeenapsToast('error', 'Delete sync failed. Item restored.');
-    }
-    setIsSyncing(false);
+    setDeletedEducationIds(prev => [...prev, id]);
+    setIsDirty(true);
   };
 
-  const handleSaveCareer = async (data: CareerEntry) => {
-    const original = [...career];
+  const handleSaveCareer = (data: CareerEntry) => {
     const isEdit = career.some(item => item.id === data.id);
-    
     setCareer(prev => isEdit 
       ? prev.map(item => item.id === data.id ? data : item)
       : [...prev, data]
     );
+    setIsDirty(true);
     setIsCareerModalOpen(false);
-
-    setIsSyncing(true);
-    const success = await upsertCareerToSupabase(data);
-    if (!success) {
-      setCareer(original);
-      showXeenapsToast('error', 'Supabase sync failed. Career history restored.');
-    }
-    setIsSyncing(false);
   };
 
-  const handleDeleteCareer = async (id: string) => {
-    const original = [...career];
+  const handleDeleteCareer = (id: string) => {
     setCareer(prev => prev.filter(item => item.id !== id));
-    
-    setIsSyncing(true);
-    const success = await deleteCareerFromSupabase(id);
-    if (!success) {
-      setCareer(original);
-      showXeenapsToast('error', 'Delete sync failed. Item restored.');
-    }
-    setIsSyncing(false);
+    setDeletedCareerIds(prev => [...prev, id]);
+    setIsDirty(true);
   };
 
-  // --- IDENTITY HANDLERS ---
+  // --- IDENTITY HANDLERS (LOCAL STATE ONLY) ---
 
-  const handleFieldUpdate = async (field: keyof UserProfile, value: string) => {
-    if (!localProfile || !profile) return;
+  const handleFieldUpdate = (field: keyof UserProfile, value: string) => {
+    if (!localProfile) return;
     if (localProfile[field] === value) return;
 
-    const newProfile = { ...localProfile, [field]: value };
-    setLocalProfile(newProfile);
-    
-    if (field === 'fullName') {
-      dispatchProfileUpdate(newProfile);
-    }
-
-    setIsSyncing(true);
-    const success = await upsertProfileToSupabase(newProfile);
-    if (success) {
-      setProfile(newProfile);
-      dispatchProfileUpdate(newProfile);
-    } else {
-      setLocalProfile(profile); 
-      showXeenapsToast('error', 'Supabase sync failed');
-      dispatchProfileUpdate(profile);
-    }
-    setIsSyncing(false);
+    setLocalProfile({ ...localProfile, [field]: value });
+    setIsDirty(true);
   };
 
-  const handlePhotoUpdate = async (url: string, fileId: string, nodeUrl: string) => {
+  const handlePhotoUpdate = (url: string, fileId: string, nodeUrl: string) => {
     if (!localProfile) return;
     
-    const oldFileId = localProfile.photoFileId;
-    const oldNodeUrl = localProfile.photoNodeUrl;
-
+    // Note: We don't delete the old photo immediately to allow "Cancel" without data loss.
+    // The photo file upload is physical and immediate, but the linkage to profile is state-based.
+    
     const updatedProfile = { 
       ...localProfile, 
       photoUrl: url, 
@@ -219,23 +264,12 @@ const UserProfileView: React.FC = () => {
     };
 
     setLocalProfile(updatedProfile);
-    setIsSyncing(true);
-
-    const success = await upsertProfileToSupabase(updatedProfile);
-    if (success) {
-      setProfile(updatedProfile);
-      dispatchProfileUpdate(updatedProfile);
-
-      if (oldFileId && oldFileId !== fileId && oldNodeUrl) {
-         await deleteProfilePhoto(oldFileId, oldNodeUrl);
-      }
-    }
-    setIsSyncing(false);
+    setIsDirty(true);
   };
 
-  const handleUniqueIdUpdate = async (newId: string) => {
+  const handleUniqueIdUpdate = (newId: string) => {
     if (!localProfile) return;
-    await handleFieldUpdate('uniqueAppId', newId);
+    handleFieldUpdate('uniqueAppId', newId);
   };
 
   if (isLoading) {
@@ -250,88 +284,117 @@ const UserProfileView: React.FC = () => {
   ];
 
   return (
-    <div className="flex-1 overflow-y-auto custom-scrollbar bg-[#fcfcfc] animate-in fade-in duration-700 h-full">
-      <div className="max-w-7xl mx-auto p-4 md:p-8 space-y-8 pb-32">
-        
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch">
-          <div className="h-full">
-            <IDCardSection 
-              profile={localProfile!} 
-              onUpdate={handleFieldUpdate}
-              onPhotoChange={handlePhotoUpdate}
-              onEditUniqueId={() => setIsUniqueIdModalOpen(true)}
-            />
-          </div>
+    <FormPageContainer>
+      <GlobalSavingOverlay isVisible={isSaving} />
 
-          <div className="h-full">
-            <AcademicGrid 
-              profile={localProfile!} 
-              onUpdate={handleFieldUpdate}
-            />
-          </div>
-        </div>
+      <FormStickyHeader 
+        title="User Profile" 
+        subtitle="Manage personal identity & history" 
+        onBack={handleSafeBack} 
+        rightElement={
+          isDirty && (
+            <button 
+              onClick={handleSaveChanges}
+              disabled={isSaving}
+              className={`flex items-center gap-2 px-6 py-3 bg-[#004A74] text-[#FED400] rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg transition-all animate-in zoom-in-95 ${isSaving ? 'opacity-70 cursor-not-allowed' : 'hover:scale-105 active:scale-95'}`}
+            >
+              {isSaving ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" /> Saving...
+                </>
+              ) : (
+                <>
+                  <Save size={16} /> Save Changes
+                </>
+              )}
+            </button>
+          )
+        }
+      />
 
-        <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm">
-           <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-400 mb-6 px-2">Academic Identifiers</h3>
-           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              {idCards.map((id) => (
-                <div key={id.key} className="space-y-2 p-4 bg-gray-50 rounded-2xl border border-gray-100 focus-within:border-[#FED400] transition-all">
-                   <label className={`text-[8px] font-black uppercase tracking-tighter flex items-center gap-1.5 ${id.color}`}>
-                      <id.icon size={12} /> {id.label}
-                   </label>
-                   <input 
-                     className="w-full bg-transparent border-none p-0 text-[10px] font-mono font-bold text-[#004A74] outline-none placeholder:text-gray-200"
-                     defaultValue={localProfile![id.key]}
-                     onBlur={(e) => handleFieldUpdate(id.key, e.target.value)}
-                     placeholder="CODE..."
-                   />
-                </div>
-              ))}
-           </div>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 pt-4">
-          <div className="space-y-6">
-            <div className="flex items-center justify-between px-4">
-              <h3 className="text-[11px] font-black uppercase tracking-[0.3em] text-[#004A74] flex items-center gap-2">
-                <GraduationCap size={18} /> Education History
-              </h3>
-              <button 
-                onClick={() => { setSelectedEdu(undefined); setIsEduModalOpen(true); }}
-                className="p-2 bg-[#004A74] text-[#FED400] rounded-xl hover:scale-110 active:scale-95 transition-all shadow-md"
-              >
-                <Plus size={18} strokeWidth={3} />
-              </button>
+      <FormContentArea>
+        <div className="max-w-7xl mx-auto space-y-8 pb-32">
+          
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch">
+            <div className="h-full">
+              <IDCardSection 
+                profile={localProfile!} 
+                onUpdate={handleFieldUpdate}
+                onPhotoChange={handlePhotoUpdate}
+                onEditUniqueId={() => setIsUniqueIdModalOpen(true)}
+              />
             </div>
-            <HistoryTimeline 
-              type="education"
-              items={education}
-              onEdit={(item) => { setSelectedEdu(item as EducationEntry); setIsEduModalOpen(true); }}
-              onDelete={handleDeleteEducation}
-            />
+
+            <div className="h-full">
+              <AcademicGrid 
+                profile={localProfile!} 
+                onUpdate={handleFieldUpdate}
+              />
+            </div>
           </div>
 
-          <div className="space-y-6">
-            <div className="flex items-center justify-between px-4">
-              <h3 className="text-[11px] font-black uppercase tracking-[0.3em] text-[#004A74] flex items-center gap-2">
-                <Briefcase size={18} /> Career Journey
-              </h3>
-              <button 
-                onClick={() => { setSelectedCareer(undefined); setIsCareerModalOpen(true); }}
-                className="p-2 bg-[#004A74] text-[#FED400] rounded-xl hover:scale-110 active:scale-95 transition-all shadow-md"
-              >
-                <Plus size={18} strokeWidth={3} />
-              </button>
+          <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm">
+             <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-400 mb-6 px-2">Academic Identifiers</h3>
+             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                {idCards.map((id) => (
+                  <div key={id.key} className="space-y-2 p-4 bg-gray-50 rounded-2xl border border-gray-100 focus-within:border-[#FED400] transition-all">
+                     <label className={`text-[8px] font-black uppercase tracking-tighter flex items-center gap-1.5 ${id.color}`}>
+                        <id.icon size={12} /> {id.label}
+                     </label>
+                     <input 
+                       className="w-full bg-transparent border-none p-0 text-[10px] font-mono font-bold text-[#004A74] outline-none placeholder:text-gray-200"
+                       value={localProfile![id.key] || ''}
+                       onChange={(e) => handleFieldUpdate(id.key, e.target.value)}
+                       placeholder="CODE..."
+                     />
+                  </div>
+                ))}
+             </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 pt-4">
+            <div className="space-y-6">
+              <div className="flex items-center justify-between px-4">
+                <h3 className="text-[11px] font-black uppercase tracking-[0.3em] text-[#004A74] flex items-center gap-2">
+                  <GraduationCap size={18} /> Education History
+                </h3>
+                <button 
+                  onClick={() => { setSelectedEdu(undefined); setIsEduModalOpen(true); }}
+                  className="p-2 bg-[#004A74] text-[#FED400] rounded-xl hover:scale-110 active:scale-95 transition-all shadow-md"
+                >
+                  <Plus size={18} strokeWidth={3} />
+                </button>
+              </div>
+              <HistoryTimeline 
+                type="education"
+                items={education}
+                onEdit={(item) => { setSelectedEdu(item as EducationEntry); setIsEduModalOpen(true); }}
+                onDelete={handleDeleteEducation}
+              />
             </div>
-            <HistoryTimeline 
-              type="career"
-              items={career}
-              onEdit={(item) => { setSelectedCareer(item as CareerEntry); setIsCareerModalOpen(true); }}
-              onDelete={handleDeleteCareer}
-            />
+
+            <div className="space-y-6">
+              <div className="flex items-center justify-between px-4">
+                <h3 className="text-[11px] font-black uppercase tracking-[0.3em] text-[#004A74] flex items-center gap-2">
+                  <Briefcase size={18} /> Career Journey
+                </h3>
+                <button 
+                  onClick={() => { setSelectedCareer(undefined); setIsCareerModalOpen(true); }}
+                  className="p-2 bg-[#004A74] text-[#FED400] rounded-xl hover:scale-110 active:scale-95 transition-all shadow-md"
+                >
+                  <Plus size={18} strokeWidth={3} />
+                </button>
+              </div>
+              <HistoryTimeline 
+                type="career"
+                items={career}
+                onEdit={(item) => { setSelectedCareer(item as CareerEntry); setIsCareerModalOpen(true); }}
+                onDelete={handleDeleteCareer}
+              />
+            </div>
           </div>
         </div>
-      </div>
+      </FormContentArea>
 
       {isEduModalOpen && (
         <EducationModal 
@@ -362,7 +425,7 @@ const UserProfileView: React.FC = () => {
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(0, 74, 116, 0.1); border-radius: 10px; }
       `}</style>
-    </div>
+    </FormPageContainer>
   );
 };
 
