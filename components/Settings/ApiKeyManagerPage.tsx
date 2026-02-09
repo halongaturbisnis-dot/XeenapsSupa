@@ -190,7 +190,7 @@ const ApiKeyManagerPage: React.FC = () => {
                         disabled={isProcessing || !newKey || !newLabel}
                         className="w-full md:w-auto px-8 py-3 bg-[#004A74] text-[#FED400] rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg hover:scale-105 active:scale-95 transition-all disabled:opacity-50 disabled:grayscale"
                       >
-                        {isProcessing ? <Loader2 className="w-4 h-4 animate-spin" /> : null } Register
+                        {isProcessing ? null : null } Register
                       </button>
                    </div>
 

@@ -467,7 +467,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onMobileClose }) => {
               className="w-full flex items-center p-2 pl-9 lg:pl-10 rounded-lg text-black hover:text-black hover:bg-[#FED400]/5 transition-all text-xs md:text-sm font-medium"
             >
               <Key size={16} className="mr-2 shrink-0" />
-              <span className="whitespace-nowrap">AI Key</span>
+              <span className="whitespace-nowrap">API Key</span>
             </NavLink>
           </div>
         </div>
