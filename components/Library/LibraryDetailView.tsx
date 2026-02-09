@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 // @ts-ignore
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -800,13 +799,7 @@ const LibraryDetailView: React.FC<LibraryDetailViewProps> = ({ item, onClose, is
                     <button onClick={handleUpdate} className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-gray-600 hover:bg-[#004A74] hover:text-white rounded-xl transition-all">
                       <PencilIcon className="w-4 h-4" /> Update
                     </button>
-                    {/* NEW BUTTON: Manage Content Source */}
-                    <button 
-                      onClick={() => { setIsContentManagerOpen(true); setIsMenuOpen(false); }} 
-                      className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-gray-600 hover:bg-[#004A74] hover:text-white rounded-xl transition-all"
-                    >
-                      <FileCode className="w-4 h-4" /> Manage Content Source
-                    </button>
+                    {/* NEW BUTTON: Manage Content Source Removed from Dropdown */}
                     
                     <button 
                       onClick={() => { if(hasContent) { setShowPresentations(true); setIsMenuOpen(false); } }} 
@@ -906,14 +899,25 @@ const LibraryDetailView: React.FC<LibraryDetailViewProps> = ({ item, onClose, is
                       <p className="text-sm font-bold text-[#004A74]">{authorsText === 'N/A' ? 'Unknown' : authorsText}</p>
                     </div>
 
-                    <div className="mt-4 md:mt-0 flex flex-col items-start md:items-end gap-0.5 opacity-60 md:absolute md:bottom-4 md:right-8 transition-all">
-                       <div className="flex items-center gap-1.5">
-                          <ClockIcon className="w-2.5 h-2.5" />
-                          <span className="text-[7px] font-black uppercase tracking-tighter">Created: {formatTimeMeta(currentItem.createdAt)}</span>
-                       </div>
-                       <div className="flex items-center gap-1.5">
-                          <ArrowPathIcon className="w-2.5 h-2.5" />
-                          <span className="text-[7px] font-black uppercase tracking-tighter">Updated: {formatTimeMeta(currentItem.updatedAt)}</span>
+                    <div className="mt-4 md:mt-0 md:absolute md:bottom-4 md:right-8 transition-all flex flex-col md:flex-row items-start md:items-center gap-4">
+                       {/* Source Button */}
+                       <button 
+                         onClick={() => setIsContentManagerOpen(true)}
+                         className="flex items-center gap-2 px-5 py-2 bg-[#FED400] text-[#004A74] text-[10px] font-black uppercase tracking-widest rounded-xl shadow-md hover:scale-105 active:scale-95 transition-all"
+                       >
+                         SOURCE
+                       </button>
+
+                       {/* Timestamps */}
+                       <div className="flex flex-col items-start md:items-end gap-0.5 opacity-60">
+                          <div className="flex items-center gap-1.5">
+                             <ClockIcon className="w-2.5 h-2.5" />
+                             <span className="text-[7px] font-black uppercase tracking-tighter">Created: {formatTimeMeta(currentItem.createdAt)}</span>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                             <ArrowPathIcon className="w-2.5 h-2.5" />
+                             <span className="text-[7px] font-black uppercase tracking-tighter">Updated: {formatTimeMeta(currentItem.updatedAt)}</span>
+                          </div>
                        </div>
                     </div>
 
@@ -1120,4 +1124,4 @@ const LibraryDetailView: React.FC<LibraryDetailViewProps> = ({ item, onClose, is
   );
 };
 
-export default LibraryDetailView;
+export default SharboxDetailView;
