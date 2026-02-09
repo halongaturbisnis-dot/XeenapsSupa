@@ -34,7 +34,7 @@ interface GroqKey {
 
 const ApiKeyManagerPage: React.FC = () => {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<'GEMINI' | 'GROQ' | 'SCRAPING'>('GEMINI');
+  const [activeTab, setActiveTab] = useState<'GEMINI' | 'GROQ'>('GEMINI');
   const [isLoading, setIsLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
   const [showKeys, setShowKeys] = useState<Record<string, boolean>>({}); // Toggle mask state per row
@@ -42,7 +42,6 @@ const ApiKeyManagerPage: React.FC = () => {
   // Data States
   const [geminiKeys, setGeminiKeys] = useState<GeminiKey[]>([]);
   const [groqKeys, setGroqKeys] = useState<GroqKey[]>([]);
-  const [scrapingKey, setScrapingKey] = useState('');
 
   // Form States
   const [newKey, setNewKey] = useState('');
@@ -55,7 +54,6 @@ const ApiKeyManagerPage: React.FC = () => {
       if (res.status === 'success' && res.data) {
         setGeminiKeys(res.data.gemini || []);
         setGroqKeys(res.data.groq || []);
-        setScrapingKey(res.data.scraping || '');
       }
     } catch (e) {
       showXeenapsToast('error', 'Failed to load keys');
@@ -137,17 +135,6 @@ const ApiKeyManagerPage: React.FC = () => {
     }
   };
 
-  const handleSaveScraping = async () => {
-    setIsProcessing(true);
-    const res = await manageApiKeys({ subAction: 'save_scraping', key: scrapingKey });
-    if (res.status === 'success') {
-      showXeenapsToast('success', 'ScrapingAnt Key Saved');
-    } else {
-      showXeenapsToast('error', 'Save Failed');
-    }
-    setIsProcessing(false);
-  };
-
   return (
     <FormPageContainer>
       <FormStickyHeader 
@@ -161,13 +148,13 @@ const ApiKeyManagerPage: React.FC = () => {
            
            {/* TABS */}
            <div className="flex bg-gray-100 p-1.5 rounded-2xl gap-1 shrink-0 w-full md:w-auto self-start">
-              {['GEMINI', 'GROQ', 'SCRAPING'].map(tab => (
+              {['GEMINI', 'GROQ'].map(tab => (
                 <button 
                   key={tab}
                   onClick={() => { setActiveTab(tab as any); setNewKey(''); setNewLabel(''); }}
                   className={`flex-1 md:flex-none px-8 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === tab ? 'bg-[#004A74] text-white shadow-md' : 'text-gray-400 hover:text-[#004A74] hover:bg-white'}`}
                 >
-                  {tab === 'SCRAPING' ? 'Scraping Ant' : `${tab} AI`}
+                  {tab === 'GROQ' ? 'GROQ AI' : `${tab} AI`}
                 </button>
               ))}
            </div>
@@ -279,20 +266,18 @@ const ApiKeyManagerPage: React.FC = () => {
                       <StandardTableWrapper>
                          <thead className="bg-gray-50">
                             <tr>
-                               <StandardTh>ID Reference</StandardTh>
                                <StandardTh>Masked API Key</StandardTh>
                                <StandardTh className="text-center">Action</StandardTh>
                             </tr>
                          </thead>
                          <tbody className="divide-y divide-gray-50">
                             {isLoading ? (
-                              <tr><td colSpan={3} className="p-8 text-center"><Loader2 className="w-6 h-6 animate-spin mx-auto text-[#004A74]" /></td></tr>
+                              <tr><td colSpan={2} className="p-8 text-center"><Loader2 className="w-6 h-6 animate-spin mx-auto text-[#004A74]" /></td></tr>
                             ) : groqKeys.length === 0 ? (
-                              <tr><td colSpan={3} className="p-12 text-center opacity-30 text-xs font-bold uppercase tracking-widest">No keys found</td></tr>
+                              <tr><td colSpan={2} className="p-12 text-center opacity-30 text-xs font-bold uppercase tracking-widest">No keys found</td></tr>
                             ) : (
                               groqKeys.map(k => (
                                 <StandardTr key={k.id}>
-                                   <StandardTd className="font-mono text-gray-400 text-[10px]">{k.id}</StandardTd>
                                    <StandardTd>
                                       <div className="flex items-center gap-3">
                                          {renderMaskedKey(k.api, k.id)}
@@ -312,43 +297,6 @@ const ApiKeyManagerPage: React.FC = () => {
                          </tbody>
                       </StandardTableWrapper>
                    </StandardTableContainer>
-                </div>
-              )}
-
-              {/* SCRAPING SECTION */}
-              {activeTab === 'SCRAPING' && (
-                <div className="flex flex-col items-center justify-center py-10 space-y-6">
-                   <div className="w-16 h-16 bg-gray-100 rounded-[1.5rem] flex items-center justify-center mb-2">
-                      <ShieldCheck size={32} className="text-[#004A74]" />
-                   </div>
-                   <div className="text-center space-y-2 max-w-md">
-                      <h3 className="text-lg font-black text-[#004A74] uppercase tracking-tight">ScrapingAnt Configuration</h3>
-                      <p className="text-xs text-gray-500 font-medium">Used for bypassing sophisticated website blocks during literature discovery.</p>
-                   </div>
-                   
-                   <div className="w-full max-w-lg relative group">
-                      <input 
-                         type={showKeys['scraping'] ? 'text' : 'password'}
-                         className="w-full px-6 py-4 bg-gray-50 border border-gray-200 rounded-2xl text-center font-mono font-bold text-[#004A74] tracking-widest outline-none focus:bg-white focus:ring-4 focus:ring-[#004A74]/5 transition-all"
-                         value={scrapingKey}
-                         onChange={e => setScrapingKey(e.target.value)}
-                         placeholder="ENTER API KEY"
-                      />
-                      <button 
-                        onClick={() => toggleMask('scraping')} 
-                        className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#004A74] transition-colors"
-                      >
-                         {showKeys['scraping'] ? <EyeOff size={16} /> : <Eye size={16} />}
-                      </button>
-                   </div>
-
-                   <button 
-                      onClick={handleSaveScraping}
-                      disabled={isProcessing}
-                      className="px-10 py-4 bg-[#004A74] text-white rounded-2xl font-black uppercase tracking-widest text-xs shadow-xl hover:scale-105 active:scale-95 transition-all flex items-center gap-3 disabled:opacity-50"
-                   >
-                      {isProcessing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save size={16} />} Save Configuration
-                   </button>
                 </div>
               )}
 
