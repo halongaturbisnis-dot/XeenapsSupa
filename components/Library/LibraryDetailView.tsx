@@ -1124,4 +1124,4 @@ const LibraryDetailView: React.FC<LibraryDetailViewProps> = ({ item, onClose, is
   );
 };
 
-export default SharboxDetailView;
+export default LibraryDetailView;
