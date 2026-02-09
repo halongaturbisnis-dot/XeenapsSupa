@@ -1,3 +1,4 @@
+
 import { LibraryItem, GASResponse, ExtractionResult } from '../types';
 import { GAS_WEB_APP_URL } from '../constants';
 import Swal from 'sweetalert2';
@@ -467,5 +468,27 @@ export const createEmptyInsightFile = async (item: LibraryItem, nodeUrl: string)
   } catch (e) {
     console.error("Create Insight Failed:", e);
     return null;
+  }
+};
+
+/**
+ * API Key Management Service
+ * Handles CRUD for Gemini, Groq, and Scraping keys
+ */
+export const manageApiKeys = async (payload: any): Promise<GASResponse<any>> => {
+  if (!GAS_WEB_APP_URL) return { status: 'error', message: 'Backend URL missing' };
+  try {
+    const response = await fetch(GAS_WEB_APP_URL, {
+      method: 'POST',
+      mode: 'cors',
+      redirect: 'follow',
+      body: JSON.stringify({ 
+        action: 'manageApiKey',
+        ...payload 
+      }),
+    });
+    return await response.json();
+  } catch (error: any) {
+    return { status: 'error', message: error.toString() };
   }
 };

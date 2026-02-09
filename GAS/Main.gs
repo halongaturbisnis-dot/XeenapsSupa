@@ -1,5 +1,6 @@
 
 
+
 /**
  * XEENAPS PKM - MAIN ROUTER
  */
@@ -321,6 +322,11 @@ function doPost(e) {
   const action = body.action;
   
   try {
+    // NEW: API Key Management
+    if (action === 'manageApiKey') {
+      return createJsonResponse(handleApiKeyManager(body));
+    }
+  
     if (action === 'setupDatabase') return createJsonResponse(setupDatabase());
     if (action === 'setupSharboxDatabase') return createJsonResponse(setupSharboxDatabase());
     // NOTEBOOK SETUP DEPRECATED: if (action === 'setupNotebookDatabase') ...
