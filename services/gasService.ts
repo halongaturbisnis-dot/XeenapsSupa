@@ -1,4 +1,3 @@
-
 import { LibraryItem, GASResponse, ExtractionResult } from '../types';
 import { GAS_WEB_APP_URL } from '../constants';
 import Swal from 'sweetalert2';
@@ -10,6 +9,27 @@ const Toast = Swal.mixin({
   timer: 3000,
   timerProgressBar: true,
 });
+
+/**
+ * Manage API Keys (Gemini, Groq, ScrapingAnt) via GAS Backend
+ */
+export const manageApiKeys = async (payload: any): Promise<GASResponse<any>> => {
+  try {
+    if (!GAS_WEB_APP_URL) throw new Error('VITE_GAS_URL is missing.');
+    const response = await fetch(GAS_WEB_APP_URL, {
+      method: 'POST',
+      mode: 'cors',
+      redirect: 'follow',
+      body: JSON.stringify({ 
+        action: 'manageApiKey',
+        ...payload
+      }),
+    });
+    return await response.json();
+  } catch (error: any) {
+    return { status: 'error', message: error.toString() };
+  }
+};
 
 export const initializeDatabase = async (): Promise<{ status: string; message: string }> => {
   try {
@@ -45,52 +65,179 @@ export const initializeConsultationDatabase = async (): Promise<{ status: string
 };
 
 /**
- * NEW: Initialize Colleague Database Structure
- */
-export const initializeColleagueDatabase = async (): Promise<{ status: string; message: string }> => {
-  try {
-    if (!GAS_WEB_APP_URL) throw new Error('VITE_GAS_URL is missing.');
-    const response = await fetch(GAS_WEB_APP_URL, {
-      method: 'POST',
-      mode: 'cors',
-      redirect: 'follow',
-      body: JSON.stringify({ action: 'setupColleagueDatabase' }),
-    });
-    return await response.json();
-  } catch (error: any) {
-    return { status: 'error', message: error.toString() };
-  }
-};
-
-/**
- * NEW: Initialize Brainstorming Database Structure
+ * NEW: Initialize Brainstorming Database Structure (Optional Legacy)
  */
 export const initializeBrainstormingDatabase = async (): Promise<{ status: string; message: string }> => {
-  try {
-    if (!GAS_WEB_APP_URL) throw new Error('VITE_GAS_URL is missing.');
-    const response = await fetch(GAS_WEB_APP_URL, {
-      method: 'POST',
-      mode: 'cors',
-      redirect: 'follow',
-      body: JSON.stringify({ action: 'setupBrainstormingDatabase' }),
-    });
-    return await response.json();
-  } catch (error: any) {
-    return { status: 'error', message: error.toString() };
-  }
+  // Legacy stub, real logic moved to Supabase service
+  return { status: 'success', message: 'Brainstorming DB ready (Supabase managed).' };
 };
 
 /**
- * NEW: Initialize Publication Database Structure
+ * NEW: Initialize Publication Database Structure (Optional Legacy)
  */
 export const initializePublicationDatabase = async (): Promise<{ status: string; message: string }> => {
+  // Legacy stub
+  return { status: 'success', message: 'Publication DB ready (Supabase managed).' };
+};
+
+export const deleteLibraryItem = async (id: string): Promise<boolean> => {
   try {
     if (!GAS_WEB_APP_URL) throw new Error('VITE_GAS_URL is missing.');
     const response = await fetch(GAS_WEB_APP_URL, {
       method: 'POST',
       mode: 'cors',
       redirect: 'follow',
-      body: JSON.stringify({ action: 'setupPublicationDatabase' }),
+      body: JSON.stringify({ action: 'deleteItem', id }),
+    });
+    const result = await response.json();
+    return result.status === 'success';
+  } catch (error) {
+    console.error("Delete failed:", error);
+    return false;
+  }
+};
+
+export const callAiProxy = async (
+  provider: 'gemini' | 'groq', 
+  prompt: string, 
+  modelOverride?: string,
+  signal?: AbortSignal,
+  responseType?: 'json' | 'text' 
+): Promise<string> => {
+  try {
+    if (!GAS_WEB_APP_URL) throw new Error('VITE_GAS_URL is missing.');
+    const response = await fetch(GAS_WEB_APP_URL, {
+      method: 'POST',
+      mode: 'cors',
+      redirect: 'follow',
+      body: JSON.stringify({ 
+        action: 'aiProxy', 
+        provider, 
+        prompt, 
+        modelOverride,
+        responseType
+      }),
+      signal // Pass abort signal to fetch
+    });
+    const result = await response.json();
+    if (result.status === 'success') {
+      return result.data;
+    } else {
+      console.error("AI Proxy Error:", result.message);
+      return '';
+    }
+  } catch (error: any) {
+    if (error.name === 'AbortError') {
+      // Silent abort
+    } else {
+      console.error("AI Proxy Connection Failed:", error);
+    }
+    return '';
+  }
+};
+
+/**
+ * Upload File Helper for Library
+ */
+export const uploadAndStoreFile = async (
+  file: File, 
+  metadata: Partial<LibraryItem>
+): Promise<{ status: string; fileId?: string; nodeUrl?: string; message?: string }> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = async () => {
+      try {
+        const base64Data = (reader.result as string).split(',')[1];
+        if (!GAS_WEB_APP_URL) throw new Error('VITE_GAS_URL is missing.');
+        
+        const response = await fetch(GAS_WEB_APP_URL, {
+          method: 'POST',
+          mode: 'cors',
+          redirect: 'follow',
+          body: JSON.stringify({
+            action: 'saveItem',
+            item: metadata,
+            file: {
+              fileName: file.name,
+              mimeType: file.type,
+              fileData: base64Data
+            }
+          })
+        });
+        const result = await response.json();
+        resolve(result);
+      } catch (e) {
+        reject(e);
+      }
+    };
+    reader.onerror = (e) => reject(e);
+    reader.readAsDataURL(file);
+  });
+};
+
+/**
+ * Save Extracted Content (Text) to Drive via GAS (Sharding)
+ * Used by ContentManagerModal
+ */
+export const saveExtractedContentToDrive = async (
+  item: LibraryItem, 
+  content: string
+): Promise<{ status: string, fileId: string, nodeUrl: string } | null> => {
+  try {
+    if (!GAS_WEB_APP_URL) return null;
+    // Re-use 'saveItem' logic but with text content specifically
+    const payload = {
+      action: 'saveItem',
+      item: item,
+      extractedText: content
+      // No binary file attached
+    };
+    
+    const response = await fetch(GAS_WEB_APP_URL, {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+    return await response.json();
+  } catch (e) {
+    return null;
+  }
+};
+
+/**
+ * Helper: Create Empty Insight File if missing
+ */
+export const createEmptyInsightFile = async (item: LibraryItem, nodeUrl?: string): Promise<string | null> => {
+  try {
+    if (!GAS_WEB_APP_URL) return null;
+    const targetUrl = nodeUrl || GAS_WEB_APP_URL;
+
+    // Use generic saveJsonFile action
+    const res = await fetch(targetUrl, {
+      method: 'POST',
+      body: JSON.stringify({ 
+        action: 'saveJsonFile', 
+        fileName: `insight_${item.id}.json`, 
+        content: JSON.stringify({}) 
+      })
+    });
+    const result = await res.json();
+    return result.status === 'success' ? result.fileId : null;
+  } catch (e) {
+    return null;
+  }
+};
+
+/**
+ * Extract Metadata from URL via GAS (Scraping)
+ */
+export const extractFromUrl = async (url: string): Promise<any> => {
+  try {
+    if (!GAS_WEB_APP_URL) throw new Error('VITE_GAS_URL is missing.');
+    const response = await fetch(GAS_WEB_APP_URL, {
+      method: 'POST',
+      mode: 'cors',
+      redirect: 'follow',
+      body: JSON.stringify({ action: 'extractOnly', url }),
     });
     return await response.json();
   } catch (error: any) {
@@ -98,62 +245,88 @@ export const initializePublicationDatabase = async (): Promise<{ status: string;
   }
 };
 
-export const fetchLibrary = async (): Promise<LibraryItem[]> => {
-  try {
-    if (!GAS_WEB_APP_URL) return [];
-    const response = await fetch(`${GAS_WEB_APP_URL}?action=getLibrary`, {
-      method: 'GET',
-      mode: 'cors',
-      redirect: 'follow'
-    });
-    if (!response.ok) return [];
-    const result: GASResponse<LibraryItem[]> = await response.json();
-    return result.data || [];
-  } catch (error) {
-    return [];
-  }
-};
-
 /**
- * Server-side Paginated Fetch with AbortSignal and Sorting Support
+ * Identifier Search Proxy
  */
-export const fetchLibraryPaginated = async (
-  page: number = 1, 
-  limit: number = 25, 
-  search: string = "", 
-  type: string = "All", 
-  path: string = "",
-  sortKey: string = "createdAt",
-  sortDir: string = "desc",
-  signal?: AbortSignal
-): Promise<{ items: LibraryItem[], totalCount: number }> => {
+export const callIdentifierSearch = async (idValue: string, signal?: AbortSignal): Promise<any> => {
   try {
-    if (!GAS_WEB_APP_URL) return { items: [], totalCount: 0 };
-    const url = `${GAS_WEB_APP_URL}?action=getLibrary&page=${page}&limit=${limit}&search=${encodeURIComponent(search)}&type=${encodeURIComponent(type)}&path=${encodeURIComponent(path)}&sortKey=${sortKey}&sortDir=${sortDir}`;
-    const response = await fetch(url, { 
-      method: 'GET', 
-      mode: 'cors', 
+    if (!GAS_WEB_APP_URL) throw new Error('VITE_GAS_URL is missing.');
+    const response = await fetch(GAS_WEB_APP_URL, {
+      method: 'POST',
+      mode: 'cors',
       redirect: 'follow',
-      signal 
+      body: JSON.stringify({ action: 'searchByIdentifier', idValue }),
+      signal
     });
-    if (!response.ok) return { items: [], totalCount: 0 };
-    const result: any = await response.json();
-    return { 
-      items: result.data || [], 
-      totalCount: result.totalCount || 0 
-    };
-  } catch (error: any) {
-    if (error.name === 'AbortError') {
-      console.log('Fetch aborted');
-    }
-    return { items: [], totalCount: 0 };
+    const result = await response.json();
+    return result.status === 'success' ? result.data : null;
+  } catch (error) {
+    return null;
   }
 };
 
 /**
- * Fetch File Content from Storage Node (Master or Slave)
+ * Generate Citations
+ */
+export const generateCitations = async (item: LibraryItem, style: string, language: string): Promise<any> => {
+  try {
+    if (!GAS_WEB_APP_URL) return null;
+    const response = await fetch(GAS_WEB_APP_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'generateCitations', item, style, language })
+    });
+    const result = await response.json();
+    return result.status === 'success' ? result.data : null;
+  } catch (e) {
+    return null;
+  }
+};
+
+/**
+ * Generate Insight (AI Insighter)
+ */
+export const generateInsight = async (item: LibraryItem): Promise<any> => {
+  try {
+    if (!GAS_WEB_APP_URL) return null;
+    const response = await fetch(GAS_WEB_APP_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'generateInsight', item })
+    });
+    const result = await response.json();
+    return result.status === 'success' ? result.data : null;
+  } catch (e) {
+    return null;
+  }
+};
+
+/**
+ * Translate Insight Section
+ */
+export const translateInsightSection = async (item: LibraryItem, sectionName: string, targetLang: string): Promise<string | null> => {
+  try {
+    if (!GAS_WEB_APP_URL || !item.insightJsonId) return null;
+    const response = await fetch(GAS_WEB_APP_URL, {
+      method: 'POST',
+      body: JSON.stringify({ 
+        action: 'translateInsightSection', 
+        fileId: item.insightJsonId, 
+        sectionName, 
+        targetLang,
+        nodeUrl: item.storageNodeUrl 
+      })
+    });
+    const result = await response.json();
+    return result.status === 'success' ? result.translatedText : null;
+  } catch (e) {
+    return null;
+  }
+};
+
+/**
+ * Fetch File Content (JSON Sharding)
  */
 export const fetchFileContent = async (fileId: string, nodeUrl?: string): Promise<any> => {
+  if (!fileId) return null;
   try {
     const targetUrl = nodeUrl || GAS_WEB_APP_URL;
     if (!targetUrl) return null;
@@ -161,332 +334,37 @@ export const fetchFileContent = async (fileId: string, nodeUrl?: string): Promis
     const response = await fetch(finalUrl);
     const result = await response.json();
     return result.status === 'success' ? JSON.parse(result.content) : null;
-  } catch (error) {
-    console.error("fetchFileContent error:", error);
+  } catch (e) {
     return null;
   }
 };
 
 /**
- * MODIFIED: callAiProxy now supports responseType parameter for flexible output formatting.
+ * Process Library File in Cloud (Heavy Lifting Worker)
+ * Delegates complex extraction and file saving to GAS to avoid browser timeouts.
  */
-export const callAiProxy = async (
-  provider: 'groq' | 'gemini', 
-  prompt: string, 
-  modelOverride?: string, 
-  signal?: AbortSignal,
-  responseType: 'json' | 'text' = 'json'
-): Promise<string> => {
+export const processLibraryFileInCloud = async (
+  item: any, 
+  fileUploadData?: { fileName: string, mimeType: string, fileData: string }, 
+  extractedText?: string
+): Promise<any> => {
   try {
-    if (!GAS_WEB_APP_URL) throw new Error('GAS_WEB_APP_URL not configured');
+    if (!GAS_WEB_APP_URL) throw new Error('VITE_GAS_URL is missing.');
+
+    const payload = {
+      action: 'saveItem',
+      item: item,
+      file: fileUploadData,
+      extractedText: extractedText
+    };
+
+    // Use a longer timeout fetch wrapper or standard fetch
+    // Note: Standard fetch doesn't have timeout, browsers default to ~300s
     const response = await fetch(GAS_WEB_APP_URL, {
       method: 'POST',
-      mode: 'cors',
-      redirect: 'follow',
-      body: JSON.stringify({ action: 'aiProxy', provider, prompt, modelOverride, responseType }),
-      signal
-    });
-    const result = await response.json();
-    if (result && result.status === 'success') return result.data;
-    throw new Error(result?.message || 'AI Proxy failed.');
-  } catch (error: any) {
-    console.error("callAiProxy Exception:", error);
-    throw error;
-  }
-};
-
-const processExtractedText = (extractedText: string, defaultTitle: string = ""): ExtractionResult => {
-  const isYouTube = extractedText.includes("YOUTUBE_METADATA");
-  const minLength = isYouTube ? 50 : 300;
-
-  if (!extractedText || extractedText.length < minLength) {
-    throw new Error("Content extraction returned insufficient data.");
-  }
-
-  const limitTotal = 200000;
-  const limitedText = extractedText.substring(0, limitTotal);
-  const aiSnippet = limitedText.substring(0, 7500);
-  const chunkSize = 20000;
-  const chunks: string[] = [];
-  for (let i = 0; i < limitedText.length; i += chunkSize) {
-    if (chunks.length >= 10) break;
-    chunks.push(limitedText.substring(i, i + chunkSize));
-  }
-  return { title: defaultTitle, fullText: limitedText, aiSnippet, chunks } as ExtractionResult;
-};
-
-export const extractFromUrl = async (url: string, onStageChange?: (stage: 'READING' | 'BYPASS' | 'AI_ANALYSIS') => void, signal?: AbortSignal): Promise<ExtractionResult | null> => {
-  if (!GAS_WEB_APP_URL) throw new Error('Backend GAS URL missing.');
-
-  onStageChange?.('READING');
-  try {
-    const res = await fetch(GAS_WEB_APP_URL, {
-      method: 'POST',
-      mode: 'cors',
-      redirect: 'follow',
-      body: JSON.stringify({ action: 'extractOnly', url }),
-      signal
+      body: JSON.stringify(payload)
     });
     
-    const data = await res.json();
-    if (data.status === 'success' && data.extractedText && !data.extractedText.startsWith("Extraction failed")) {
-      return processExtractedText(data.extractedText, data.fileName);
-    }
-    throw new Error(data.message || 'Extraction failed.');
-  } catch (error: any) {
-    throw error;
-  }
-};
-
-export const callIdentifierSearch = async (idValue: string, signal?: AbortSignal): Promise<Partial<LibraryItem> | null> => {
-  if (!GAS_WEB_APP_URL) throw new Error('GAS_WEB_APP_URL missing.');
-  
-  const internalSignal = signal || AbortSignal.timeout(15000);
-
-  try {
-    const res = await fetch(GAS_WEB_APP_URL, {
-      method: 'POST',
-      mode: 'cors',
-      redirect: 'follow',
-      body: JSON.stringify({ action: 'searchByIdentifier', idValue }),
-      signal: internalSignal
-    });
-    
-    const result = await res.json();
-    if (result.status === 'success') return result.data;
-    throw new Error(result.message || 'No data found.');
-  } catch (error: any) {
-    if (error.name === 'AbortError' || error.message === 'TIMEOUT') {
-      throw new Error('TIMEOUT');
-    }
-    throw error;
-  }
-};
-
-export const uploadAndStoreFile = async (file: File, signal?: AbortSignal): Promise<ExtractionResult | null> => {
-  if (!GAS_WEB_APP_URL) throw new Error('GAS_WEB_APP_URL missing.');
-  
-  const reader = new FileReader();
-  const base64Data = await new Promise<string>((resolve) => {
-    reader.onload = () => resolve((reader.result as string).split(',')[1]);
-    reader.readAsDataURL(file);
-  });
-
-  const response = await fetch(GAS_WEB_APP_URL, { 
-    method: 'POST', 
-    mode: 'cors', 
-    redirect: 'follow',
-    body: JSON.stringify({ 
-      action: 'extractOnly', 
-      fileData: base64Data, 
-      fileName: file.name, 
-      mimeType: file.type 
-    }),
-    signal
-  });
-  
-  const result = await response.json();
-  if (result.status === 'success' && result.extractedText && !result.extractedText.startsWith("Extraction failed")) {
-    return processExtractedText(result.extractedText, file.name);
-  }
-  throw new Error(result.message || 'File processing failed.');
-};
-
-/**
- * MODIFIED: saveLibraryItem sekarang hanya mengurus "File Processing" di Google Drive (GAS).
- * Dia tidak lagi menulis metadata ke Google Sheets.
- */
-export const processLibraryFileInCloud = async (item: LibraryItem, fileContent?: any, extractedText: string = ""): Promise<any> => {
-  try {
-    const res = await fetch(GAS_WEB_APP_URL!, {
-      method: 'POST',
-      mode: 'cors',
-      redirect: 'follow',
-      body: JSON.stringify({ 
-        action: 'saveItem', 
-        item, 
-        file: fileContent,
-        extractedText 
-      }),
-    });
-    return await res.json();
-  } catch (error) {
-    return { status: 'error', message: 'GAS Worker failure' };
-  }
-};
-
-export const deleteLibraryItem = async (id: string): Promise<boolean> => {
-  // SILENT BROADCAST FOR OPTIMISTIC UI
-  window.dispatchEvent(new CustomEvent('xeenaps-library-deleted', { detail: id }));
-
-  const res = await fetch(GAS_WEB_APP_URL!, {
-    method: 'POST',
-    mode: 'cors',
-    redirect: 'follow',
-    body: JSON.stringify({ action: 'deleteItem', id }),
-  });
-  const result = await res.json();
-  return result.status === 'success';
-};
-
-/**
- * NEW: Generate Citations via GAS Service
- */
-export const generateCitations = async (item: LibraryItem, style: string, language: string): Promise<any> => {
-  try {
-    const res = await fetch(GAS_WEB_APP_URL!, {
-      method: 'POST',
-      mode: 'cors',
-      redirect: 'follow',
-      body: JSON.stringify({ action: 'generateCitations', item, style, language }),
-    });
-    const result = await res.json();
-    return result.status === 'success' ? result.data : null;
-  } catch (error) {
-    console.error("Citation generation failed:", error);
-    return null;
-  }
-};
-
-/**
- * NEW: Generate Deep Insights via AI Insighter (Groq)
- */
-export const generateInsight = async (item: LibraryItem): Promise<any> => {
-  try {
-    const res = await fetch(GAS_WEB_APP_URL!, {
-      method: 'POST',
-      mode: 'cors',
-      redirect: 'follow',
-      body: JSON.stringify({ action: 'generateInsight', item }),
-    });
-    const result = await res.json();
-    return result.status === 'success' ? result.data : null;
-  } catch (error) {
-    console.error("Insight generation failed:", error);
-    return null;
-  }
-};
-
-/**
- * NEW: Translate Insight Section via GAS Service
- */
-export const translateInsightSection = async (item: LibraryItem, sectionName: string, targetLang: string): Promise<string | null> => {
-  try {
-    const res = await fetch(GAS_WEB_APP_URL!, {
-      method: 'POST',
-      mode: 'cors',
-      redirect: 'follow',
-      body: JSON.stringify({ 
-        action: 'translateInsightSection', 
-        fileId: item.insightJsonId, 
-        sectionName, 
-        targetLang,
-        nodeUrl: item.storageNodeUrl
-      }),
-    });
-    const result = await res.json();
-    return result.status === 'success' ? result.translatedText : null;
-  } catch (error) {
-    console.error("Translation failed:", error);
-    return null;
-  }
-};
-
-/**
- * NEW: Save raw extracted content directly to Drive (Sharding)
- * This function bypasses metadata sheets and talks directly to the storage worker.
- */
-export const saveExtractedContentToDrive = async (item: LibraryItem, content: string): Promise<{fileId: string, nodeUrl: string, status: string} | null> => {
-  if (!GAS_WEB_APP_URL) return null;
-  try {
-    // Determine target node: use existing if available, otherwise Master GAS will decide
-    const targetUrl = item.storageNodeUrl || GAS_WEB_APP_URL;
-    
-    // Construct payload
-    const jsonFileName = `extracted_${item.id}.json`;
-    const jsonBody = JSON.stringify({ id: item.id, fullText: content });
-
-    const res = await fetch(targetUrl, {
-      method: 'POST',
-      mode: 'cors',
-      redirect: 'follow',
-      body: JSON.stringify({ 
-        action: 'saveJsonFile', 
-        fileId: item.extractedJsonId || null, // If exists, overwrite. If null, create.
-        fileName: jsonFileName, 
-        content: jsonBody,
-        folderId: null // Let backend use default logic
-      })
-    });
-    
-    const result = await res.json();
-    
-    if (result.status === 'success') {
-      // If we saved to a specific node URL (slave), we must return that. 
-      // If we saved to default GAS URL, it might be the master node.
-      return { 
-        status: 'success', 
-        fileId: result.fileId, 
-        nodeUrl: targetUrl 
-      };
-    }
-    return null;
-  } catch (e) {
-    console.error("Save Extracted Content Failed:", e);
-    return null;
-  }
-};
-
-/**
- * NEW: Create Empty Insight File (Sharding Affinity)
- * Ensures insight file sits next to extracted file on the same node.
- */
-export const createEmptyInsightFile = async (item: LibraryItem, nodeUrl: string): Promise<string | null> => {
-  try {
-    const jsonFileName = `insight_${item.id}.json`;
-    const jsonBody = JSON.stringify({});
-
-    const res = await fetch(nodeUrl, {
-      method: 'POST',
-      mode: 'cors',
-      redirect: 'follow',
-      body: JSON.stringify({ 
-        action: 'saveJsonFile', 
-        fileId: null, // Always create new if we are here
-        fileName: jsonFileName, 
-        content: jsonBody,
-        folderId: null // Let backend use default logic
-      })
-    });
-    
-    const result = await res.json();
-    
-    if (result.status === 'success') {
-      return result.fileId;
-    }
-    return null;
-  } catch (e) {
-    console.error("Create Insight Failed:", e);
-    return null;
-  }
-};
-
-/**
- * API Key Management Service
- * Handles CRUD for Gemini, Groq, and Scraping keys
- */
-export const manageApiKeys = async (payload: any): Promise<GASResponse<any>> => {
-  if (!GAS_WEB_APP_URL) return { status: 'error', message: 'Backend URL missing' };
-  try {
-    const response = await fetch(GAS_WEB_APP_URL, {
-      method: 'POST',
-      mode: 'cors',
-      redirect: 'follow',
-      body: JSON.stringify({ 
-        action: 'manageApiKey',
-        ...payload 
-      }),
-    });
     return await response.json();
   } catch (error: any) {
     return { status: 'error', message: error.toString() };

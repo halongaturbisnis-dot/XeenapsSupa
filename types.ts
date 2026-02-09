@@ -836,20 +836,6 @@ export interface TutorialItem {
   link: string;
 }
 
-// --- API KEY MANAGER TYPES ---
-export interface ApiKeyGemini {
-  id: string;
-  key: string;
-  label: string;
-  status: string;
-  addedAt: string;
-}
-
-export interface ApiKeyGroq {
-  id: string;
-  api: string;
-}
-
 export interface GASResponse<T> {
   status: 'success' | 'error';
   data?: T;
