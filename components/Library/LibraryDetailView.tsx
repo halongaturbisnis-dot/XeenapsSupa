@@ -1106,16 +1106,10 @@ const LibraryDetailView: React.FC<LibraryDetailViewProps> = ({ item, onClose, is
                   <p className="text-[10px] text-[#FED400]/80 font-bold italic text-center px-4">"Multimedia triangulation anchors knowledge 40% faster than text alone."</p>
                 </div>
               </section>
-
-              <footer className="py-20 text-center opacity-20">
-                <div className="w-10 h-0.5 bg-[#004A74] mx-auto mb-4 rounded-full" />
-                <p className="text-[8px] font-black text-[#004A74] uppercase tracking-[0.8em]">XEENAPS ANALYTIC INFRASTRUCTURE</p>
-              </footer>
             </div>
           </div>
         )}
       </div>
-
       <style>{`
         .custom-scrollbar::-webkit-scrollbar { width: 4px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
