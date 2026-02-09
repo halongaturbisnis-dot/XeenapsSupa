@@ -1,6 +1,3 @@
-
-
-
 import React, { useState, useEffect } from 'react';
 // @ts-ignore - Resolving TS error for missing exported members
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
@@ -68,7 +65,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onMobileClose }) => {
     { name: 'Sharebox', path: '/sharbox', icon: Inbox },
     { name: 'Colleague', path: '/colleagues', icon: Users },
     { name: 'CV Generator', path: '/cv-architect', icon: FileUser },
-    { name: 'Profile', path: '/profile', icon: CircleUserRound },
+    // Profile moved to Settings Submenu
     { name: 'Tutorial', path: '/tutorial', icon: Youtube },
   ];
 
@@ -457,12 +454,12 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onMobileClose }) => {
 
           <div className={`overflow-hidden transition-all duration-500 ease-in-out space-y-1 mt-1 ${settingsMenuOpen && isExpanded ? 'max-h-32 opacity-100' : 'max-h-0 opacity-0 invisible'}`}>
             <NavLink 
-              to="/settings"
-              onClick={(e) => handleSafeClick(e, '/settings')}
+              to="/profile"
+              onClick={(e) => handleSafeClick(e, '/profile')}
               className="w-full flex items-center p-2 pl-9 lg:pl-10 rounded-lg text-black hover:text-black hover:bg-[#FED400]/5 transition-all text-xs md:text-sm font-medium"
             >
-              <Settings size={16} className="mr-2 shrink-0" />
-              <span className="whitespace-nowrap">Configuration</span>
+              <CircleUserRound size={16} className="mr-2 shrink-0" />
+              <span className="whitespace-nowrap">Profile</span>
             </NavLink>
             <NavLink 
               to="/settings/api-keys"

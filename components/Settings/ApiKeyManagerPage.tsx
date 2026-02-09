@@ -138,7 +138,7 @@ const ApiKeyManagerPage: React.FC = () => {
   return (
     <FormPageContainer>
       <FormStickyHeader 
-        title="API Key Vault" 
+        title="API Key Management" 
         subtitle="Manage secure access credentials" 
         onBack={() => navigate('/settings')} 
       />

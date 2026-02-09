@@ -1,6 +1,3 @@
-
-
-
 import React, { useState, useEffect, useCallback } from 'react';
 // @ts-ignore - Resolving TS error for missing exported members in some environments
 import { HashRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
@@ -19,7 +16,6 @@ import AllQuestion from './components/QuestionBank/AllQuestion';
 import GapFinderModule from './components/Research/GapFinderModule';
 import Sidebar from './components/Layout/Sidebar';
 import Header from './components/Layout/Header';
-import SettingsView from './components/Settings/SettingsView';
 import ApiKeyManagerPage from './components/Settings/ApiKeyManagerPage';
 import UserProfileView from './components/Profile/UserProfileView';
 import FindArticle from './components/Research/Literature/FindArticle';
@@ -325,7 +321,6 @@ const App: React.FC = () => {
                 
                 <Route path="/add" element={isLoading ? <GlobalAppLoader /> : <LibraryForm onComplete={loadData} items={items} />} />
                 <Route path="/edit/:id" element={isLoading ? <GlobalAppLoader /> : <LibraryEditForm onComplete={loadData} items={items} />} />
-                <Route path="/settings" element={isLoading ? <GlobalAppLoader /> : <SettingsView />} />
                 <Route path="/settings/api-keys" element={<ApiKeyManagerPage />} />
                 <Route path="/profile" element={isLoading ? <GlobalAppLoader /> : <UserProfileView />} />
                 
